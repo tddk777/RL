@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://scripts/card_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+title = "Ambush"
+cost = 0
+description = "Your next card costs 1 less."
+color = Color(0.6, 0.55, 0.75, 1)

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://scripts/card_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+title = "Mend"
+cost = 2
+description = "Restore 4 health."
+color = Color(0.78, 0.74, 0.55, 1)

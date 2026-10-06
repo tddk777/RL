@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/card.gd" id="1_card"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_card"]
+size = Vector3(1.26, 0.02, 1.76)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_card"]
+size = Vector3(1.26, 0.06, 1.76)
+
+[node name="Card" type="Node3D"]
+script = ExtResource("1_card")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="Visual"]
+mesh = SubResource("BoxMesh_card")
+
+[node name="CostLabel" type="Label3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.46, 0.012, -0.68)
+pixel_size = 0.004
+modulate = Color(0.1, 0.1, 0.11, 1)
+outline_size = 0
+font_size = 56
+text = "0"
+
+[node name="TitleLabel" type="Label3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.1, 0.012, -0.66)
+pixel_size = 0.004
+modulate = Color(0.1, 0.1, 0.11, 1)
+outline_size = 0
+font_size = 40
+text = "Card"
+
+[node name="BodyLabel" type="Label3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.012, 0.25)
+pixel_size = 0.004
+modulate = Color(0.1, 0.1, 0.11, 1)
+outline_size = 0
+font_size = 26
+autowrap_mode = 3
+width = 240.0
+text = ""
+
+[node name="PickArea" type="Area3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="Shape" type="CollisionShape3D" parent="PickArea"]
+shape = SubResource("BoxShape3D_card")
