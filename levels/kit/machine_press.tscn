@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/machine_press_mesh.res" id="1_f74wv"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_eg6my"]
+size = Vector3(2.4, 1.15, 1.7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_or8ui"]
+size = Vector3(0.4, 2.6, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_a6lco"]
+size = Vector3(0.4, 2.6, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kab07"]
+size = Vector3(2.8, 0.9, 1.4)
+
+[node name="MachinePress" type="StaticBody3D" unique_id=1605841653]
+collision_mask = 0
+metadata/surface = &"metal"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=2067126804]
+mesh = ExtResource("1_f74wv")
+
+[node name="Shape0" type="CollisionShape3D" parent="." unique_id=458605036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.57, 0)
+shape = SubResource("BoxShape3D_eg6my")
+
+[node name="Shape1" type="CollisionShape3D" parent="." unique_id=1642311321]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 2, 0)
+shape = SubResource("BoxShape3D_or8ui")
+
+[node name="Shape2" type="CollisionShape3D" parent="." unique_id=1690326030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 2, 0)
+shape = SubResource("BoxShape3D_a6lco")
+
+[node name="Shape3" type="CollisionShape3D" parent="." unique_id=1457713249]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+shape = SubResource("BoxShape3D_kab07")

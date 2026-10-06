@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/charge.wav" id="1_kjc0e"]
+[ext_resource type="Resource" path="res://content/ammo/762x39_ps.tres" id="2_elbwx"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_hhk46"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_distant.wav" id="4_f7jid"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/dry_fire.wav" id="5_su723"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/fire_select.wav" id="6_by61m"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_in.wav" id="7_426t1"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_out.wav" id="8_jkrso"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/ak47/ak47.tscn" id="9_bqudd"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_kc7yc"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_1.wav" id="11_gksdl"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_2.wav" id="12_4jyr8"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_3.wav" id="13_lseun"]
+
+[resource]
+script = ExtResource("10_kc7yc")
+model_scene = ExtResource("9_bqudd")
+caliber = &"7.62x39"
+default_ammo = ExtResource("2_elbwx")
+spread_hip = 2.6
+spread_ads = 0.13
+spread_moving = 1.6
+recoil_vertical = 1.45
+recoil_horizontal = 0.6
+recoil_recovery = 0.55
+kick_back = 0.05
+kick_rotation = 4.5
+ads_time = 0.28
+hip_offset = Vector3(0.155, -0.175, -0.31)
+ads_eye_distance = 0.13
+sway = 1.1
+length = 0.95
+reload_time = 2.5
+reload_empty_time = 3.2
+cycle_time = 0.9
+shot_sounds = Array[AudioStream]([ExtResource("11_gksdl"), ExtResource("12_4jyr8"), ExtResource("13_lseun")])
+distant_shot_sound = ExtResource("4_f7jid")
+dry_fire_sound = ExtResource("5_su723")
+mag_out_sound = ExtResource("8_jkrso")
+mag_in_sound = ExtResource("7_426t1")
+charge_sound = ExtResource("1_kjc0e")
+fire_select_sound = ExtResource("6_by61m")
+loudness = 130.0
+id = &"ak47"
+display_name = "AK-47"
+description = "Soviet assault rifle. Heavy round, heavy recoil, runs on anything."
+weight_kg = 3.5

@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/corrugated_metal/albedo.png" id="1_3eeh4"]
+[ext_resource type="Texture2D" path="res://assets/textures/corrugated_metal/metallic.png" id="2_pi17x"]
+[ext_resource type="Texture2D" path="res://assets/textures/corrugated_metal/normal.png" id="3_rkgpx"]
+[ext_resource type="Texture2D" path="res://assets/textures/corrugated_metal/roughness.png" id="4_14vdf"]
+
+[resource]
+albedo_texture = ExtResource("1_3eeh4")
+metallic = 1.0
+metallic_texture = ExtResource("2_pi17x")
+roughness_texture = ExtResource("4_14vdf")
+normal_enabled = true
+normal_texture = ExtResource("3_rkgpx")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0
+uv1_world_triplanar = true

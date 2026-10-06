@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/bedroll_mesh.res" id="1_asioh"]
+
+[node name="Bedroll" type="Node3D" unique_id=351442940]
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=931557401]
+mesh = ExtResource("1_asioh")

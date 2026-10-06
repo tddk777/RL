@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://player/weapon_holder.gd" id="2_holder"]
+[ext_resource type="Script" path="res://core/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://core/hitbox.gd" id="4_hitbox"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule_body"]
+radius = 0.32
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="Capsule_hit"]
+radius = 0.3
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" groups=["player"]]
+floor_max_angle = 0.820305
+floor_snap_length = 0.35
+script = ExtResource("1_player")
+starting_weapon_ids = PackedStringArray("ak47", "m16", "mp5", "m40")
+starting_ammo = {
+"5.56x45": 150,
+"7.62x39": 150,
+"7.62x51": 40,
+"9x19": 180
+}
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Capsule_body")
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.68, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+current = true
+fov = 75.0
+near = 0.02
+far = 300.0
+
+[node name="WeaponHolder" type="Node3D" parent="Head/Camera3D"]
+script = ExtResource("2_holder")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Hitbox" type="Area3D" parent="." node_paths=PackedStringArray("health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+script = ExtResource("4_hitbox")
+zone = &"torso"
+health = NodePath("../HealthComponent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitbox"]
+shape = SubResource("Capsule_hit")

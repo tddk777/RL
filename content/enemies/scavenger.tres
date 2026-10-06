@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="PackedScene" path="res://ai/human_npc.tscn" id="1_huirl"]
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="2_umjrn"]
+[ext_resource type="Resource" path="res://content/weapons/ak47.tres" id="3_x4ic0"]
+
+[resource]
+script = ExtResource("2_umjrn")
+id = &"scavenger"
+display_name = "Scavenger"
+scene = ExtResource("1_huirl")
+weapon = ExtResource("3_x4ic0")
+sight_range = 40.0
+detection_time = 0.9
+aim_error = 3.2
+reaction_time = 0.7
+burst_pause = 0.8

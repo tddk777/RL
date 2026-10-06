@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/brick/albedo.png" id="1_43o2f"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/normal.png" id="2_ddewn"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/roughness.png" id="3_2gd1s"]
+
+[resource]
+albedo_texture = ExtResource("1_43o2f")
+roughness_texture = ExtResource("3_2gd1s")
+normal_enabled = true
+normal_texture = ExtResource("2_ddewn")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0
+uv1_world_triplanar = true

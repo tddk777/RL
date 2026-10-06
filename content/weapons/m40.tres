@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/charge.wav" id="1_xgobk"]
+[ext_resource type="Resource" path="res://content/ammo/762x51_m118.tres" id="2_liwkf"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_hryn6"]
+[ext_resource type="Resource" path="res://content/attachments/scope_m40.tres" id="4_evqbv"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/shot_distant.wav" id="5_2lo2p"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/dry_fire.wav" id="6_868ev"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/fire_select.wav" id="7_rjjuk"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/mag_in.wav" id="8_udb6j"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/mag_out.wav" id="9_eidau"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/m40/m40.tscn" id="10_5xydx"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="11_dh1cw"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/shot_1.wav" id="12_k1rbp"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/shot_2.wav" id="13_palcd"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m40/shot_3.wav" id="14_yoejb"]
+
+[resource]
+script = ExtResource("11_dh1cw")
+model_scene = ExtResource("10_5xydx")
+caliber = &"7.62x51"
+default_ammo = ExtResource("2_liwkf")
+feed = 1
+magazine_size = 5
+fire_modes = Array[int]([3])
+rounds_per_minute = 60.0
+muzzle_velocity = 790.0
+spread_hip = 3.2
+spread_ads = 0.02
+spread_moving = 2.0
+recoil_vertical = 3.4
+recoil_horizontal = 0.7
+recoil_recovery = 0.35
+kick_back = 0.08
+kick_rotation = 7.0
+ads_time = 0.4
+ads_fov = 30.0
+hip_offset = Vector3(0.16, -0.17, -0.36)
+ads_eye_distance = 0.06
+sway = 1.4
+length = 1.2
+reload_time = 0.0
+reload_empty_time = 0.0
+insert_time = 0.6
+mount_types = {
+"optic": ["m40_base"]
+}
+default_attachments = Array[ExtResource("3_hryn6")]([ExtResource("4_evqbv")])
+shot_sounds = Array[AudioStream]([ExtResource("12_k1rbp"), ExtResource("13_palcd"), ExtResource("14_yoejb")])
+distant_shot_sound = ExtResource("5_2lo2p")
+dry_fire_sound = ExtResource("6_868ev")
+mag_out_sound = ExtResource("9_eidau")
+mag_in_sound = ExtResource("8_udb6j")
+charge_sound = ExtResource("1_xgobk")
+fire_select_sound = ExtResource("7_rjjuk")
+loudness = 160.0
+muzzle_flash_scale = 1.3
+casing_scale = 1.3
+id = &"m40"
+display_name = "M40"
+description = "Bolt-action sniper rifle with a fixed 10x scope."
+weight_kg = 6.6

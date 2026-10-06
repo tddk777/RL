@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/lamp_hanging_shade.res" id="1_atw68"]
+[ext_resource type="ArrayMesh" path="res://assets/models/props/lamp_hanging_bulb.res" id="2_mkc00"]
+
+[node name="LampHanging" type="Node3D" unique_id=603577439]
+
+[node name="Shade" type="MeshInstance3D" parent="." unique_id=1611211712]
+mesh = ExtResource("1_atw68")
+
+[node name="Bulb" type="MeshInstance3D" parent="." unique_id=367154280]
+mesh = ExtResource("2_mkc00")

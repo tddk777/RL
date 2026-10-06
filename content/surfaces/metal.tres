@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="SurfaceData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_metal_1.wav" id="1_lpwsb"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_metal_2.wav" id="2_82j4d"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/bullet_hole_metal.png" id="3_d5g4g"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/metal_1.wav" id="4_u6eem"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/metal_2.wav" id="5_odjfx"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/metal_3.wav" id="6_nqbvf"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/metal_4.wav" id="7_6f4g4"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/metal_1.wav" id="8_c7afl"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/metal_2.wav" id="9_dwd64"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/metal_3.wav" id="10_wde6n"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/land_metal.wav" id="11_ai5qr"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/smoke_puff.png" id="12_dk8vr"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/ricochet_1.wav" id="13_joo4a"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/ricochet_2.wav" id="14_e5y6r"]
+[ext_resource type="Script" path="res://core/data/surface_data.gd" id="15_6c03q"]
+
+[resource]
+script = ExtResource("15_6c03q")
+id = &"metal"
+impact_sounds = Array[AudioStream]([ExtResource("8_c7afl"), ExtResource("9_dwd64"), ExtResource("10_wde6n")])
+ricochet_sounds = Array[AudioStream]([ExtResource("13_joo4a"), ExtResource("14_e5y6r")])
+ricochet_chance = 0.25
+decal_textures = Array[Texture2D]([ExtResource("3_d5g4g")])
+particle_texture = ExtResource("12_dk8vr")
+particle_color = Color(0.35, 0.34, 0.33, 1)
+particle_amount = 5
+particle_speed = 1.5
+particle_size = 0.1
+sparks = true
+footstep_sounds = Array[AudioStream]([ExtResource("4_u6eem"), ExtResource("5_odjfx"), ExtResource("6_nqbvf"), ExtResource("7_6f4g4")])
+land_sound = ExtResource("11_ai5qr")
+casing_sounds = Array[AudioStream]([ExtResource("1_lpwsb"), ExtResource("2_82j4d")])

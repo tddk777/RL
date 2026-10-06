@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/fluorescent_housing.res" id="1_qnbi6"]
+[ext_resource type="ArrayMesh" path="res://assets/models/props/fluorescent_tubes.res" id="2_uwtxy"]
+
+[node name="Fluorescent" type="Node3D" unique_id=1069874174]
+
+[node name="Housing" type="MeshInstance3D" parent="." unique_id=1125884539]
+mesh = ExtResource("1_qnbi6")
+
+[node name="Tubes" type="MeshInstance3D" parent="." unique_id=398902031]
+mesh = ExtResource("2_uwtxy")

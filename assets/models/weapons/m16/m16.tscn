@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_mk2fj"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/m16/m16_body.res" id="2_ll8kp"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/m16/m16_magazine.res" id="3_pr8nx"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/m16/m16_bolt.res" id="4_v2uhx"]
+
+[node name="M16" type="Node3D" unique_id=826623655]
+script = ExtResource("1_mk2fj")
+magazine_drop = Vector3(0, -0.24, -0.02)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=2069850173]
+mesh = ExtResource("2_ll8kp")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=1008208435]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=460396059]
+mesh = ExtResource("3_pr8nx")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=1966866288]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1946974035]
+mesh = ExtResource("4_v2uhx")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=196856789]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.79)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=1753134106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.024, 0.002, -0.12)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=667016927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.02)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=392616201]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.11, -0.035)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1674488213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.032, -0.4)
+gizmo_extents = 0.02
+
+[node name="Mount_optic" type="Marker3D" parent="." unique_id=1331582231]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, -0.11)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=1625653056]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.745)
+gizmo_extents = 0.02

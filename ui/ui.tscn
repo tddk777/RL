@@ -1,0 +1,187 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/ui.gd" id="1_ui"]
+[ext_resource type="Script" path="res://ui/hud.gd" id="2_hud"]
+[ext_resource type="Script" path="res://ui/crosshair.gd" id="3_cross"]
+[ext_resource type="Shader" path="res://ui/vignette.gdshader" id="4_vig"]
+[ext_resource type="Script" path="res://ui/scope_overlay.gd" id="5_scope"]
+
+[sub_resource type="ShaderMaterial" id="Mat_vignette"]
+shader = ExtResource("4_vig")
+shader_parameter/intensity = 0.0
+
+[sub_resource type="StyleBoxFlat" id="Bar_bg"]
+bg_color = Color(0.12, 0.12, 0.12, 0.6)
+
+[sub_resource type="StyleBoxFlat" id="Bar_fill"]
+bg_color = Color(0.72, 0.7, 0.64, 0.85)
+
+[node name="UI" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_ui")
+
+[node name="Scope" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scope")
+
+[node name="Texture" type="TextureRect" parent="Scope"]
+layout_mode = 0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Left" type="ColorRect" parent="Scope"]
+layout_mode = 0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Right" type="ColorRect" parent="Scope"]
+layout_mode = 0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="HUD" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_hud")
+
+[node name="Vignette" type="ColorRect" parent="HUD"]
+material = SubResource("Mat_vignette")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Crosshair" type="Control" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+mouse_filter = 2
+script = ExtResource("3_cross")
+
+[node name="Health" type="VBoxContainer" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -58.0
+offset_right = 272.0
+offset_bottom = -32.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="HUD/Health"]
+theme_override_colors/font_color = Color(0.6, 0.59, 0.55, 0.85)
+theme_override_font_sizes/font_size = 13
+text = "CONDITION"
+
+[node name="Bar" type="ProgressBar" parent="HUD/Health"]
+custom_minimum_size = Vector2(0, 5)
+mouse_filter = 2
+theme_override_styles/background = SubResource("Bar_bg")
+theme_override_styles/fill = SubResource("Bar_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Weapon" type="VBoxContainer" parent="HUD"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -432.0
+offset_top = -76.0
+offset_right = -32.0
+offset_bottom = -32.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="HUD/Weapon"]
+theme_override_colors/font_color = Color(0.6, 0.59, 0.55, 0.85)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+
+[node name="Ammo" type="Label" parent="HUD/Weapon"]
+theme_override_colors/font_color = Color(0.86, 0.84, 0.79, 0.9)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 2
+
+[node name="Prompt" type="Label" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = 60.0
+offset_right = 300.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(0.86, 0.84, 0.79, 0.95)
+theme_override_font_sizes/font_size = 17
+horizontal_alignment = 1
+
+[node name="Screens" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TitleCard" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="TitleCard"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -80.0
+offset_right = 500.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="TitleCard/VBox"]
+theme_override_colors/font_color = Color(0.86, 0.84, 0.79, 1)
+theme_override_font_sizes/font_size = 52
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="TitleCard/VBox"]
+theme_override_colors/font_color = Color(0.76, 0.64, 0.39, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="Fade" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

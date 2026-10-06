@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="SurfaceData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_1.wav" id="1_jok3f"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_2.wav" id="2_m7nof"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_3.wav" id="3_01jjo"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/bullet_hole_concrete.png" id="4_1vtdv"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_1.wav" id="5_fwpvn"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_2.wav" id="6_un2rh"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_3.wav" id="7_ltn57"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_4.wav" id="8_k6t0p"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/concrete_1.wav" id="9_opqrc"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/concrete_2.wav" id="10_pu8b7"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/concrete_3.wav" id="11_a2gf3"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/land_concrete.wav" id="12_v2xbw"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/dust_puff.png" id="13_kfa8b"]
+[ext_resource type="Script" path="res://core/data/surface_data.gd" id="14_ng6kk"]
+
+[resource]
+script = ExtResource("14_ng6kk")
+id = &"concrete"
+impact_sounds = Array[AudioStream]([ExtResource("9_opqrc"), ExtResource("10_pu8b7"), ExtResource("11_a2gf3")])
+decal_textures = Array[Texture2D]([ExtResource("4_1vtdv")])
+particle_texture = ExtResource("13_kfa8b")
+particle_color = Color(0.62, 0.6, 0.56, 1)
+particle_amount = 12
+particle_size = 0.14
+footstep_sounds = Array[AudioStream]([ExtResource("5_fwpvn"), ExtResource("6_un2rh"), ExtResource("7_ltn57"), ExtResource("8_k6t0p")])
+land_sound = ExtResource("12_v2xbw")
+casing_sounds = Array[AudioStream]([ExtResource("1_jok3f"), ExtResource("2_m7nof"), ExtResource("3_01jjo")])

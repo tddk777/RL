@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/fabric_canvas/albedo.png" id="1_yg44o"]
+[ext_resource type="Texture2D" path="res://assets/textures/fabric_canvas/normal.png" id="2_0mde0"]
+[ext_resource type="Texture2D" path="res://assets/textures/fabric_canvas/roughness.png" id="3_ejt6a"]
+
+[resource]
+albedo_texture = ExtResource("1_yg44o")
+roughness_texture = ExtResource("3_ejt6a")
+normal_enabled = true
+normal_texture = ExtResource("2_0mde0")
+uv1_scale = Vector3(3, 3, 3)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0

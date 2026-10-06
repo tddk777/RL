@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_bsd0s"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/ak47/ak47_body.res" id="2_fytcv"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/ak47/ak47_magazine.res" id="3_a3a3x"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/ak47/ak47_bolt.res" id="4_mldud"]
+
+[node name="Ak47" type="Node3D" unique_id=978114868]
+script = ExtResource("1_bsd0s")
+bolt_travel = Vector3(0, 0, 0.075)
+magazine_drop = Vector3(0, -0.24, -0.05)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1053649324]
+mesh = ExtResource("2_fytcv")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=164988004]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=1736517886]
+mesh = ExtResource("3_a3a3x")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=808074690]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1717978313]
+mesh = ExtResource("4_mldud")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1283519072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.622)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=1479640445]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.004, -0.165)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=484903238]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.046, -0.245)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=335562920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.095, -0.035)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=2096802031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.028, -0.4)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=939431438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.588)
+gizmo_extents = 0.02

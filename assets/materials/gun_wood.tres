@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/gun_wood/albedo.png" id="1_n8ndo"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_wood/normal.png" id="2_up6q6"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_wood/roughness.png" id="3_oe86j"]
+
+[resource]
+albedo_texture = ExtResource("1_n8ndo")
+roughness_texture = ExtResource("3_oe86j")
+normal_enabled = true
+normal_texture = ExtResource("2_up6q6")
+uv1_scale = Vector3(4, 4, 4)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0

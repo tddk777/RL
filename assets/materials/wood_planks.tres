@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/wood_planks/albedo.png" id="1_bds76"]
+[ext_resource type="Texture2D" path="res://assets/textures/wood_planks/normal.png" id="2_y62jn"]
+[ext_resource type="Texture2D" path="res://assets/textures/wood_planks/roughness.png" id="3_6npn0"]
+
+[resource]
+albedo_texture = ExtResource("1_bds76")
+roughness_texture = ExtResource("3_6npn0")
+normal_enabled = true
+normal_texture = ExtResource("2_y62jn")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0
+uv1_world_triplanar = true

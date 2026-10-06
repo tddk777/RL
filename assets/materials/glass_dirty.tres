@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+transparency = 1
+cull_mode = 2
+albedo_color = Color(0.55, 0.6, 0.58, 0.35)
+roughness = 0.15
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0
+uv1_world_triplanar = true

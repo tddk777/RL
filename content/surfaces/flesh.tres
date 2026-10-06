@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="SurfaceData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_1.wav" id="1_4a1ip"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_2.wav" id="2_goxbw"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_3.wav" id="3_qeuha"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_1.wav" id="4_t2air"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_2.wav" id="5_0uok6"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_3.wav" id="6_34dwc"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/concrete_4.wav" id="7_s2whg"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/flesh_1.wav" id="8_q8nbv"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/flesh_2.wav" id="9_uyjni"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/flesh_3.wav" id="10_j7w3s"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/land_concrete.wav" id="11_qeyjj"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/blood_puff.png" id="12_okxkg"]
+[ext_resource type="Script" path="res://core/data/surface_data.gd" id="13_70uxm"]
+
+[resource]
+script = ExtResource("13_70uxm")
+id = &"flesh"
+impact_sounds = Array[AudioStream]([ExtResource("8_q8nbv"), ExtResource("9_uyjni"), ExtResource("10_j7w3s")])
+particle_texture = ExtResource("12_okxkg")
+particle_color = Color(0.38, 0.04, 0.03, 1)
+particle_amount = 9
+particle_speed = 1.8
+particle_size = 0.16
+footstep_sounds = Array[AudioStream]([ExtResource("4_t2air"), ExtResource("5_0uok6"), ExtResource("6_34dwc"), ExtResource("7_s2whg")])
+land_sound = ExtResource("11_qeyjj")
+casing_sounds = Array[AudioStream]([ExtResource("1_4a1ip"), ExtResource("2_goxbw"), ExtResource("3_qeuha")])

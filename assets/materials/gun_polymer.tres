@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/gun_polymer/albedo.png" id="1_jd3di"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_polymer/normal.png" id="2_ghk41"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_polymer/roughness.png" id="3_xiva4"]
+
+[resource]
+albedo_texture = ExtResource("1_jd3di")
+roughness_texture = ExtResource("3_xiva4")
+normal_enabled = true
+normal_texture = ExtResource("2_ghk41")
+uv1_scale = Vector3(5, 5, 5)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0

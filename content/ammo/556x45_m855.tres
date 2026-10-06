@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AmmoData" format=3]
+
+[ext_resource type="Script" path="res://core/data/ammo_data.gd" id="1_ckb31"]
+
+[resource]
+script = ExtResource("1_ckb31")
+caliber = &"5.56x45"
+damage = 42.0
+id = &"556x45_m855"
+display_name = "5.56x45mm M855"
+description = "Green-tip NATO rifle round."
+weight_kg = 0.012

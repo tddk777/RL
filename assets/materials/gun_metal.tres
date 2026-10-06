@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/gun_metal/albedo.png" id="1_7b5wa"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_metal/metallic.png" id="2_qpcvt"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_metal/normal.png" id="3_a6ent"]
+[ext_resource type="Texture2D" path="res://assets/textures/gun_metal/roughness.png" id="4_mpbqs"]
+
+[resource]
+albedo_texture = ExtResource("1_7b5wa")
+metallic = 1.0
+metallic_texture = ExtResource("2_qpcvt")
+roughness_texture = ExtResource("4_mpbqs")
+normal_enabled = true
+normal_texture = ExtResource("3_a6ent")
+uv1_scale = Vector3(5, 5, 5)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0

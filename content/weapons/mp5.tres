@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/charge.wav" id="1_klmqd"]
+[ext_resource type="Resource" path="res://content/ammo/9x19_fmj.tres" id="2_m1uwh"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_i0s5j"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_distant.wav" id="4_j7irv"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/dry_fire.wav" id="5_4abef"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/fire_select.wav" id="6_e3cqb"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/mag_in.wav" id="7_h7h4u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/mag_out.wav" id="8_2r8cc"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/mp5/mp5.tscn" id="9_7mmtw"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_qpbsa"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_1.wav" id="11_kxuhr"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_2.wav" id="12_36h0t"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_3.wav" id="13_4crjx"]
+
+[resource]
+script = ExtResource("10_qpbsa")
+model_scene = ExtResource("9_7mmtw")
+caliber = &"9x19"
+default_ammo = ExtResource("2_m1uwh")
+rounds_per_minute = 800.0
+muzzle_velocity = 400.0
+spread_hip = 2.2
+spread_ads = 0.18
+spread_moving = 1.0
+recoil_vertical = 0.65
+recoil_horizontal = 0.35
+recoil_recovery = 0.7
+kick_back = 0.03
+kick_rotation = 2.6
+ads_time = 0.2
+ads_fov = 58.0
+hip_offset = Vector3(0.15, -0.165, -0.27)
+ads_eye_distance = 0.16
+sway = 0.8
+length = 0.72
+reload_time = 2.2
+reload_empty_time = 2.8
+cycle_time = 0.7
+shot_sounds = Array[AudioStream]([ExtResource("11_kxuhr"), ExtResource("12_36h0t"), ExtResource("13_4crjx")])
+distant_shot_sound = ExtResource("4_j7irv")
+dry_fire_sound = ExtResource("5_4abef")
+mag_out_sound = ExtResource("8_2r8cc")
+mag_in_sound = ExtResource("7_h7h4u")
+charge_sound = ExtResource("1_klmqd")
+fire_select_sound = ExtResource("6_e3cqb")
+loudness = 90.0
+muzzle_flash_scale = 0.7
+casing_scale = 0.75
+id = &"mp5"
+display_name = "MP5"
+description = "Roller-delayed submachine gun. Quiet, controllable, short range."
+weight_kg = 2.5

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="SurfaceData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_1.wav" id="1_u8v7j"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_2.wav" id="2_4b7no"]
+[ext_resource type="AudioStream" path="res://assets/audio/casings/brass_concrete_3.wav" id="3_liyse"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/bullet_hole_wood.png" id="4_o4ekf"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/wood_1.wav" id="5_7norx"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/wood_2.wav" id="6_6bxg3"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/wood_3.wav" id="7_hvcmv"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/wood_4.wav" id="8_y3ss7"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/wood_1.wav" id="9_vrs1k"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/wood_2.wav" id="10_chkj3"]
+[ext_resource type="AudioStream" path="res://assets/audio/impacts/wood_3.wav" id="11_7kgld"]
+[ext_resource type="AudioStream" path="res://assets/audio/footsteps/land_concrete.wav" id="12_6kslj"]
+[ext_resource type="Texture2D" path="res://assets/textures/fx/dust_puff.png" id="13_duws2"]
+[ext_resource type="Script" path="res://core/data/surface_data.gd" id="14_f0vv7"]
+
+[resource]
+script = ExtResource("14_f0vv7")
+id = &"wood"
+impact_sounds = Array[AudioStream]([ExtResource("9_vrs1k"), ExtResource("10_chkj3"), ExtResource("11_7kgld")])
+decal_textures = Array[Texture2D]([ExtResource("4_o4ekf")])
+particle_texture = ExtResource("13_duws2")
+particle_color = Color(0.5, 0.4, 0.3, 1)
+particle_speed = 2.2
+particle_size = 0.1
+footstep_sounds = Array[AudioStream]([ExtResource("5_7norx"), ExtResource("6_6bxg3"), ExtResource("7_hvcmv"), ExtResource("8_y3ss7")])
+land_sound = ExtResource("12_6kslj")
+casing_sounds = Array[AudioStream]([ExtResource("1_u8v7j"), ExtResource("2_4b7no"), ExtResource("3_liyse")])

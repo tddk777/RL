@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/crate_wood_mesh.res" id="1_5x6gf"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_drdnr"]
+size = Vector3(1, 0.8, 1)
+
+[node name="CrateWood" type="StaticBody3D" unique_id=2038179286]
+collision_mask = 0
+metadata/surface = &"wood"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1041873143]
+mesh = ExtResource("1_5x6gf")
+
+[node name="Shape0" type="CollisionShape3D" parent="." unique_id=1241510581]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_drdnr")

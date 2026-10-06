@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/tiles_dirty/albedo.png" id="1_8q83e"]
+[ext_resource type="Texture2D" path="res://assets/textures/tiles_dirty/normal.png" id="2_y6gkp"]
+[ext_resource type="Texture2D" path="res://assets/textures/tiles_dirty/roughness.png" id="3_7otnr"]
+
+[resource]
+albedo_texture = ExtResource("1_8q83e")
+roughness_texture = ExtResource("3_7otnr")
+normal_enabled = true
+normal_texture = ExtResource("2_y6gkp")
+uv1_scale = Vector3(0.6, 0.6, 0.6)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0
+uv1_world_triplanar = true

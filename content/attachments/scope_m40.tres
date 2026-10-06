@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AttachmentData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/fx/scope_overlay.png" id="1_vc1k3"]
+[ext_resource type="PackedScene" path="res://assets/models/attachments/scope_m40/scope_m40.tscn" id="2_3d0yb"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_duff3"]
+
+[resource]
+script = ExtResource("3_duff3")
+mount_type = &"m40_base"
+model_scene = ExtResource("2_3d0yb")
+ads_time_multiplier = 1.25
+ads_fov = 8.0
+ads_overlay = ExtResource("1_vc1k3")
+id = &"scope_m40"
+display_name = "10x sniper scope"
+description = "Fixed-power rifle scope with duplex reticle."
+weight_kg = 0.6

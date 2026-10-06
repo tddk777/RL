@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ai/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://characters/humanoid.gd" id="2_body"]
+[ext_resource type="Script" path="res://core/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://ai/perception.gd" id="4_perception"]
+[ext_resource type="Script" path="res://ai/ai_brain.gd" id="5_brain"]
+[ext_resource type="Script" path="res://ai/states/idle.gd" id="6_idle"]
+[ext_resource type="Script" path="res://ai/states/patrol.gd" id="7_patrol"]
+[ext_resource type="Script" path="res://ai/states/investigate.gd" id="8_investigate"]
+[ext_resource type="Script" path="res://ai/states/combat.gd" id="9_combat"]
+[ext_resource type="Script" path="res://ai/states/dead.gd" id="10_dead"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule_body"]
+radius = 0.3
+height = 1.8
+
+[node name="HumanNPC" type="CharacterBody3D" groups=["npc"]]
+floor_max_angle = 0.820305
+floor_snap_length = 0.35
+script = ExtResource("1_npc")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Capsule_body")
+
+[node name="Body" type="Node3D" parent="."]
+script = ExtResource("2_body")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Perception" type="Node" parent="."]
+script = ExtResource("4_perception")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.6
+target_desired_distance = 0.7
+agent_height_offset = 0.0
+radius = 0.4
+
+[node name="Brain" type="Node" parent="."]
+script = ExtResource("5_brain")
+initial_state = &"idle"
+
+[node name="Idle" type="Node" parent="Brain"]
+script = ExtResource("6_idle")
+
+[node name="Patrol" type="Node" parent="Brain"]
+script = ExtResource("7_patrol")
+
+[node name="Investigate" type="Node" parent="Brain"]
+script = ExtResource("8_investigate")
+
+[node name="Combat" type="Node" parent="Brain"]
+script = ExtResource("9_combat")
+
+[node name="Dead" type="Node" parent="Brain"]
+script = ExtResource("10_dead")
