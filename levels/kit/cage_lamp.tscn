@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/cage_lamp_mesh.res" id="1_g6whu"]
+[ext_resource type="ArrayMesh" path="res://assets/models/props/cage_lamp_bulb.res" id="2_bnalc"]
+
+[node name="CageLamp" type="Node3D" unique_id=1303022259]
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=888888702]
+mesh = ExtResource("1_g6whu")
+
+[node name="Bulb" type="MeshInstance3D" parent="." unique_id=1833509033]
+mesh = ExtResource("2_bnalc")

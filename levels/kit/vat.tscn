@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/vat_mesh.res" id="1_0catu"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_gg0am"]
+height = 2.28
+radius = 1.26
+
+[node name="Vat" type="StaticBody3D" unique_id=1441344165]
+collision_mask = 0
+metadata/surface = &"metal"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=2015156406]
+mesh = ExtResource("1_0catu")
+
+[node name="Shape0" type="CollisionShape3D" parent="." unique_id=96038147]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.14, 0)
+shape = SubResource("CylinderShape3D_gg0am")

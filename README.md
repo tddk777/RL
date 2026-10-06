@@ -12,13 +12,22 @@ grow deeper level by level.
 
 ## Current build
 
-- **Level 1, The Foundry**: an abandoned, rusting factory hall on three
-  heights (ground floor, 5 m catwalks and offices, 10 m control room), lit by
-  light shafts through the collapsed roof, flickering tubes and sodium lamps.
-- **Firearms**: AK-47, M16A2, MP5 and M40 with real ballistics (velocity and
+- **Level 1, The Works**: a vast abandoned industrial complex, generated
+  fresh every run (and every retry). About 48 x 48 cells of 8 m across up to
+  four storeys: factory halls with catwalk rings, warehouses with shelving
+  rows, processing rooms with vats, offices, maintenance corridors, loading
+  docks, stairwells, collapsed floors and roof holes, leaking pipes, dead and
+  flickering lights. It streams in around you, so only the nearby part is
+  built. Two or three exits are scattered far from the start; some are hidden
+  maintenance hatches, some need a breaker pulled first. A few things are not
+  quite right. The seed is shown in the pause menu.
+- **You start with an M1911 and one spare magazine.** The AK-47, M16A2, MP5
+  and M40 and their ammunition lie around the level (placeholder pickups
+  until the loot system is designed).
+- **Firearms**: M1911, AK-47, M16A2, MP5 and M40 with real ballistics (velocity and
   drop), fire modes (semi/burst/auto/bolt), chambering, tactical and empty
   reloads, round-by-round loading for the M40, recoil, ADS, a 10x scope.
-- **A rival scavenger** who patrols, hears gunshots and footsteps, investigates,
+- **Rival scavengers** who patrol, hears gunshots and footsteps, investigates,
   spots you, fights in bursts and reloads from cover.
 - **Audio** for every shot, reload, impact, footstep, casing and the
   ambience, plus menus, HUD, settings (graphics presets, sensitivity, FOV,
@@ -55,7 +64,7 @@ All local installs for this project go on the **E: drive** (see `CLAUDE.md`).
 | Sprint / crouch / jump | Shift / Ctrl or C / Space |
 | Fire / aim | Left / right mouse |
 | Reload / fire mode | R / B |
-| Weapons | 1 AK-47, 2 M16A2, 3 MP5, 4 M40 |
+| Weapons | 1-5, in the order you picked them up |
 | Interact | F |
 | Pause | Esc |
 
@@ -63,4 +72,5 @@ All local installs for this project go on the **E: drive** (see `CLAUDE.md`).
 
 - Architecture and conventions: `CLAUDE.md`
 - How to add weapons, attachments, enemies, levels: `docs/ADDING_CONTENT.md`
-- End-to-end test: `godot --headless res://dev/tests/smoke_test.tscn`
+- Tests: `godot --headless res://dev/tests/smoke_test.tscn` (end to end) and
+  `godot --headless res://dev/tests/procgen_test.tscn` (level generation and streaming)

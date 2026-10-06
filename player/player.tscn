@@ -17,12 +17,9 @@ height = 1.8
 floor_max_angle = 0.820305
 floor_snap_length = 0.35
 script = ExtResource("1_player")
-starting_weapon_ids = PackedStringArray("ak47", "m16", "mp5", "m40")
+starting_weapon_ids = PackedStringArray("m1911")
 starting_ammo = {
-"5.56x45": 150,
-"7.62x39": 150,
-"7.62x51": 40,
-"9x19": 180
+".45ACP": 7
 }
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

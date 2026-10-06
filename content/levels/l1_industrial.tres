@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelData" format=3]
+
+[ext_resource type="Script" path="res://core/data/level_data.gd" id="1_6n4c4"]
+
+[resource]
+script = ExtResource("1_6n4c4")
+id = &"l1_industrial"
+display_name = "The Works"
+subtitle = "Level 1  ·  Abandoned industrial complex"
+order = 1
+scene_path = "res://levels/l1_industrial/l1_industrial.tscn"

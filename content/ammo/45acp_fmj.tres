@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AmmoData" format=3]
+
+[ext_resource type="Script" path="res://core/data/ammo_data.gd" id="1_206mu"]
+
+[resource]
+script = ExtResource("1_206mu")
+caliber = &".45ACP"
+damage = 38.0
+id = &"45acp_fmj"
+display_name = ".45 ACP FMJ"
+description = "Heavy, slow, subsonic pistol round."
+weight_kg = 0.012

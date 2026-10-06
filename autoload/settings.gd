@@ -50,6 +50,7 @@ const DEFAULT_BINDINGS := {
 	"weapon_2": [KEY_2],
 	"weapon_3": [KEY_3],
 	"weapon_4": [KEY_4],
+	"weapon_5": [KEY_5],
 	"pause": [KEY_ESCAPE],
 }
 
@@ -81,15 +82,21 @@ func apply() -> void:
 
 
 ## Graphics options that live on a level's Environment. Levels call this when
-## they load and again on settings_changed.
+## they load and again on settings_changed. Quality caps the effects; it never
+## turns on one the level's Environment left off (an enclosed level may skip
+## SDFGI because it replaces the flat ambient light).
 func apply_environment(env: Environment) -> void:
+	if not env.has_meta(&"authored"):
+		env.set_meta(&"authored", {"ssao": env.ssao_enabled, "ssil": env.ssil_enabled,
+			"sdfgi": env.sdfgi_enabled, "ssr": env.ssr_enabled})
+	var authored: Dictionary = env.get_meta(&"authored")
 	var q: int = get_value("graphics", "quality")
-	env.ssao_enabled = q >= Quality.MEDIUM
-	env.ssil_enabled = q >= Quality.HIGH
-	env.sdfgi_enabled = q >= Quality.HIGH
+	env.ssao_enabled = authored["ssao"] and q >= Quality.MEDIUM
+	env.ssil_enabled = authored["ssil"] and q >= Quality.HIGH
+	env.sdfgi_enabled = authored["sdfgi"] and q >= Quality.HIGH
 	env.volumetric_fog_enabled = true  # core to the look; cost scaled below
 	env.glow_enabled = true
-	env.ssr_enabled = q >= Quality.ULTRA
+	env.ssr_enabled = authored["ssr"] and q >= Quality.ULTRA
 
 
 func _apply_display() -> void:

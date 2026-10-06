@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/procgen/procedural_level.gd" id="1_level"]
+[ext_resource type="Resource" path="res://levels/l1_industrial/l1_profile.tres" id="2_profile"]
+
+[node name="L1Industrial" type="Node3D"]
+script = ExtResource("1_level")
+profile = ExtResource("2_profile")
+load_radius = 3
+reverb_room_size = 0.82
+reverb_wet = 0.16

@@ -60,15 +60,22 @@ func _build() -> void:
 		kit.cylinder(0.034 * t, 0.012, -0.012, glove_material, 10, 0.006))  # cuff
 
 
+static var _mesh_cache: Dictionary = {}
+
+
 func _segment(segment_name: String, build: Callable) -> Node3D:
 	var node := Node3D.new()
 	node.name = segment_name
 	node.top_level = true
 	add_child(node)
-	var kit := MeshKit.new()
-	build.call(kit)
+	var key := "%s|%s|%s|%s|%s|%s|%s" % [segment_name, upper_length, lower_length, thickness, left,
+		sleeve_material.resource_path if sleeve_material else "", glove_material.resource_path if glove_material else ""]
+	if not _mesh_cache.has(key):
+		var kit := MeshKit.new()
+		build.call(kit)
+		_mesh_cache[key] = kit.commit()
 	var mi := MeshInstance3D.new()
-	mi.mesh = kit.commit()
+	mi.mesh = _mesh_cache[key]
 	node.add_child(mi)
 	return node
 

@@ -27,8 +27,10 @@ Everything below is data-driven: the Registry finds any `.tres` placed in
    New Resource > `WeaponData`. Set `id`, `model_scene`, `caliber`,
    `default_ammo`, fire modes, stats and sounds. The Inspector groups the
    fields (Ammunition, Firing, Recoil, Handling, Attachments, Sound, Effects).
-4. Give it to the player: add its id to `starting_weapon_ids` on
-   `player/player.tscn` (temporary until an inventory exists).
+4. Get it into the player's hands: add its id to `weapon_pickups` on a
+   level's `LevelProfile` (it lies somewhere in the level, with ammo in
+   `ammo_table`), or to `starting_weapon_ids` on `player/player.tscn`. Both
+   are placeholders until loot and inventory are designed.
 
 Tuning tips: `hip_offset` places the gun at the hip; `ads_eye_distance` is
 how far the sight sits from the eye when aiming; `length` controls how early
@@ -63,7 +65,41 @@ the gun pulls back near walls.
    optionally point `patrol_route` at a Node3D whose Marker3D children are the
    patrol points.
 
-## A level
+## A procedural level
+
+Level 1 is procedural; new levels in the same spirit (L2 housing and towers,
+L4 labs, ...) are mostly data:
+
+1. **Styles.** A `ZoneStyle` (`levels/procgen/zone_style.gd`) per kind of
+   space: `type` (hall, warehouse, processing, office, loading_dock,
+   corridor), `weight`, `extra_storeys`, materials for floors, walls and
+   ceilings, door sizes, `windows`, light kind/chance/flicker/colour, props
+   with weights and density, pipe/leak/collapse/roof-hole chances.
+2. **Profile.** A `LevelProfile` (`levels/procgen/level_profile.gd`) with the
+   grid (`grid_size`, `storeys`, `cell_size`, `storey_height`, `chunk_cells`), block
+   sizes, the corridor style and building styles, population (enemy count
+   and id, exits, weapon/ammo pickups, corpses), anomalies (symbols, odd
+   corpses, odd containers), and atmosphere (`environment`, ambience, random
+   sounds). `dev/generators/build_l1_profile.gd` is the L1 example; copy it,
+   or build the resources in the Inspector.
+3. **Scene.** A scene whose root uses `levels/procgen/procedural_level.gd`
+   with the profile assigned. `load_radius` (chunks around the player) and
+   `frame_budget_ms` trade view distance and smoothness for cost.
+4. **Register** a `LevelData` with `order`, `display_name`, `subtitle` and
+   `scene_path` as for any level.
+
+Zone types new to a level (e.g. `apartment`, `lab`) need a fill rule in
+`LayoutGenerator` (`_make_buildings` / `_fill_rooms` / `_fill_tall`) and
+dressing in `ChunkBuilder._dressing`; everything else (walls, doors, stairs,
+lights, pipes, streaming, navigation) is shared. New wall marks go in
+`dev/asset_gen/decals.py`; new "odd" things in `levels/procgen/entities/`
+(spawned from `Anomalies.spawn`).
+
+Check a profile with `dev/tests/layout_test.gd` (connectivity, exits,
+determinism over several seeds) and look at it with
+`dev/tests/procgen_tour.tscn`.
+
+## A hand-built level
 
 1. Make a scene whose root uses `levels/level.gd` (`Level`). Required child:
    a Marker3D named `PlayerSpawn`. Usually also: `WorldEnvironment`, lights, a
@@ -72,8 +108,9 @@ the gun pulls back near walls.
 2. Tag static bodies with metadata `surface` (`concrete`, `metal`, `wood`)
    for the right impact and footstep sounds. Untagged counts as concrete.
 3. Reusable props are in `levels/kit/` (crates, barrels, shelving, machines,
-   lamps, furniture, sandbags, ...). Regenerate or extend them in
-   `dev/generators/build_kit.gd`, or replace any prop scene with a real model.
+   lamps, furniture, sandbags, containers, vats, ...). Regenerate or extend
+   them in `dev/generators/build_kit.gd`, or replace any prop scene with a
+   real model.
 4. Register: a `LevelData` in `content/levels/` with `order` (play order),
    `display_name`, `subtitle` and `scene_path`. The level exit loads the next
    `order`; the last one shows the end screen.

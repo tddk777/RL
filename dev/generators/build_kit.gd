@@ -32,6 +32,9 @@ func _initialize() -> void:
 	sandbags()
 	bedroll()
 	fire_pit()
+	cage_lamp()
+	shipping_container()
+	vat()
 	print("build_kit: done")
 	quit()
 
@@ -389,6 +392,69 @@ func bedroll() -> void:
 	k.reset()
 	k.box(Vector3(0.45, 0.4, 0.25), Vector3(0.6, 0.2, 0.6), canvas, 0.05)  # pack
 	save_prop("bedroll", {"Mesh": k}, [], &"wood")
+
+
+## Wall-mounted bulb in a wire cage. Faces +Z (wall at z = 0).
+func cage_lamp() -> void:
+	var steel := m("prop_steel")
+	var dark := m("gun_metal")
+	var k := MeshKit.new()
+	k.at(Vector3(0, 0, 0.0), Vector3(0, 0, 0)).cylinder(0.07, 0.0, 0.03, steel, 14, 0.005)  # wall plate
+	k.reset()
+	k.cylinder(0.045, 0.03, 0.12, steel, 12, 0.004)  # socket
+	for i in 6:
+		var a := TAU * i / 6.0
+		k.tube_between(Vector3(cos(a) * 0.05, sin(a) * 0.05, 0.12), Vector3(cos(a) * 0.075, sin(a) * 0.075, 0.2), 0.004, dark, 4)
+		k.tube_between(Vector3(cos(a) * 0.075, sin(a) * 0.075, 0.2), Vector3(cos(a) * 0.02, sin(a) * 0.02, 0.29), 0.004, dark, 4)
+	k.at(Vector3(0, 0, 0.2)).lathe(PackedVector2Array([Vector2(0.078, -0.005), Vector2(0.078, 0.005)]), dark, 12, false, false)
+	k.reset()
+	var bulb := MeshKit.new()
+	bulb.sphere(0.04, Vector3(0, 0, 0.17), m("lamp_emissive"), 8, 10, Vector3(1, 1, 1.3))
+	save_prop("cage_lamp", {"Mesh": k, "Bulb": bulb}, [], &"metal")
+
+
+## 20 ft shipping container, doors at +X.
+func shipping_container() -> void:
+	var body := m("corrugated_metal")
+	var frame := m("prop_rust")
+	var k := MeshKit.new()
+	var L := 6.06
+	var W := 2.44
+	var Hh := 2.59
+	k.box(Vector3(L - 0.1, Hh - 0.1, W - 0.1), Vector3(0, Hh * 0.5, 0), body, 0.02)
+	for x in [-1.0, 1.0]:
+		for z in [-1.0, 1.0]:
+			k.box(Vector3(0.16, Hh, 0.16), Vector3(x * (L * 0.5 - 0.08), Hh * 0.5, z * (W * 0.5 - 0.08)), frame, 0.01)
+	for y in [0.08, Hh - 0.08]:
+		for z in [-1.0, 1.0]:
+			k.box(Vector3(L, 0.16, 0.14), Vector3(0, y, z * (W * 0.5 - 0.07)), frame, 0.01)
+		for x in [-1.0, 1.0]:
+			k.box(Vector3(0.14, 0.16, W), Vector3(x * (L * 0.5 - 0.07), y, 0), frame, 0.01)
+	# Door locking bars
+	for z in [-0.75, -0.35, 0.35, 0.75]:
+		k.at(Vector3(L * 0.5 + 0.02, 0, z)).tube_between(Vector3(0, 0.25, 0), Vector3(0, Hh - 0.25, 0), 0.02, frame, 6)
+	k.reset()
+	save_prop("shipping_container", {"Mesh": k}, [box_shape(Vector3(L, Hh, W), Vector3(0, Hh * 0.5, 0))], &"metal")
+
+
+## Open-top processing vat on legs, with a rim and an outlet pipe.
+func vat() -> void:
+	var steel := m("prop_steel")
+	var rust := m("prop_rust")
+	var k := MeshKit.new()
+	var r := 1.2
+	k.at(Vector3(0, 0, 0), Vector3(-90, 0, 0)).lathe(PackedVector2Array([Vector2(0.0, 0.35), Vector2(r - 0.25, 0.4),
+		Vector2(r, 0.7), Vector2(r, 2.2), Vector2(r + 0.06, 2.22), Vector2(r + 0.06, 2.28), Vector2(r - 0.05, 2.28),
+		Vector2(r - 0.05, 0.75), Vector2(0.0, 0.5)]), steel, 28, false, false)
+	for i in 4:
+		var a := TAU * i / 4.0 + PI * 0.25
+		k.reset().tube_between(Vector3(cos(a) * (r - 0.15), 0.0, sin(a) * (r - 0.15)), Vector3(cos(a) * (r - 0.15), 0.8, sin(a) * (r - 0.15)), 0.06, rust, 8)
+	k.reset()
+	k.tube_between(Vector3(0, 0.4, 0), Vector3(0, 0.15, 0), 0.08, rust, 10)
+	k.tube_between(Vector3(0, 0.15, 0), Vector3(r + 0.6, 0.15, 0), 0.08, rust, 10)
+	k.at(Vector3(r + 0.6, 0.15, 0), Vector3(0, 90, 0)).cylinder(0.12, -0.03, 0.03, rust, 12)
+	k.reset()
+	save_prop("vat", {"Mesh": k}, [cyl_shape(r + 0.06, 2.28, Vector3(0, 1.14, 0))], &"metal")
 
 
 func fire_pit() -> void:

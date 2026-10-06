@@ -1,0 +1,191 @@
+[gd_resource type="Resource" script_class="LevelProfile" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/industrial_interior_loop.wav" id="1_h1il2"]
+[ext_resource type="Script" path="res://levels/procgen/zone_style.gd" id="2_qp74k"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_1.wav" id="3_e52kd"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_2.wav" id="4_j4x04"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_3.wav" id="5_i123g"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_1.wav" id="6_eup3g"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_2.wav" id="7_txbi4"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_3.wav" id="8_ojqca"]
+[ext_resource type="Script" path="res://levels/procgen/level_profile.gd" id="9_lhbt5"]
+
+[sub_resource type="Resource" id="Resource_yhyro"]
+script = ExtResource("2_qp74k")
+type = &"hall"
+weight = 1.3
+extra_storeys = Vector2i(1, 3)
+ceiling_material = &"corrugated_metal"
+ground_door_width = 4.2
+ground_door_height = 4.4
+windows = true
+light_kind = &"hanging"
+light_chance = 0.45
+light_working = 0.55
+flicker_chance = 0.25
+light_color = Color(1, 0.72, 0.42, 1)
+light_energy = 7.0
+props = {
+"barrel_blue": 1.0,
+"barrel_rust": 2.0,
+"crate_wood": 2.0,
+"electrical_cabinet": 0.6,
+"pallet": 1.5,
+"rubble": 1.0
+}
+prop_density = 0.3
+roof_hole_chance = 0.12
+
+[sub_resource type="Resource" id="Resource_kl7xd"]
+script = ExtResource("2_qp74k")
+type = &"warehouse"
+extra_storeys = Vector2i(1, 2)
+wall_material = &"corrugated_metal"
+upper_wall_material = &"corrugated_metal"
+ceiling_material = &"corrugated_metal"
+ground_door_width = 4.2
+ground_door_height = 4.4
+windows = true
+light_kind = &"hanging"
+light_chance = 0.4
+light_working = 0.5
+light_color = Color(1, 0.72, 0.42, 1)
+light_energy = 6.0
+props = {
+"barrel_orange": 1.0,
+"crate_small": 1.0,
+"crate_wood": 2.0,
+"pallet": 2.0
+}
+prop_density = 0.3
+roof_hole_chance = 0.07
+
+[sub_resource type="Resource" id="Resource_f0pvv"]
+script = ExtResource("2_qp74k")
+type = &"processing"
+extra_storeys = Vector2i(0, 2)
+wall_material = &"painted_steel"
+upper_wall_material = &"painted_steel"
+light_kind = &"fluorescent"
+light_chance = 0.6
+flicker_chance = 0.3
+light_color = Color(0.84, 0.92, 1, 1)
+props = {
+"barrel_blue": 1.0,
+"barrel_orange": 1.0,
+"crate_small": 1.0,
+"electrical_cabinet": 2.0,
+"filing_cabinet": 0.5
+}
+prop_density = 0.4
+pipe_chance = 0.5
+leak_chance = 0.15
+collapse_chance = 0.06
+
+[sub_resource type="Resource" id="Resource_fm5py"]
+script = ExtResource("2_qp74k")
+type = &"office"
+extra_storeys = Vector2i(1, 3)
+upper_floor_material = &"wood_planks"
+upper_wall_material = &"concrete_wall"
+light_kind = &"fluorescent"
+light_chance = 0.7
+flicker_chance = 0.25
+light_color = Color(0.84, 0.92, 1, 1)
+light_energy = 1.3
+props = {
+"crate_small": 0.7,
+"desk": 3.0,
+"filing_cabinet": 2.0,
+"locker": 2.0,
+"rubble": 0.4
+}
+prop_density = 0.75
+collapse_chance = 0.05
+
+[sub_resource type="Resource" id="Resource_4x3jn"]
+script = ExtResource("2_qp74k")
+type = &"loading_dock"
+weight = 0.3
+extra_storeys = Vector2i(1, 1)
+wall_material = &"corrugated_metal"
+upper_wall_material = &"corrugated_metal"
+ceiling_material = &"corrugated_metal"
+ground_door_width = 4.2
+ground_door_height = 4.4
+light_kind = &"hanging"
+light_working = 0.7
+light_color = Color(1, 0.72, 0.42, 1)
+light_energy = 6.5
+props = {
+"barrel_rust": 1.0,
+"crate_small": 1.0,
+"crate_wood": 3.0,
+"pallet": 3.0
+}
+roof_hole_chance = 0.05
+
+[sub_resource type="Resource" id="Resource_jslxu"]
+script = ExtResource("2_qp74k")
+extra_storeys = Vector2i(0, 0)
+upper_wall_material = &"concrete_wall"
+light_chance = 0.6
+light_working = 0.65
+light_energy = 1.3
+props = {
+"barrel_rust": 2.0,
+"crate_small": 2.0,
+"electrical_cabinet": 1.0,
+"pallet": 1.0,
+"rubble": 1.0
+}
+prop_density = 0.16
+pipe_chance = 0.75
+leak_chance = 0.12
+collapse_chance = 0.035
+roof_hole_chance = 0.02
+
+[sub_resource type="Environment" id="Environment_a6w2s"]
+background_mode = 1
+background_color = Color(0.17, 0.18, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.45, 0.48, 0.55, 1)
+ambient_light_energy = 0.6
+reflected_light_source = 1
+tonemap_mode = 4
+tonemap_exposure = 1.35
+ssao_enabled = true
+ssao_radius = 1.4
+ssao_intensity = 2.2
+ssil_enabled = true
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.04
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.17, 0.18, 0.2, 1)
+fog_density = 1.0
+fog_sky_affect = 0.0
+fog_depth_begin = 25.0
+fog_depth_end = 88.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.022
+volumetric_fog_albedo = Color(0.72, 0.72, 0.7, 1)
+volumetric_fog_anisotropy = 0.55
+volumetric_fog_ambient_inject = 0.2
+volumetric_fog_sky_affect = 0.1
+adjustment_enabled = true
+adjustment_contrast = 1.08
+adjustment_saturation = 0.78
+
+[resource]
+script = ExtResource("9_lhbt5")
+max_block = 12
+min_block = 4
+corridor = SubResource("Resource_jslxu")
+buildings = Array[ExtResource("2_qp74k")]([SubResource("Resource_yhyro"), SubResource("Resource_kl7xd"), SubResource("Resource_f0pvv"), SubResource("Resource_fm5py"), SubResource("Resource_4x3jn")])
+weapon_pickups = PackedStringArray("mp5", "ak47", "m16", "m40")
+ammo_pickups = 40
+environment = SubResource("Environment_a6w2s")
+ambience = ExtResource("1_h1il2")
+random_sounds = Array[AudioStream]([ExtResource("3_e52kd"), ExtResource("4_j4x04"), ExtResource("5_i123g"), ExtResource("6_eup3g"), ExtResource("7_txbi4"), ExtResource("8_ojqca")])

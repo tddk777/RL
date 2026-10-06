@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/charge.wav" id="1_pb5qa"]
+[ext_resource type="Resource" path="res://content/ammo/45acp_fmj.tres" id="2_on5p3"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_mx3or"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_distant.wav" id="4_b6jf4"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/dry_fire.wav" id="5_pl2tf"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/fire_select.wav" id="6_cbvn5"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_in.wav" id="7_070ta"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_out.wav" id="8_8ms7q"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/m1911/m1911.tscn" id="9_d3w3x"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_bfq4v"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_1.wav" id="11_ympil"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_2.wav" id="12_3bs4y"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_3.wav" id="13_r5qwo"]
+
+[resource]
+script = ExtResource("10_bfq4v")
+model_scene = ExtResource("9_d3w3x")
+caliber = &".45ACP"
+default_ammo = ExtResource("2_on5p3")
+magazine_size = 7
+fire_modes = Array[int]([0])
+rounds_per_minute = 450.0
+muzzle_velocity = 253.0
+spread_hip = 2.8
+spread_ads = 0.35
+spread_moving = 1.2
+recoil_vertical = 2.4
+recoil_horizontal = 0.9
+recoil_recovery = 0.7
+kick_rotation = 9.0
+ads_time = 0.18
+ads_fov = 62.0
+hip_offset = Vector3(0.12, -0.15, -0.36)
+ads_eye_distance = 0.42
+sway = 0.9
+length = 0.45
+reload_time = 1.7
+reload_empty_time = 2.1
+cycle_time = 0.45
+equip_time = 0.35
+shot_sounds = Array[AudioStream]([ExtResource("11_ympil"), ExtResource("12_3bs4y"), ExtResource("13_r5qwo")])
+distant_shot_sound = ExtResource("4_b6jf4")
+dry_fire_sound = ExtResource("5_pl2tf")
+mag_out_sound = ExtResource("8_8ms7q")
+mag_in_sound = ExtResource("7_070ta")
+charge_sound = ExtResource("1_pb5qa")
+fire_select_sound = ExtResource("6_cbvn5")
+loudness = 105.0
+muzzle_flash_scale = 0.6
+casing_scale = 0.8
+id = &"m1911"
+display_name = "M1911"
+description = "Single-action .45 pistol. Seven rounds, heavy kick, very old."
+weight_kg = 1.1

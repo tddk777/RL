@@ -16,6 +16,7 @@ func _initialize() -> void:
 	build_m16()
 	build_mp5()
 	build_m40()
+	build_m1911()
 	build_scope_m40()
 	print("build_weapons: done")
 	quit()
@@ -367,6 +368,62 @@ func build_m40() -> void:
 		"Mount_optic": Vector3(0, 0.022, -0.105),
 		"Mount_muzzle": Vector3(0, 0, -0.862),
 	}, {"bolt_travel": Vector3(0, 0, 0.09), "bolt_lift_degrees": -60.0})
+
+
+# --- M1911 -----------------------------------------------------------------------
+
+func build_m1911() -> void:
+	var metal := m("gun_metal")
+	var dark := m("gun_metal_grey")
+	var wood := m("gun_wood")
+	var body := MeshKit.new()
+	var mag := MeshKit.new()
+	var slide := MeshKit.new()
+
+	# Slide (the moving part): rounded top, flat sides, sights, serrations, port
+	slide.extrude(P([[0.0, -0.007], [0.0, 0.012], [-0.004, 0.015], [-0.205, 0.015], [-0.214, 0.012],
+		[-0.216, 0.0], [-0.216, -0.007]]), 0.0235, metal, 0.002)
+	slide.box(Vector3(0.016, 0.007, 0.008), Vector3(0, 0.0175, -0.012), metal, 0.001)  # rear sight base
+	for x in [-0.0055, 0.0055]:
+		slide.box(Vector3(0.004, 0.005, 0.006), Vector3(x, 0.0205, -0.012), metal, 0.0005)  # notch ears
+	slide.box(Vector3(0.0025, 0.0055, 0.008), Vector3(0, 0.0175, -0.203), metal)  # front blade
+	for i in 8:
+		for x in [-0.0119, 0.0119]:
+			slide.box(Vector3(0.0012, 0.017, 0.0016), Vector3(x, 0.003, -0.005 - i * 0.0036), dark)  # serrations
+	slide.box(Vector3(0.0015, 0.011, 0.032), Vector3(0.0118, 0.006, -0.06), dark)  # ejection port
+	slide.lathe(PackedVector2Array([Vector2(0.0065, -0.214), Vector2(0.0088, -0.214), Vector2(0.0088, -0.222),
+		Vector2(0.0058, -0.222)]), metal, 16, false, false)  # barrel bushing
+	slide.cylinder(0.0058, -0.214, -0.2225, dark, 12)  # barrel
+
+	# Frame: dust cover, trigger guard, grip with wood panels, beavertail, hammer
+	body.extrude(P([[0.008, -0.007], [-0.17, -0.007], [-0.172, -0.016], [-0.12, -0.024], [-0.052, -0.024],
+		[-0.046, -0.022], [0.0, -0.022], [0.012, -0.012]]), 0.022, metal, 0.002)
+	body.extrude(P([[-0.046, -0.022], [-0.104, -0.022], [-0.108, -0.04], [-0.098, -0.052], [-0.06, -0.054],
+		[-0.052, -0.046], [-0.058, -0.04], [-0.09, -0.04], [-0.094, -0.032], [-0.056, -0.03]]), 0.009, metal, 0.0015)
+	var grip := P([[0.012, -0.018], [-0.03, -0.018], [-0.042, -0.06], [-0.005, -0.128], [0.03, -0.128], [0.03, -0.112]])
+	body.extrude(grip, 0.022, metal, 0.002)
+	body.extrude(P([[0.006, -0.03], [-0.032, -0.03], [-0.04, -0.062], [-0.008, -0.12], [0.022, -0.12], [0.024, -0.108]]),
+		0.028, wood, 0.003)
+	body.extrude(P([[0.012, -0.012], [0.03, -0.014], [0.034, -0.02], [0.016, -0.03]]), 0.02, metal, 0.002)  # beavertail
+	body.at(Vector3(0, 0.004, 0.006), Vector3(-25, 0, 0)).box(Vector3(0.008, 0.016, 0.006), Vector3.ZERO, metal, 0.001)  # hammer
+	body.reset()
+	body.extrude(P([[-0.07, -0.026], [-0.078, -0.026], [-0.077, -0.04], [-0.072, -0.046], [-0.068, -0.044], [-0.071, -0.036]]),
+		0.006, metal, 0.0008)  # trigger
+	body.box(Vector3(0.003, 0.006, 0.026), Vector3(-0.0125, -0.009, 0.0), metal, 0.001)  # thumb safety
+	body.box(Vector3(0.003, 0.005, 0.03), Vector3(-0.0125, -0.012, -0.08), metal, 0.001)  # slide stop
+
+	# Magazine: mostly hidden in the grip; the base plate shows
+	mag.at(Vector3(0, -0.07, 0.005), Vector3(-18, 0, 0)).box(Vector3(0.016, 0.11, 0.03), Vector3.ZERO, metal, 0.002)
+	mag.reset()
+	mag.box(Vector3(0.022, 0.008, 0.038), Vector3(0, -0.131, 0.012), metal, 0.002)
+
+	save_model(OUT, "m1911", {"Body": body, "Magazine": mag, "Bolt": slide}, {
+		"Muzzle": Vector3(0, 0, -0.223),
+		"Eject": Vector3(0.013, 0.008, -0.06),
+		"ADS": Vector3(0, 0.0205, -0.012),
+		"Grip_R": Vector3(0, -0.068, 0.012),
+		"Grip_L": Vector3(-0.024, -0.078, 0.004),
+	}, {"bolt_travel": Vector3(0, 0, 0.035), "magazine_drop": Vector3(0, -0.16, 0.05)})
 
 
 # --- Scope for the M40 ----------------------------------------------------------

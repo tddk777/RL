@@ -62,7 +62,11 @@ weapons/         Weapon (runtime firearm), WeaponModel (marker contract), Muzzle
 player/          Player (FPS controller) + WeaponHolder (viewmodel, ADS, sway, IK arms)
 characters/      Humanoid (procedural body + hitboxes), ArmRig (IK arm)
 ai/              NPC, Perception (sight + hearing), AIBrain + AIState scripts in states/
-levels/          Level base, EnemySpawn, LevelExit, FlickerLight, kit/ props, l1_foundry/
+levels/          Level base, EnemySpawn, LevelExit, FlickerLight, kit/ props
+  procgen/         Procedural levels: profile/style resources, layout generator,
+                   chunk builder, streaming ProceduralLevel, entities/ (exits,
+                   levers, pickups, corpses, anomalies, leaks)
+  l1_industrial/   Level 1 scene + its LevelProfile (l1_profile.tres)
 content/         The data: weapons, ammo, attachments, enemies, levels, surfaces (.tres)
 assets/          Generated textures, audio, materials, models
 dev/             Generators (rebuild assets) and tests. Not game code.
@@ -78,9 +82,25 @@ Key contracts:
   reference implementation; a rigged imported model can implement the same API.
 - **AI behaviour**: one `AIState` node per behaviour under the NPC's `Brain`.
   States switch with `brain.change(&"name")`. Enemy types = scene + EnemyData.
-- **Levels**: root has `Level` script, a `PlayerSpawn` marker, optional
-  `EnemySpawn` markers, `cover` group markers, a `LevelExit`, and a baked
-  `NavigationRegion3D`. Register with a `LevelData` (order decides sequence).
+- **Levels**: root has a `Level` script and `player_spawn_transform()`;
+  `Game` calls `configure(seed)` (if present), adds it, then awaits
+  `prepare()` before placing the player. Register with a `LevelData` (order
+  decides sequence). Hand-built levels use a `PlayerSpawn` marker, `EnemySpawn`
+  markers, a `LevelExit` and a baked `NavigationRegion3D`.
+- **Procedural levels** (`levels/procgen/`): a `ProceduralLevel` scene with a
+  `LevelProfile` (grid size, storeys, population, anomalies, environment) whose
+  `ZoneStyle`s (hall, warehouse, processing, office, loading_dock, corridor)
+  set materials, doors, lights and dressing. `LayoutGenerator.generate(profile,
+  seed)` makes a `LevelLayout` (3D cell grid + entity records), deterministic
+  per seed: BSP blocks and corridors, rooms, catwalks, stairs, doors, collapse,
+  connectivity, exits, enemies, pickups, anomalies. `ChunkBuilder` turns 4x4
+  cells into merged meshes, collision, occluders and nav source on worker
+  threads; `ProceduralLevel` streams chunks around the player (instantiation
+  time-sliced under `frame_budget_ms`, navmesh baked per chunk) and keeps
+  entity state in the layout records so unloaded chunks remember it. A new
+  seed is drawn every run and every retry (`Game.level_seed`, shown in pause).
+  Any per-cell randomness must use a seeded RNG (`hash([seed, x, z, s,
+  purpose])`), never the global one: `Array.shuffle()` uses the global RNG.
 - **Surfaces**: tag a collider with metadata `surface` (`concrete`, `metal`,
   `wood`, `flesh`, ...); `SurfaceData` drives impact sound/particles/decals,
   footsteps and casing sounds.
@@ -113,7 +133,8 @@ godot --headless --path . --script res://dev/generators/build_materials.gd
 godot --headless --path . --script res://dev/generators/build_weapons.gd
 godot --headless --path . --script res://dev/generators/build_kit.gd
 godot --headless --path . --script res://dev/generators/build_content.gd   # overwrites content/*.tres
-godot --headless --path . --script res://dev/generators/build_l1.gd        # overwrites Level 1
+godot --headless --path . --script res://dev/generators/build_l1_profile.gd  # overwrites the L1 profile
+python3 dev/asset_gen/decals.py             # wall symbols, puddle, salt circle
 ```
 
 Generators are bootstraps. Once a file is hand-edited in the editor, don't
@@ -126,13 +147,17 @@ file as long as the contract above is kept.
 ```
 godot --headless --import                              # re-import, surfaces parse errors
 godot --headless res://dev/tests/smoke_test.tscn       # end-to-end test, prints PASS/FAIL, exit code
+godot --headless res://dev/tests/procgen_test.tscn     # generation, streaming, nav, exits, pickups
+godot --headless --script res://dev/tests/layout_test.gd   # layout invariants over several seeds
 godot --rendering-driver vulkan res://dev/tests/smoke_test.tscn -- <dir>   # also saves screenshots
+godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type
 ```
 
 ## Planned, not built
 
 Described by the user, waiting on their design decisions: loot (lying around,
-on bodies, in containers that hold the rarest loot), inventory, armor, the
+on bodies, in containers that hold the rarest loot; L1 currently has
+placeholder weapon/ammo pickups only), inventory, armor, the
 realistic attachment system beyond mounting (only the M40 scope exists),
 pills (healing), bandages (bleeding), extraction rules, levels 2-5
 (L2 residential wood/concrete housing and towers, L3 TBD, L4 futuristic

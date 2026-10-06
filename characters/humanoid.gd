@@ -35,10 +35,13 @@ var _speed: float = 0.0
 var _aim_pitch: float = 0.0
 var _aim_blend: float = 0.0
 var _dead: bool = false
+## Hand targets in this node's local space [right, left] when not holding a weapon.
+var _hand_targets: Array = [Vector3(0.24, 0.9, -0.05), Vector3(-0.24, 0.9, -0.05)]
 
 
 func _ready() -> void:
-	_build()
+	if hips == null:
+		_build()
 
 
 # --- API ------------------------------------------------------------------------
@@ -110,8 +113,45 @@ func _process(delta: float) -> void:
 	_update_arms()
 
 
+## Instant dead pose for bodies placed in the level (no animation).
+## pose: 0 fallen, 1 laid out arms spread, 2 kneeling.
+func pose_dead(pose: int, variant: int = 0) -> void:
+	if hips == null:
+		_build()
+	_dead = true
+	var r := RandomNumberGenerator.new()
+	r.seed = variant
+	match pose:
+		1:
+			rotation.x = deg_to_rad(88.0)
+			position.y = 0.14
+			_hand_targets = [Vector3(0.75, 1.3, 0.0), Vector3(-0.75, 1.3, 0.0)]
+		2:
+			hips.position.y = 0.52
+			for side in [&"l", &"r"]:
+				(_thigh[side] as Node3D).rotation.x = deg_to_rad(-6.0)
+				(_knee[side] as Node3D).rotation.x = deg_to_rad(-86.0)
+			spine.rotation.x = deg_to_rad(-28.0)
+			head.rotation.x = deg_to_rad(-35.0)
+			_hand_targets = [Vector3(0.2, 0.45, -0.35), Vector3(-0.2, 0.45, -0.35)]
+		_:
+			rotation.x = deg_to_rad(84.0) * (1.0 if r.randf() < 0.5 else -1.0)
+			rotation.z = deg_to_rad(r.randf_range(-20.0, 20.0))
+			position.y = 0.14
+			for side in [&"l", &"r"]:
+				(_thigh[side] as Node3D).rotation.x = deg_to_rad(r.randf_range(-10.0, 30.0))
+				(_knee[side] as Node3D).rotation.x = deg_to_rad(r.randf_range(-45.0, -5.0))
+			_hand_targets = [Vector3(r.randf_range(0.3, 0.6), r.randf_range(0.7, 1.4), r.randf_range(-0.3, 0.2)),
+				Vector3(r.randf_range(-0.6, -0.3), r.randf_range(0.7, 1.4), r.randf_range(-0.3, 0.2))]
+	set_process(false)
+	_update_arms.call_deferred()
+
+
 func _update_arms() -> void:
 	if _weapon == null or _weapon.model == null:
+		var b := global_basis
+		_arm_r.solve(global_transform * (_hand_targets[0] as Vector3), _arm_r.global_position + b * Vector3(0.4, -0.3, 0.3))
+		_arm_l.solve(global_transform * (_hand_targets[1] as Vector3), _arm_l.global_position + b * Vector3(-0.4, -0.3, 0.3))
 		return
 	var model := _weapon.model
 	var basis := global_basis
@@ -209,11 +249,19 @@ func _pivot(node_name: String, parent: Node3D, offset: Vector3) -> Node3D:
 	return node
 
 
+## Body meshes are identical for every humanoid with the same materials, so
+## they're built once and shared.
+static var _mesh_cache: Dictionary = {}
+
+
 func _mesh(parent: Node3D, build: Callable) -> void:
-	var kit := MeshKit.new()
-	build.call(kit)
+	var key := "%s|%s|%s" % [parent.name, jacket.resource_path, trousers.resource_path]
+	if not _mesh_cache.has(key):
+		var kit := MeshKit.new()
+		build.call(kit)
+		_mesh_cache[key] = kit.commit()
 	var mi := MeshInstance3D.new()
-	mi.mesh = kit.commit()
+	mi.mesh = _mesh_cache[key]
 	parent.add_child(mi)
 
 

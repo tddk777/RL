@@ -95,6 +95,7 @@ func _ammo() -> Dictionary:
 		["556x45_m855", "5.56x45mm M855", "5.56x45", 42.0, "Green-tip NATO rifle round."],
 		["9x19_fmj", "9x19mm FMJ", "9x19", 30.0, "Full metal jacket pistol round."],
 		["762x51_m118", "7.62x51mm M118", "7.62x51", 105.0, "Match-grade long-range rifle round."],
+		["45acp_fmj", ".45 ACP FMJ", ".45ACP", 38.0, "Heavy, slow, subsonic pistol round."],
 	]
 	var out := {}
 	for d in defs:
@@ -161,6 +162,13 @@ func _weapons(ammo: Dictionary, attachments: Dictionary) -> void:
 		"reload": [0.0, 0.0], "cycle": 1.0, "insert": 0.6, "weight": 6.6, "loudness": 160.0, "sway": 1.4,
 		"mounts": {"optic": ["m40_base"]}, "attachments": [attachments["scope_m40"]],
 	}, ammo)
+	_weapon({
+		"id": "m1911", "name": "M1911", "caliber": ".45ACP", "desc": "Single-action .45 pistol. Seven rounds, heavy kick, very old.",
+		"modes": [F.SEMI], "rpm": 450.0, "velocity": 253.0, "mag": 7,
+		"spread": [2.8, 0.35, 1.2], "recoil": [2.4, 0.9, 0.7, 0.045, 9.0],
+		"ads": [0.18, 62.0, 0.42], "hip": Vector3(0.12, -0.15, -0.36), "length": 0.45,
+		"reload": [1.7, 2.1], "cycle": 0.45, "weight": 1.1, "loudness": 105.0, "sway": 0.9,
+	}, ammo)
 
 
 func _weapon(d: Dictionary, ammo: Dictionary) -> void:
@@ -213,8 +221,9 @@ func _weapon(d: Dictionary, ammo: Dictionary) -> void:
 	w.mag_in_sound = sound(base + "mag_in.wav")
 	w.charge_sound = sound(base + "charge.wav")
 	w.fire_select_sound = sound(base + "fire_select.wav")
-	w.muzzle_flash_scale = 1.3 if id == "m40" else (0.7 if id == "mp5" else 1.0)
-	w.casing_scale = 0.75 if id == "mp5" else (1.3 if id == "m40" else 1.0)
+	w.muzzle_flash_scale = {"m40": 1.3, "mp5": 0.7, "m1911": 0.6}.get(id, 1.0)
+	w.casing_scale = {"mp5": 0.75, "m40": 1.3, "m1911": 0.8}.get(id, 1.0)
+	w.equip_time = 0.35 if id == "m1911" else 0.5
 	save(w, "res://content/weapons/%s.tres" % id)
 
 
@@ -242,9 +251,9 @@ func _enemies() -> void:
 
 func _levels() -> void:
 	var l := LevelData.new()
-	l.id = &"l1_foundry"
-	l.display_name = "The Foundry"
-	l.subtitle = "Level 1"
+	l.id = &"l1_industrial"
+	l.display_name = "The Works"
+	l.subtitle = "Level 1  \u00b7  Abandoned industrial complex"
 	l.order = 1
-	l.scene_path = "res://levels/l1_foundry/l1_foundry.tscn"
-	save(l, "res://content/levels/l1_foundry.tres")
+	l.scene_path = "res://levels/l1_industrial/l1_industrial.tscn"
+	save(l, "res://content/levels/l1_industrial.tres")

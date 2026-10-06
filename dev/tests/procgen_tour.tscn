@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://dev/tests/procgen_tour.gd" id="1"]
+
+[node name="ProcgenTour" type="Node"]
+process_mode = 3
+script = ExtResource("1")

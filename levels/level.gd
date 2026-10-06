@@ -22,6 +22,12 @@ var _random_timer: float = 0.0
 var _environment: Environment
 
 
+## Awaited by Game before the player is placed (procedural levels generate
+## and load their starting area here).
+func prepare() -> void:
+	pass
+
+
 func player_spawn_transform() -> Transform3D:
 	var spawn := get_node_or_null(^"PlayerSpawn") as Node3D
 	return spawn.global_transform if spawn else Transform3D.IDENTITY

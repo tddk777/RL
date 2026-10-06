@@ -12,6 +12,10 @@ var world: Node3D
 var level: Level
 var level_data: LevelData
 var player: Player
+## Seed of the current run; each level and each retry derives its own seed.
+var run_seed: int = 0
+var attempt: int = 0
+var level_seed: int = 0
 
 
 func _ready() -> void:
@@ -43,6 +47,8 @@ func start_run() -> void:
 	if levels.is_empty():
 		push_error("Game: no levels in res://content/levels")
 		return
+	run_seed = randi()
+	attempt = 0
 	load_level(levels[0])
 
 
@@ -65,11 +71,15 @@ func load_level(data: LevelData) -> void:
 		return
 
 	level_data = data
+	level_seed = absi(hash([run_seed, data.order, attempt])) % 2147483647
 	world = Node3D.new()
 	world.name = "World"
 	get_tree().root.add_child(world)
 	level = packed.instantiate() as Level
+	if level.has_method(&"configure"):
+		level.call(&"configure", level_seed)
 	world.add_child(level)
+	await level.prepare()
 	player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
 	world.add_child(player)
 	player.global_transform = level.player_spawn_transform()
@@ -85,8 +95,10 @@ func load_level(data: LevelData) -> void:
 	UI.fade_in()
 
 
+## Retrying generates a fresh layout (new seed) for procedural levels.
 func restart_level() -> void:
 	if level_data:
+		attempt += 1
 		load_level(level_data)
 
 
@@ -96,6 +108,7 @@ func complete_level() -> void:
 		return
 	var next := Registry.next_level(level_data)
 	if next:
+		attempt = 0
 		load_level(next)
 	else:
 		state = State.FINISHED

@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/props/shipping_container_mesh.res" id="1_vepdw"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lnla5"]
+size = Vector3(6.06, 2.59, 2.44)
+
+[node name="ShippingContainer" type="StaticBody3D" unique_id=185470737]
+collision_mask = 0
+metadata/surface = &"metal"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1710951281]
+mesh = ExtResource("1_vepdw")
+
+[node name="Shape0" type="CollisionShape3D" parent="." unique_id=1332489697]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.295, 0)
+shape = SubResource("BoxShape3D_lnla5")

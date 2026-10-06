@@ -5,6 +5,9 @@ extends SceneTree
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out: String = args[0]
+	var ui := root.get_node_or_null(^"UI")
+	if ui:
+		ui.visible = false  # hide the fade overlay
 	var scenes := args.slice(1)
 	var env := WorldEnvironment.new()
 	env.environment = Environment.new()

@@ -563,6 +563,13 @@ GUNS = {
                 band=(80, 6000), bright_t60=0.13, body_t60=0.30, dark_lp=900, dark_gain=1.6,
                 boom=(130, 42, 0.016, 0.26, 0.62), mech=[(0.002, 3300, 0.04, 0.05)],
                 drive=3.0, rt60=1.8, wet=0.36),
+    # .45 ACP is subsonic: no crack, a deep rounded blast and a slide clack.
+    "m1911": dict(crack=0.0, blast=0.85, nwave_ms=0.1, crack_hp=2000,
+                  band=(150, 4200), bright_t60=0.05, body_t60=0.11, dark_lp=1300, dark_gain=1.25,
+                  boom=(185, 62, 0.008, 0.11, 0.36), mech=[(0.003, 2400, 0.04, 0.12),
+                                                          (0.030, 1500, 0.08, 0.26),
+                                                          (0.034, 2900, 0.04, 0.12)],
+                  drive=2.2, rt60=1.25, wet=0.28),
 }
 
 
@@ -634,7 +641,7 @@ def seq(events, dur):
     return buf
 
 
-FOLEY_TILT = {"ak47": 0.85, "m16": 1.15, "mp5": 1.0, "m40": 0.95}
+FOLEY_TILT = {"ak47": 0.85, "m16": 1.15, "mp5": 1.0, "m40": 0.95, "m1911": 1.05}
 
 
 def foley_finish(name, x, wet=0.10, peak_db=-3.0):
@@ -660,6 +667,9 @@ def gen_weapon_foley(gid):
     elif gid == "mp5":
         ev = [(0.0, mclick(r, 2800, 0.015), 0.25), (0.045, mclick(r, 2100, 0.04, hard=6000), 1.0),
               (0.046, thud(r, 420, 0.03, noise_lp=2500), 0.5)]
+    elif gid == "m1911":  # hammer falling on an empty chamber
+        ev = [(0.0, mclick(r, 3100, 0.015), 0.2), (0.03, mclick(r, 2200, 0.05), 1.0),
+              (0.031, thud(r, 380, 0.025), 0.35)]
     else:
         ev = [(0.0, mclick(r, 3500, 0.015), 0.2), (0.05, mclick(r, 3200, 0.04), 1.0),
               (0.051, spring(r, 2600, 0.09), 0.12)]
@@ -683,6 +693,10 @@ def gen_weapon_foley(gid):
               (0.04, scrape(r, 0.16, 900, 5000, grit=0.25), 0.33),
               (0.2, mclick(r, 1300, 0.10), 0.65),
               (0.205, grains(r, ns(0.15), 0, 0.1, 10, 1500, 8000, decay=0.03), 0.35)]
+    elif gid == "m1911":  # mag catch button, magazine slides out of the grip
+        ev = [(0.0, mclick(r, 3300, 0.025), 0.75),
+              (0.02, scrape(r, 0.09, 1600, 7000, grit=0.15), 0.3),
+              (0.12, mclick(r, 1900, 0.06), 0.4)]
     else:  # hinged floorplate release (internal magazine)
         ev = [(0.0, mclick(r, 3000, 0.03), 0.7), (0.03, scrape(r, 0.06, 1500, 6000), 0.2),
               (0.09, mclick(r, 1500, 0.08), 0.6), (0.09, spring(r, 1900, 0.18), 0.1)]
@@ -703,6 +717,10 @@ def gen_weapon_foley(gid):
         ev = [(0.0, scrape(r, 0.12, 900, 5500, grit=0.25), 0.3),
               (0.13, mclick(r, 2000, 0.07), 1.0), (0.132, thud(r, 200, 0.05), 0.5),
               (0.14, mclick(r, 3300, 0.03), 0.3)]
+    elif gid == "m1911":  # magazine slapped home
+        ev = [(0.0, scrape(r, 0.07, 1500, 7000, grit=0.15), 0.3),
+              (0.08, thud(r, 170, 0.05, noise_lp=1200), 0.7),
+              (0.081, mclick(r, 2700, 0.05, hard=10000), 1.0)]
     else:  # single .308 round pushed into the internal magazine
         ev = [(0.0, scrape(r, 0.09, 2000, 8000, rough=0.8), 0.3),
               (0.095, mclick(r, 3900, 0.05, hard=12000), 0.9),
@@ -736,6 +754,13 @@ def gen_weapon_foley(gid):
               (0.362, mclick(r, 1300, 0.10), 1.0),
               (0.365, grains(r, ns(0.12), 0, 0.08, 12, 1500, 7000, decay=0.025), 0.35)]
         dur = 0.8
+    elif gid == "m1911":  # slide racked back and released
+        ev = [(0.0, mclick(r, 2300, 0.03), 0.5),
+              (0.01, scrape(r, 0.1, 1300, 7000, grit=0.2), 0.45),
+              (0.11, mclick(r, 3000, 0.04), 0.6),
+              (0.22, mclick(r, 1800, 0.08), 1.0), (0.221, thud(r, 260, 0.04), 0.5),
+              (0.222, spring(r, 2100, 0.15), 0.1)]
+        dur = 0.6
     else:  # bolt up, back, forward, down
         ev = [(0.0, mclick(r, 2400, 0.04), 0.6), (0.0, scrape(r, 0.07, 1500, 6000), 0.2),
               (0.13, scrape(r, 0.2, 1200, 6000, attack=0.6, release=0.1, grit=0.15), 0.4),
@@ -755,6 +780,8 @@ def gen_weapon_foley(gid):
         ev = [(0.0, mclick(r, 3000, 0.035, hard=11000), 1.0), (0.001, thud(r, 380, 0.02), 0.2)]
     elif gid == "mp5":
         ev = [(0.0, mclick(r, 2600, 0.04, hard=7000), 1.0), (0.001, thud(r, 450, 0.02, noise_lp=2500), 0.3)]
+    elif gid == "m1911":  # thumb safety
+        ev = [(0.0, mclick(r, 3800, 0.02), 0.9), (0.001, thud(r, 500, 0.015), 0.15)]
     else:
         ev = [(0.0, mclick(r, 3600, 0.025), 0.8), (0.01, mclick(r, 4400, 0.015), 0.25)]
     write_wav(base + "fire_select.wav", foley_finish("select", seq(ev, 0.3), peak_db=-4.0))
@@ -1518,7 +1545,40 @@ def qa():
 
 # =============================================================================
 
+# =============================================================================
+# World interaction (exits, breakers)
+# =============================================================================
+
+def gen_world():
+    ir = small_ir("world_room", 0.9)
+    # Heavy breaker lever: spring tension, a big clunk, relay chatter, a hum swelling up
+    r = rng_for("breaker")
+    hum_n = ns(1.6)
+    t = tvec(hum_n)
+    hum = (np.sin(2 * np.pi * 50 * t) + 0.5 * np.sin(2 * np.pi * 100 * t) + 0.25 * np.sin(2 * np.pi * 150 * t))
+    hum *= np.clip((t - 0.35) / 0.6, 0, 1) * np.exp(-np.clip(t - 1.0, 0, None) * 3.0)
+    ev = [(0.0, scrape(r, 0.12, 400, 3000, grit=0.3), 0.35), (0.0, spring(r, 900, 0.2), 0.12),
+          (0.14, thud(r, 120, 0.12, noise_lp=900), 1.0), (0.141, mclick(r, 850, 0.25), 0.9),
+          (0.18, grains(r, ns(0.4), 0, 0.3, 18, 1500, 7000, decay=0.08), 0.35),
+          (0.32, mclick(r, 2400, 0.04), 0.4), (0.36, mclick(r, 2600, 0.04), 0.35), (0.41, mclick(r, 2200, 0.05), 0.3),
+          (0.0, 0.12 * hum, 1.0)]
+    write_wav("world/breaker.wav", finish(reverb(seq(ev, 1.8), ir, 0.25), -2.0, trim_db=-60, lead=8))
+    # Door unlocking: solenoid snap and latch
+    r = rng_for("unlock")
+    ev = [(0.0, mclick(r, 1800, 0.08), 0.8), (0.0, thud(r, 200, 0.05), 0.5),
+          (0.25, mclick(r, 1200, 0.12), 1.0), (0.26, spring(r, 1500, 0.15), 0.1)]
+    write_wav("world/door_unlock.wav", finish(reverb(seq(ev, 0.9), ir, 0.2), -3.0, trim_db=-60, lead=8))
+    # Locked door: handle rattles against the latch
+    r = rng_for("locked")
+    ev = []
+    for i in range(4):
+        ev.append((i * 0.07, mclick(r, 1500 + 200 * i, 0.06), 0.8 - 0.12 * i))
+        ev.append((i * 0.07 + 0.01, thud(r, 260, 0.04), 0.4))
+    write_wav("world/door_locked.wav", finish(reverb(seq(ev, 0.8), ir, 0.2), -4.0, trim_db=-60, lead=8))
+
+
 FAMILIES = {
+    "world": gen_world,
     "weapons": gen_weapons,
     "impacts": gen_impacts,
     "footsteps": gen_footsteps,

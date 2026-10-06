@@ -91,7 +91,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-motion.relative.x * sens)
 		_pitch = clampf(_pitch - motion.relative.y * sens * invert, deg_to_rad(-88.0), deg_to_rad(88.0))
 		_look_delta += motion.relative
-	for i in 4:
+	for i in 5:
 		if event.is_action_pressed(StringName("weapon_%d" % (i + 1))):
 			equip(i)
 	if current_weapon:
