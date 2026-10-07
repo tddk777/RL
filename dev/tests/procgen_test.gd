@@ -230,6 +230,9 @@ func _run() -> void:
 				var hole := Rect2()
 				if L.has_flag(x, z, s, LevelLayout.STAIR_ABOVE):
 					hole = level.builder.run_rect(L.hole_dir(x, z, s), L.hole_side(x, z, s)).grow(0.3)
+				var feat := level.builder.level_feature(x, z, s)
+				if not feat.is_empty() and feat["kind"] == &"pit":
+					hole = feat["rect"]  # its floor is lower: walked below
 				var o := L.cell_origin(x, z, s)
 				for p in pts:
 					if hole.has_point(p):
@@ -275,6 +278,41 @@ func _run() -> void:
 				else:
 					print("INFO  stuck going down the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
 	check(flights > 0 and climbed == flights and descended == flights, "player walks up and down flights (%d of %d up, %d down)" % [climbed, flights, descended])
+
+	# Platforms and pits: up the steps onto a platform, up out of a pit.
+	var feats := {&"podium": 0, &"pit": 0}
+	var walked := {&"podium": 0, &"pit": 0}
+	var tried := {&"podium": 0, &"pit": 0}
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				var f := level.builder.level_feature(x, z, s)
+				if f.is_empty() or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				var kind: StringName = f["kind"]
+				feats[kind] += 1
+				if tried[kind] >= 3:
+					continue
+				tried[kind] += 1
+				var rect: Rect2 = f["rect"]
+				var out := LevelLayout.dir_vector(f["side"])
+				var c := L.cell_origin(x, z, s) + Vector3(rect.get_center().x, 0, rect.get_center().y)
+				var half := (rect.size.y if (f["side"] as int) % 2 == 0 else rect.size.x) * 0.5
+				var h: float = f["h"]
+				var ok := false
+				if kind == &"podium":
+					var from := c + out * (half + (f["n"] as int) * LevelLayout.FOOT * 0.0 + (f["n"] as int) * 0.3 + 0.5)
+					ok = await _walk(player, from, -out, func() -> bool: return player.global_position.y > c.y + h - 0.1)
+				else:
+					var from := c - out * 0.2 + Vector3.UP * -h
+					ok = await _walk(player, from, out, func() -> bool: return player.global_position.y > c.y - 0.1 and (player.global_position - c).dot(out) > half)
+				if ok:
+					walked[kind] += 1
+				else:
+					print("INFO  could not get %s %s at %s (now %s)" % ["onto the platform" if kind == &"podium" else "out of the pit", f["rect"], Vector3i(x, z, s), player.global_position])
+	print("INFO  %d platforms, %d pits" % [feats[&"podium"], feats[&"pit"]])
+	check(feats[&"podium"] > 0 and walked[&"podium"] == tried[&"podium"] and walked[&"pit"] == tried[&"pit"],
+		"steps up onto platforms (%d of %d) and out of pits (%d of %d)" % [walked[&"podium"], tried[&"podium"], walked[&"pit"], tried[&"pit"]])
 	for npc in get_tree().get_nodes_in_group(&"npc"):
 		npc.process_mode = Node.PROCESS_MODE_INHERIT
 

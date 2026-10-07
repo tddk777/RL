@@ -35,6 +35,11 @@ extends Resource
 @export var breaches: int = 14
 @export var vents: int = 12
 @export var stashes: int = 2
+## Changes of level inside a storey: chance per open floor cell of a raised
+## platform (machine plinth, control stand, loading stage) or a sunken pit
+## (machine pit, sump) with steps.
+@export_range(0.0, 1.0) var podium_chance: float = 0.14
+@export_range(0.0, 1.0) var pit_chance: float = 0.07
 
 @export_group("Spaces")
 ## Walkway styles, one per family (see ZoneStyle.family): covered passages

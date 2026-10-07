@@ -31,7 +31,11 @@ grow deeper level by level.
   doors off their hinges, collapsed racks, broken glass, leaks, rust and damp,
   moss under the roof holes. Two or three exits are scattered far from the
   start; some are hidden maintenance hatches, some need a breaker pulled
-  first. A few things are not quite right. The seed is shown in the pause menu.
+  first. Holes broken through walls and crawl vents (some half hidden behind
+  a dragged locker) make shortcuts and odd connections, and a couple of
+  hideouts can only be reached by crawling. Floors rise and fall: machine
+  plinths and platforms with steps, sunken pits.
+- **Dark where nothing lights it**, with a flashlight on T. A few things are not quite right. The seed is shown in the pause menu.
 - **You start with an M1911 and one spare magazine.** The AK-47, M16A2, MP5
   and M40 and their ammunition lie around the level (placeholder pickups
   until the loot system is designed).

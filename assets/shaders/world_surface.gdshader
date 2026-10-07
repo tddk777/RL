@@ -37,6 +37,10 @@ uniform float damp : hint_range(0.0, 1.0) = 0.35;
 uniform float dust : hint_range(0.0, 1.0) = 0.4;
 uniform float rust : hint_range(0.0, 1.0) = 0.0;
 uniform float storey_height = 4.5;
+// Depth: crevices in the normal map (mortar, grout, grooves, pits) darken,
+// and broad soft bumps keep walls and slabs from reading as flat cards.
+uniform float cavity : hint_range(0.0, 1.0) = 0.6;
+uniform float relief : hint_range(0.0, 1.0) = 0.25;
 uniform vec3 grime_color : source_color = vec3(0.13, 0.115, 0.095);
 uniform vec3 rust_color : source_color = vec3(0.34, 0.16, 0.075);
 uniform vec3 damp_color : source_color = vec3(0.10, 0.115, 0.085);
@@ -96,21 +100,25 @@ void fragment() {
 	float ro = 0.0;
 	float me = 0.0;
 	vec3 a; vec3 t; float r; float m;
+	float cav = 0.0;
 	if (w.x > 0.01) {
 		sample_plane(uvx, dxx, dyx, a, t, r, m);
 		alb += a * w.x; ro += r * w.x; me += m * w.x;
+		cav += clamp((1.0 - t.z) * 3.5, 0.0, 1.0) * w.x;
 		t = vec3(t.xy + n.zy, abs(t.z) * n.x);
 		nsum += t.zyx * w.x;
 	}
 	if (w.y > 0.01) {
 		sample_plane(uvy, dxy, dyy, a, t, r, m);
 		alb += a * w.y; ro += r * w.y; me += m * w.y;
+		cav += clamp((1.0 - t.z) * 3.5, 0.0, 1.0) * w.y;
 		t = vec3(t.xy + n.xz, abs(t.z) * n.y);
 		nsum += t.xzy * w.y;
 	}
 	if (w.z > 0.01) {
 		sample_plane(uvz, dxz, dyz, a, t, r, m);
 		alb += a * w.z; ro += r * w.z; me += m * w.z;
+		cav += clamp((1.0 - t.z) * 3.5, 0.0, 1.0) * w.z;
 		t = vec3(t.xy + n.xy, abs(t.z) * n.z);
 		nsum += t.xyz * w.z;
 	}
@@ -131,6 +139,20 @@ void fragment() {
 	vec4 nz_macro = texture(noise_tex, q * 0.021);
 	vec4 nz_mid = texture(noise_tex, q * 0.083 + vec2(0.37, 0.11));
 	float h = mod(world_pos.y + 0.02, storey_height);
+
+	// Broad soft bumps: tilt the normal along the noise slope, in metres.
+	if (relief > 0.0 && !object_space) {
+		float e = 0.06;
+		float c0 = texture(noise_tex, q * 0.11).g;
+		float cx = texture(noise_tex, (q + vec2(e, 0.0)) * 0.11).g;
+		float cy = texture(noise_tex, (q + vec2(0.0, e)) * 0.11).g;
+		vec2 slope = vec2(cx - c0, cy - c0) / e * relief * 0.35;
+		vec3 t1 = aw.y > 0.6 ? vec3(1.0, 0.0, 0.0) : (aw.x > aw.z ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0));
+		vec3 t2 = aw.y > 0.6 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+		nmap = normalize(nmap - (t1 * slope.x + t2 * slope.y));
+	}
+	float occl = 1.0 - cav * cavity;
+	alb *= mix(1.0, occl, 0.55);
 
 	// Large soft variation in brightness and warmth.
 	float macro = nz_macro.g;
@@ -183,6 +205,8 @@ void fragment() {
 	}
 
 	ALBEDO = alb;
+	AO = occl;
+	AO_LIGHT_AFFECT = 0.35;
 	ROUGHNESS = clamp(ro, 0.04, 1.0);
 	METALLIC = clamp(me, 0.0, 1.0);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nmap, 0.0)).xyz);

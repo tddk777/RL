@@ -106,11 +106,22 @@ func dress(d: ChunkBuilder.ChunkData, x: int, z: int, s: int, o: Vector3, st: Zo
 				_room(k)
 			else:
 				_wall_props(k, 0.4)
+	_clutter(k)
 
 
 # --- Helpers -------------------------------------------------------------------------------
 
 func _blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
+	var out := base_blocked(x, z, s, st)
+	var f := cb.level_feature(x, z, s)
+	if not f.is_empty():
+		out.append((f["footprint"] as Rect2).grow(0.5))
+	return out
+
+
+## Door lanes, stair strips, exits and the like (not the cell's platform or
+## pit, which is placed clear of these).
+func base_blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 	var out: Array[Rect2] = []
 	for dir in 4:
 		if L.has_door(x, z, s, dir) or (L.has_flag(x, z, s, LevelLayout.DOCK) and L.is_outside(x, z, s, dir)):
@@ -153,6 +164,14 @@ func _blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 				3:
 					lane = Rect2(0, C * 0.5 - 1.3, 2.7, 2.6)
 			out.append(lane)
+	# Posts holding up a catwalk bridge overhead (ChunkBuilder._bridge).
+	if (x + z) % 2 == 0:
+		for axis in 2:
+			if L.has_flag(x, z, s + 1, LevelLayout.BRIDGE_X if axis == 0 else LevelLayout.BRIDGE_Z):
+				for e: float in [-1.0, 1.0]:
+					var off := e * (ChunkBuilder.BRIDGE * 0.5 + 0.06)
+					var p := Vector2(C * 0.5, C * 0.5 + off) if axis == 0 else Vector2(C * 0.5 + off, C * 0.5)
+					out.append(Rect2(p - Vector2(0.35, 0.35), Vector2(0.7, 0.7)))
 	for corner in 4:
 		if L.has_chamfer(x, z, s, corner):
 			var e := LevelLayout.CHAMFER_CUT + 0.6
@@ -208,11 +227,14 @@ func box(k: Cell, center: Vector3, size: Vector3, mat: StringName, collide: bool
 	if not collide and size.y >= 0.25 and minf(size.x, size.z) >= 0.3 and maxf(size.x, size.z) >= 0.4:
 		collide = true
 	k.d.geo.box(center, size, mat, cb.surface_of(mat) if collide else &"", false, basis)
+	if collide:
+		k.d.taken.append(ChunkBuilder.box_aabb(center, size, basis))
 
 
 ## Invisible collider (also blocks navigation).
 func solid(k: Cell, center: Vector3, size: Vector3, surface: StringName = &"metal", basis: Basis = Basis.IDENTITY) -> void:
 	k.d.geo.box(center, size, &"", surface, false, basis)
+	k.d.taken.append(ChunkBuilder.box_aabb(center, size, basis))
 
 
 func cyl(k: Cell, a: Vector3, b: Vector3, radius: float, mat: StringName, seg: int = 12, caps: bool = true) -> void:
@@ -223,6 +245,7 @@ func cyl(k: Cell, a: Vector3, b: Vector3, radius: float, mat: StringName, seg: i
 		var axis := (b - a) / length
 		var basis := Basis.looking_at(axis, Vector3.UP if absf(axis.y) < 0.98 else Vector3.FORWARD)
 		k.d.geo.box((a + b) * 0.5, Vector3(radius * 1.6, radius * 1.6, length), &"", cb.surface_of(mat), false, basis)
+		k.d.taken.append(ChunkBuilder.box_aabb((a + b) * 0.5, Vector3(radius * 2.0, radius * 2.0, length), basis))
 
 
 func decal(k: Cell, tex: String, p: Vector3, size: Vector3, yaw: float) -> void:
@@ -1123,6 +1146,220 @@ func _dock(k: Cell) -> void:
 	_wall_props(k, 0.4, ["pallet", "crate_wood", "barrel_rust"])
 
 
+# --- Clutter: the odds and ends of a works ---------------------------------------------------
+
+## A few of the things that pile up in a factory, wherever there's room
+## left: against the walls (cylinders, panels, tool chests, ladders, sacks,
+## extinguishers, junction boxes) and out on the floor (spools, pipe
+## bundles, fans, dollies, chains, buckets).
+func _clutter(k: Cell) -> void:
+	var r := cb.rng(k.x, k.z, k.s, 150)
+	var fam := k.zn.style.family if k.zn.style else &"factory"
+	var count := r.randi_range(1, 3) if fam == &"factory" else r.randi_range(0, 2)
+	if k.zn.type in ChunkBuilder.TALL:
+		count += 1
+	var wall_items := ["gas_cylinders", "panel", "tool_chest", "ladder", "sacks", "extinguisher", "junction", "drums"]
+	var floor_items := ["spool", "pipes", "fan", "dolly", "chain", "buckets", "worklight"]
+	if fam == &"interior":
+		wall_items = ["panel", "extinguisher", "junction", "ladder", "sacks", "tool_chest"]
+		floor_items = ["buckets", "dolly", "fan", "spool"]
+	for i in count:
+		if r.randf() < 0.6:
+			_clutter_wall(k, r, wall_items[r.randi_range(0, wall_items.size() - 1)])
+		else:
+			_clutter_floor(k, r, floor_items[r.randi_range(0, floor_items.size() - 1)])
+
+
+## Room for a footprint (world centre, half sizes along A and across) clear of
+## lanes and of everything solid already in the cell.
+func _room_for(k: Cell, c: Vector3, A: Vector3, la: float, lb: float) -> bool:
+	if not _free(k, _rect(k, c, A, la, lb)):
+		return false
+	var ab := AABB(c + Vector3(0, 0.05, 0), Vector3.ZERO).grow(0.0)
+	var B := _across(A)
+	ab = AABB(c - A * la * 0.5 - B * lb * 0.5 + Vector3.UP * 0.05, Vector3.ZERO).expand(c + A * la * 0.5 + B * lb * 0.5 + Vector3.UP * 1.8)
+	for t in k.d.taken:
+		if t.intersects(ab):
+			return false
+	k.d.taken.append(ab)
+	return true
+
+
+func _clutter_wall(k: Cell, r: RandomNumberGenerator, item: String) -> void:
+	var dirs: Array[int] = []
+	for dir in 4:
+		if _wall_free(k, dir):
+			dirs.append(dir)
+	if dirs.is_empty():
+		return
+	var dir: int = dirs[r.randi_range(0, dirs.size() - 1)]
+	var N := -LevelLayout.dir_vector(dir)
+	var A := LevelLayout.dir_vector((dir + 1) % 4)
+	var t := r.randf_range(-2.8, 2.8)
+	var base := _wall_at(k, dir, t, 0.0)
+	match item:
+		"gas_cylinders":
+			var n := r.randi_range(2, 5)
+			if not _room_for(k, base + N * 0.2, A, n * 0.3, 0.4):
+				return
+			var mat: StringName = [&"painted_steel_green", &"painted_steel_blue", &"painted_steel_red", &"painted_steel_yellow"][r.randi_range(0, 3)]
+			for i in n:
+				var p := base + N * 0.18 + A * ((i - (n - 1) * 0.5) * 0.28)
+				if r.randf() < 0.15:
+					# One has fallen and rolled.
+					var q := p + N * r.randf_range(0.8, 1.6)
+					var ax := Vector3(r.randf_range(-1, 1), 0, r.randf_range(-1, 1)).normalized()
+					cyl(k, q + Vector3.UP * 0.12 - ax * 0.7, q + Vector3.UP * 0.12 + ax * 0.7, 0.12, mat, 10)
+					continue
+				cyl(k, p, p + UP * 1.35, 0.12, mat, 10)
+				cyl(k, p + UP * 1.35, p + UP * 1.5, 0.05, &"gun_metal", 6)
+			k.d.geo.cylinder(base + N * 0.05 + A * (-n * 0.15) + UP * 1.0, base + N * 0.05 + A * (n * 0.15) + UP * 1.0, 0.012, &"rusted_metal", 4)  # chain
+		"panel":
+			if not _room_for(k, base + N * 0.25, A, 1.3, 0.5):
+				return
+			var mat: StringName = [&"painted_steel_green", &"painted_steel", &"painted_steel_blue"][r.randi_range(0, 2)]
+			box(k, base + N * 0.25 + UP * 0.95, _sz(A, 1.2, 1.9, 0.5), mat, true)
+			for i in r.randi_range(2, 5):
+				var g := base + N * 0.51 + A * r.randf_range(-0.45, 0.45) + UP * r.randf_range(1.2, 1.7)
+				k.d.geo.cylinder(g, g + N * 0.03, 0.06, &"paper", 10, true)  # gauges
+			for i in r.randi_range(3, 8):
+				var b := base + N * 0.51 + A * r.randf_range(-0.5, 0.5) + UP * r.randf_range(0.9, 1.15)
+				k.d.geo.cylinder(b, b + N * 0.02, 0.02, [&"painted_steel_red", &"painted_steel_yellow", &"gun_metal"][r.randi_range(0, 2)], 6, true)
+			if r.randf() < 0.5:
+				# Door hanging open, wiring spilling out.
+				box(k, base + N * 0.75 + A * 0.55 + UP * 0.95, _sz(A, 0.03, 1.8, 0.55), mat, false, Basis(UP, 0.5))
+				for i in 4:
+					var w0 := base + N * 0.45 + A * r.randf_range(-0.4, 0.4) + UP * r.randf_range(0.6, 1.4)
+					k.d.geo.cylinder(w0, w0 + N * r.randf_range(0.2, 0.5) + UP * -r.randf_range(0.3, 0.8), 0.01, &"cable", 4)
+		"tool_chest":
+			if not _room_for(k, base + N * 0.3, A, 0.8, 0.6):
+				return
+			box(k, base + N * 0.3 + UP * 0.5, _sz(A, 0.75, 1.0, 0.5), &"painted_steel_red", true)
+			for i in 5:
+				box(k, base + N * 0.56 + UP * (0.15 + i * 0.17), _sz(A, 0.68, 0.14, 0.02), &"painted_steel_red")
+				box(k, base + N * 0.58 + UP * (0.15 + i * 0.17), _sz(A, 0.3, 0.02, 0.02), &"gun_metal")
+		"ladder":
+			var h := r.randf_range(2.6, 3.4)
+			var lean := 0.28
+			var foot := base + N * (h * sin(lean))
+			for e: float in [-0.22, 0.22]:
+				k.d.geo.cylinder(foot + A * e, base + N * 0.05 + A * e + UP * h * cos(lean), 0.025, &"rusted_metal", 6)
+			for i in int(h / 0.3):
+				var f := float(i + 1) / int(h / 0.3 + 1)
+				var p := foot.lerp(base + N * 0.05 + UP * h * cos(lean), f)
+				k.d.geo.cylinder(p - A * 0.22, p + A * 0.22, 0.015, &"rusted_metal", 4)
+		"sacks":
+			if not _room_for(k, base + N * 0.5, A, 1.4, 1.0):
+				return
+			for i in r.randi_range(3, 7):
+				var p := base + N * r.randf_range(0.3, 0.8) + A * r.randf_range(-0.6, 0.6) + UP * (0.12 + (i / 3) * 0.2)
+				box(k, p, _sz(A, 0.55, 0.22, 0.35), &"fabric_canvas", false, Basis(UP, r.randf_range(-0.3, 0.3)) * Basis(A, r.randf_range(-0.1, 0.1)))
+		"extinguisher":
+			var p := base + N * 0.12 + UP * 1.0
+			k.d.geo.cylinder(p, p + UP * 0.5, 0.08, &"painted_steel_red", 10, true)
+			k.d.geo.cylinder(p + UP * 0.5, p + UP * 0.58, 0.03, &"gun_metal", 6)
+			box(k, p + UP * 0.3 - N * 0.06, _sz(A, 0.12, 0.08, 0.04), &"gun_metal")  # bracket
+			box(k, base + N * 0.015 + UP * 1.85, _sz(A, 0.25, 0.25, 0.02), &"painted_steel_red")  # sign
+		"junction":
+			for i in r.randi_range(1, 3):
+				var p := base + N * 0.08 + A * (i * 0.5 - 0.5) + UP * r.randf_range(1.4, 2.1)
+				box(k, p, _sz(A, 0.35, 0.45, 0.16), &"painted_steel")
+				k.d.geo.cylinder(p + UP * 0.22, p + UP * 2.4, 0.025, &"gun_metal", 6)  # conduit up to the ceiling
+		"drums":
+			for q in _cluster(r, base + N * 0.55, r.randi_range(2, 4)):
+				if _room_for(k, q, A, 0.6, 0.6):
+					cb.kit(k.d, ["barrel_rust", "barrel_blue", "barrel_orange"][r.randi_range(0, 2)], q, r.randf() * TAU)
+
+
+func _clutter_floor(k: Cell, r: RandomNumberGenerator, item: String) -> void:
+	var p := k.o + Vector3(r.randf_range(1.2, C - 1.2), 0, r.randf_range(1.2, C - 1.2))
+	var A := Vector3(1, 0, 0) if r.randf() < 0.5 else Vector3(0, 0, 1)
+	var B := _across(A)
+	match item:
+		"spool":
+			if not _room_for(k, p, A, 1.3, 1.3):
+				return
+			if r.randf() < 0.5:
+				cyl(k, p, p + UP * 0.08, 0.6, &"prop_wood", 14)
+				cyl(k, p + UP * 0.08, p + UP * 0.72, 0.32, &"cable", 12)
+				cyl(k, p + UP * 0.72, p + UP * 0.8, 0.6, &"prop_wood", 14)
+			else:
+				var c := p + UP * 0.6
+				cyl(k, c - A * 0.4, c - A * 0.32, 0.6, &"prop_wood", 14)
+				cyl(k, c - A * 0.32, c + A * 0.32, 0.32, &"cable", 12)
+				cyl(k, c + A * 0.32, c + A * 0.4, 0.6, &"prop_wood", 14)
+				# Cable unrolled across the floor.
+				var e := c + B * 0.3 + Vector3.DOWN * 0.58
+				k.d.geo.cylinder(e, e + B * r.randf_range(1.5, 3.0) + A * r.randf_range(-1.0, 1.0), 0.03, &"cable", 6)
+		"pipes":
+			if not _room_for(k, p, A, 3.2, 0.8):
+				return
+			var n := r.randi_range(3, 6)
+			for i in n:
+				var row := i % 3
+				var layer := i / 3
+				var q := p + B * ((row - 1) * 0.22 + layer * 0.11) + UP * (0.1 + layer * 0.19)
+				cyl(k, q - A * 1.5, q + A * 1.5, 0.1, &"rusted_metal", 10)
+			for e: float in [-1.0, 1.0]:
+				box(k, p + A * (e * 1.1) + UP * 0.03, _sz(A, 0.1, 0.06, 0.8), &"prop_wood")  # bearers
+		"fan":
+			if not _room_for(k, p, A, 1.0, 1.0):
+				return
+			var h := 1.3
+			k.d.geo.cylinder(p, p + UP * h, 0.03, &"gun_metal", 6)
+			for i in 3:
+				var a := TAU * i / 3.0
+				k.d.geo.cylinder(p + UP * 0.02, p + Vector3(cos(a), 0, sin(a)) * 0.35, 0.02, &"gun_metal", 4)
+			var spin := r.randf() * TAU
+			var face := Vector3(cos(spin), 0, sin(spin))
+			k.d.geo.frustum(p + UP * h - face * 0.12, p + UP * h + face * 0.12, 0.45, 0.42, &"painted_steel", 14, false)
+			k.d.geo.cylinder(p + UP * h, p + UP * h + face * 0.02, 0.4, &"steel_grate", 14, true)
+		"dolly":
+			if not _room_for(k, p, A, 0.8, 0.6):
+				return
+			var yaw := r.randf() * TAU
+			var b := Basis(UP, yaw) * Basis(Vector3.RIGHT, -0.35)
+			for e: float in [-0.2, 0.2]:
+				k.d.geo.cylinder(p + Basis(UP, yaw) * Vector3(e, 0.18, 0), p + b * Vector3(e, 1.3, 0) + Vector3.UP * 0.18, 0.02, &"painted_steel_red", 6)
+				k.d.geo.cylinder(p + Basis(UP, yaw) * Vector3(e * 1.3, 0.12, 0.12), p + Basis(UP, yaw) * Vector3(e * 1.3 + 0.06 * signf(e), 0.12, 0.12), 0.12, &"rubber", 10, true)
+			box(k, p + Basis(UP, yaw) * Vector3(0, 0.03, -0.2), Vector3(0.4, 0.02, 0.3), &"gun_metal", false, Basis(UP, yaw))
+		"chain":
+			var hc := cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s)
+			# The anchor plate ends at the underside of the slab (0.3 thick).
+			var top := k.o.y + minf(hc, H * (k.zn.top + 1 - k.s) if k.zn.type in ChunkBuilder.TALL else hc) - 0.4
+			var len := r.randf_range(1.2, top - k.o.y - 1.9)
+			if len < 0.6:
+				return
+			var q := Vector3(p.x, top, p.z)
+			for i in int(len / 0.09):
+				var y := top - i * 0.09
+				var b := Basis(UP, (PI * 0.5) * (i % 2))
+				k.d.geo.box(Vector3(p.x, y - 0.045, p.z), b * Vector3(0.012, 0.09, 0.05), &"rusted_metal", &"", false, b)
+			var hook := Vector3(p.x, top - len, p.z)
+			k.d.geo.cylinder(hook, hook + Vector3.DOWN * 0.18 + A * 0.08, 0.025, &"gun_metal", 6)
+			k.d.geo.cylinder(q, q + Vector3.UP * 0.1, 0.06, &"gun_metal", 6, true)
+		"buckets":
+			for i in r.randi_range(1, 3):
+				var q := p + Vector3(r.randf_range(-0.6, 0.6), 0, r.randf_range(-0.6, 0.6))
+				if r.randf() < 0.3:
+					var ax := Vector3(r.randf_range(-1, 1), 0, r.randf_range(-1, 1)).normalized()
+					k.d.geo.frustum(q + UP * 0.15 - ax * 0.17, q + UP * 0.15 + ax * 0.17, 0.12, 0.15, &"prop_rust", 10, true)
+				else:
+					k.d.geo.frustum(q, q + UP * 0.34, 0.12, 0.15, [&"prop_rust", &"painted_steel_blue", &"prop_steel"][r.randi_range(0, 2)], 10, true)
+			if r.randf() < 0.5:
+				k.d.geo.cylinder(p + UP * 0.05, p + Vector3(0.9, 1.2, 0.3), 0.015, &"prop_wood", 4)  # mop handle against the bucket
+		"worklight":
+			if not _room_for(k, p, A, 0.9, 0.9):
+				return
+			for i in 3:
+				var a := TAU * i / 3.0
+				k.d.geo.cylinder(p + Vector3(cos(a), 0, sin(a)) * 0.35, p + UP * 1.4, 0.015, &"painted_steel_yellow", 4)
+			var head := p + UP * 1.55
+			var face := Vector3(cos(r.randf() * TAU), -0.3, sin(r.randf() * TAU)).normalized()
+			k.d.geo.box(head, Vector3(0.3, 0.22, 0.12), &"painted_steel_yellow", &"", false, Basis.looking_at(face, UP))
+			k.d.geo.box(head + face * 0.065, Vector3(0.24, 0.16, 0.01), &"lamp_dead", &"", false, Basis.looking_at(face, UP))
+
+
 # --- Yards and open ground ----------------------------------------------------------------
 
 ## Open-air courtyard: cracked asphalt gone to weeds, puddles, whatever was
@@ -1332,8 +1569,16 @@ func _stash(k: Cell) -> void:
 	var r := k.r
 	var p := k.c + Vector3(r.randf_range(-1.0, 1.0), 0, r.randf_range(-1.0, 1.0))
 	if _free(k, Rect2(p.x - k.o.x - 1.2, p.z - k.o.z - 1.2, 2.4, 2.4)):
-		cb.kit(k.d, "bedroll", p, r.randf() * TAU)
-		cb.kit(k.d, "crate_small", p + Vector3(1.1, 0, 0.3), r.randf() * TAU)
+		var yaw := r.randf() * TAU
+		var b := Basis(UP, yaw)
+		box(k, p + b * Vector3(0, 0.08, 0), Vector3(0.95, 0.16, 1.95), &"fabric_dark", false, b)  # mattress
+		cb.kit(k.d, "bedroll", p + b * Vector3(0, 0.16, 0.1), yaw + r.randf_range(-0.2, 0.2), {"collide": false})
+		# A table of crates, a lamp and a tin on it.
+		var t := p + b * Vector3(1.2, 0, -0.4)
+		cb.kit(k.d, "crate_wood", t, yaw)
+		k.d.geo.frustum(t + UP * 0.8, t + UP * 1.05, 0.08, 0.06, &"glass_dirty", 8, true)
+		k.d.geo.cylinder(t + UP * 1.05, t + UP * 1.12, 0.05, &"gun_metal", 8, true)
+		cb.kit(k.d, "crate_small", t + b * Vector3(0.1, 0, 0.9), r.randf() * TAU)
 		for i in r.randi_range(3, 7):
 			var q := p + Vector3(r.randf_range(-1.4, 1.4), 0, r.randf_range(-1.4, 1.4))
 			cyl(k, q, q + UP * r.randf_range(0.08, 0.12), 0.035, &"prop_rust", 8)  # tins

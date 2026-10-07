@@ -27,6 +27,8 @@ const PARTIAL := 1 << 24 # << dir: a stub of wall on an open edge inside a room
 ## Per-cell `extra` flags (the main flags word is full).
 const VENT := 1     # << dir: crawl vent through the wall on that edge (crouching player only)
 const BREACH := 16  # << dir: a hole broken through the wall on that edge
+const PODIUM := 256 # a raised platform stands in the cell (steps up to it)
+const PIT := 512    # a sunken pit is let into the floor (steps down into it)
 
 ## Corners of a cell: 0 = N-W, 1 = N-E, 2 = S-E, 3 = S-W. CORNER_DIRS[c] are
 ## the two sides that meet there.

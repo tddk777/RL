@@ -94,6 +94,37 @@ func _run() -> void:
 		var c: Vector3i = a["cell"]
 		var floor_y := L.cell_center(c.x, c.y, c.z).y
 		views.append([key, Vector3(at.x, floor_y, at.z) - v * (2.2 if a["kind"] == &"odd_corpse" else 3.2), v, -22.0 if a["kind"] != &"symbol" else 0.0])
+	# The odd bits: a platform, a pit, a breach, a vent, a stash.
+	var odd := {}
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				if L.distance[L.idx(x, z, s)] < 0 and not (L.room_of(x, z, s) and L.room_of(x, z, s).use == &"stash"):
+					continue
+				var f := level.builder.level_feature(x, z, s)
+				if not f.is_empty() and not odd.has(f["kind"]):
+					odd[f["kind"]] = true
+					var rect: Rect2 = f["rect"]
+					var out := LevelLayout.dir_vector(f["side"])
+					var c := L.cell_origin(x, z, s) + Vector3(rect.get_center().x, 0, rect.get_center().y)
+					var half := (rect.size.y if (f["side"] as int) % 2 == 0 else rect.size.x) * 0.5
+					views.append([String(f["kind"]), c + out * (half + 2.6), -out, -14.0 if f["kind"] == &"podium" else -32.0])
+				for d in 4:
+					var key := "breach" if L.has_breach(x, z, s, d) else ("vent" if L.has_vent(x, z, s, d) else "")
+					if key != "" and not odd.has(key) and not L.has_flag(x, z, s, LevelLayout.NARROW):
+						odd[key] = true
+						var v := LevelLayout.dir_vector(d)
+						var g := level.builder.gap_span(x, z, s, d)
+						var sp := level.builder.edge_span(L.cell_origin(x, z, s), d)
+						var at := sp.origin + sp.u * ((g.x + g.y) * 0.5)
+						views.append([key, at - v * 3.2, v, -6.0 if key == "breach" else -18.0])
+				var rm := L.room_of(x, z, s)
+				if rm and rm.use == &"stash" and not odd.has("stash"):
+					odd["stash"] = true
+					for d in 4:
+						if L.has_vent(x, z, s, d):
+							var v := LevelLayout.dir_vector(d)
+							views.append(["stash", L.cell_center(x, z, s) + v * (L.cell * 0.5 - 1.6), -v, -12.0])
 	# From outside: a hall's windowed facade, a covered walkway, a corner of the complex.
 	var outside_views := {}
 	for z in L.size.y:

@@ -84,6 +84,7 @@ func _run(p: LevelProfile, level_seed: int) -> LevelLayout:
 	_compute_distances()
 	_make_stashes()
 	_compute_distances()
+	_make_levels()
 	_place_exits()
 	_place_enemies()
 	_place_pickups()
@@ -1512,6 +1513,30 @@ func _make_stashes() -> void:
 		_set_gap(c.x, c.y, rm.storey, d, LevelLayout.VENT)
 		rm.use = &"stash"
 		made += 1
+
+
+## Raised platforms and sunken pits on open floors and in bigger rooms.
+func _make_levels() -> void:
+	for z in L.size.y:
+		for x in L.size.x:
+			for s in L.storeys:
+				if L.kind_at(x, z, s) != LevelLayout.Kind.FLOOR or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				if L.has_flag(x, z, s, LevelLayout.NARROW | LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.DOCK) \
+						or L.flags_at(x, z, s) & (15 * LevelLayout.CHAMFER) or L.kind_at(x, z, s + 1) == LevelLayout.Kind.HOLE:
+					continue
+				var zn := L.zone_of(x, z, s)
+				if zn == null or zn.type in [&"connector", &"yard"]:
+					continue
+				var rm := L.room_of(x, z, s)
+				if rm and (rm.use in [&"hallway", &"stairwell", &"washroom", &"stash", &"closet"] or rm.rect.get_area() < 2):
+					continue
+				var open_floor := zn.type in TALL_TYPES or rm == null
+				var roll := rng.randf()
+				if s == 0 and open_floor and roll < profile.pit_chance:
+					L.set_extra(x, z, s, LevelLayout.PIT)
+				elif roll < profile.pit_chance + profile.podium_chance * (1.0 if open_floor else 0.5):
+					L.set_extra(x, z, s, LevelLayout.PODIUM)
 
 
 ## A little ammo left in each stash.

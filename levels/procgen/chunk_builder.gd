@@ -61,6 +61,9 @@ class ChunkData:
 	var leaks: Array = []
 	var nav_faces := PackedVector3Array()
 	var obstructions: Array = []
+	## World AABBs of everything solid placed so far (set pieces check it
+	## before adding clutter).
+	var taken: Array[AABB] = []
 
 
 var L: LevelLayout
@@ -152,6 +155,7 @@ func _cell(d: ChunkData, x: int, z: int, s: int, full: bool) -> void:
 			_catwalk(d, x, z, s, o, flags)
 		LevelLayout.Kind.HOLE:
 			_broken_floor(d, x, z, s, o, floor_mat)
+	_level_feature(d, x, z, s, o, floor_mat)
 	if flags & LevelLayout.STAIR:
 		_flight(d, x, z, s, o)
 	if flags & LevelLayout.STAIR_ABOVE and k == LevelLayout.Kind.FLOOR:
@@ -385,6 +389,12 @@ func _floor(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: StringName, f
 	var rects := _rects(Rect2(0, 0, C, C))
 	if flags & LevelLayout.STAIR_ABOVE:
 		rects = subtract(rects[0], run_rect(L.hole_dir(x, z, s), L.hole_side(x, z, s)))
+	var f := level_feature(x, z, s)
+	if not f.is_empty() and f["kind"] == &"pit":
+		var cut: Array[Rect2] = []
+		for r in rects:
+			cut.append_array(subtract(r, f["rect"]))
+		rects = cut
 	emit_slab(d, o, slab_pieces(x, z, s - 1, rects, s), 0.0, thick, mat, s > 0)
 
 
@@ -885,7 +895,7 @@ func _gap_dressing(d: ChunkData, x: int, z: int, s: int, sp: Span, dir: int, mat
 			var hinge := sp.origin + sp.u * g.x + sp.m * (T * 0.5 + out + 0.03) + Vector3.UP * VENT_H
 			geo.box(hinge + sp.u * (VENT_W * 0.5) + Vector3.DOWN * (VENT_H * 0.5) + sp.m * 0.25,
 				Vector3(0.02, VENT_H, VENT_W) if absf(sp.u.z) > 0.5 else Vector3(VENT_W, VENT_H, 0.02), &"steel_grate", &"", false,
-				Basis(sp.u, -0.45))
+				Basis(sp.u, -1.15))
 		return
 	# Breach: broken masonry heaped at the foot, rebar poking out of the edge.
 	for i in r.randi_range(4, 8):
@@ -1389,6 +1399,187 @@ func _corner_point(corner: int) -> Vector2:
 	return Vector2(0, C)
 
 
+# --- Platforms and pits --------------------------------------------------------------------
+
+const TREAD := 0.3
+
+## The raised platform or sunken pit in this cell (deterministic), or {}:
+## kind (&"podium" / &"pit"), rect (cell-local), h (height or depth), side
+## (the edge its steps are on), n (risers), footprint (rect plus steps).
+func level_feature(x: int, z: int, s: int) -> Dictionary:
+	var ex := L.extra_at(x, z, s)
+	if ex & (LevelLayout.PODIUM | LevelLayout.PIT) == 0:
+		return {}
+	var st := L.style_at(x, z, s)
+	var blocked := pieces.base_blocked(x, z, s, st)
+	var r := rng(x, z, s, 140)
+	var pit := ex & LevelLayout.PIT != 0
+	var h: float = [0.6, 0.9, 1.2][r.randi_range(0, 2)] if pit else [0.3, 0.45, 0.6, 0.9][r.randi_range(0, 3)]
+	if not pit and ceiling_height(st, L.zone_of(x, z, s), L.room_of(x, z, s), x, z, s) - h < 2.5:
+		h = 0.3
+	var n := maxi(int(round(h / 0.16)), 2)
+	var run := n * TREAD
+	for attempt in 16:
+		var w := r.randf_range(2.4, 5.0)
+		var dp := r.randf_range(2.2, 4.4)
+		var rect := Rect2(r.randf_range(0.9, C - 0.9 - w), r.randf_range(0.9, C - 0.9 - dp), w, dp)
+		var room := [rect.position.y, C - rect.end.x, C - rect.end.y, rect.position.x]
+		var side := 0
+		for i in 4:
+			if room[i] > room[side]:
+				side = i
+		var foot := rect
+		if not pit:
+			if room[side] < run + 0.5:
+				continue
+			match side:
+				0:
+					foot = Rect2(rect.position.x, rect.position.y - run, rect.size.x, rect.size.y + run)
+				1:
+					foot = Rect2(rect.position.x, rect.position.y, rect.size.x + run, rect.size.y)
+				2:
+					foot = Rect2(rect.position.x, rect.position.y, rect.size.x, rect.size.y + run)
+				3:
+					foot = Rect2(rect.position.x - run, rect.position.y, rect.size.x + run, rect.size.y)
+		elif (rect.size.y if side % 2 == 0 else rect.size.x) < run + 1.2:
+			continue
+		var clear := true
+		for b in blocked:
+			if b.intersects(foot.grow(0.4)):
+				clear = false
+				break
+		if clear:
+			return {"kind": &"pit" if pit else &"podium", "rect": rect, "h": h, "side": side, "n": n, "footprint": foot}
+	return {}
+
+
+## Builds the cell's platform or pit.
+func _level_feature(d: ChunkData, x: int, z: int, s: int, o: Vector3, floor_mat: StringName) -> void:
+	var f := level_feature(x, z, s)
+	if f.is_empty():
+		return
+	var g := d.geo
+	var r := rng(x, z, s, 141)
+	var rect: Rect2 = f["rect"]
+	var h: float = f["h"]
+	var side: int = f["side"]
+	var n: int = f["n"]
+	var out := LevelLayout.dir_vector(side)
+	var lateral := LevelLayout.dir_vector((side + 1) % 4)
+	var c := o + Vector3(rect.get_center().x, 0, rect.get_center().y)
+	var half_out := (rect.size.y if side % 2 == 0 else rect.size.x) * 0.5  # centre to the step side
+	var half_lat := (rect.size.x if side % 2 == 0 else rect.size.y) * 0.5
+	var edge := c + out * half_out
+	var ws := minf(1.6, half_lat * 2.0 - 0.5)
+	if f["kind"] == &"podium":
+		var steel := r.randf() < 0.45
+		var top_mat: StringName = &"steel_grate" if steel else &"concrete_dark"
+		if steel:
+			# Grating deck on a frame, skirted in sheet steel.
+			g.box(c + Vector3.UP * (h - 0.03), Vector3(rect.size.x, 0.06, rect.size.y), &"steel_grate", &"metal")
+			g.box(c + Vector3.UP * ((h - 0.06) * 0.5), Vector3(rect.size.x - 0.04, h - 0.06, rect.size.y - 0.04), &"painted_steel", &"metal")
+		else:
+			g.box(c + Vector3.UP * (h * 0.5), Vector3(rect.size.x, h, rect.size.y), floor_mat if r.randf() < 0.5 else &"concrete_dark", &"concrete", true)
+			# Hazard band round the edge, a hair proud of the sides.
+			g.box(c + Vector3.UP * (h - 0.07), Vector3(rect.size.x + 0.02, 0.08, rect.size.y + 0.02), &"painted_steel_yellow")
+		_steps(g, edge + out * (n - 1) * TREAD, -out, ws, 0.0, h, top_mat if steel else &"concrete_dark", steel)
+		if h >= 0.6:
+			_feature_rails(g, o, rect, h, side, ws, true)
+		_podium_load(d, c + Vector3.UP * h, rect, side, r)
+	else:
+		# Pit: walls lining the hole, a floor down at -h, steps up to the rim.
+		var wall := 0.2
+		var bottom := -h
+		var wm: StringName = &"concrete_dark"
+		var inner := rect.grow(-wall)
+		g.box(o + Vector3(rect.get_center().x, (bottom - 0.25) * 0.5, rect.position.y + wall * 0.5), Vector3(rect.size.x, -bottom + 0.25, wall), wm, &"concrete", true)
+		g.box(o + Vector3(rect.get_center().x, (bottom - 0.25) * 0.5, rect.end.y - wall * 0.5), Vector3(rect.size.x, -bottom + 0.25, wall), wm, &"concrete", true)
+		g.box(o + Vector3(rect.position.x + wall * 0.5, (bottom - 0.25) * 0.5, rect.get_center().y), Vector3(wall, -bottom + 0.25, inner.size.y), wm, &"concrete", true)
+		g.box(o + Vector3(rect.end.x - wall * 0.5, (bottom - 0.25) * 0.5, rect.get_center().y), Vector3(wall, -bottom + 0.25, inner.size.y), wm, &"concrete", true)
+		g.box(o + Vector3(inner.get_center().x, bottom - 0.125, inner.get_center().y), Vector3(inner.size.x, 0.25, inner.size.y), &"concrete_floor", &"concrete")
+		var top_edge := c + out * (half_out - wall)
+		_steps(g, top_edge - out * (n - 1) * TREAD, out, minf(ws, half_lat * 2.0 - wall * 2.0 - 0.2), bottom, 0.0, &"concrete_dark", false)
+		if h >= 0.8:
+			_feature_rails(g, o, rect, 0.0, side, ws, false)
+		# What collects in a pit: standing water, a sump pump, junk.
+		d.decals.append(["puddle", Transform3D(Basis(Vector3.UP, r.randf() * TAU), c + Vector3.UP * bottom - out * 0.6),
+			Vector3(inner.size.x * 0.8, 0.5, inner.size.y * 0.8)])
+		var pump := c + Vector3.UP * bottom - out * (half_out - wall - 0.5) + lateral * (half_lat - wall - 0.45)
+		g.cylinder(pump, pump + Vector3.UP * 0.6, 0.22, &"painted_steel_blue", 10, true)
+		g.box(pump + Vector3.UP * 0.3, Vector3(0.44, 0.6, 0.44), &"", &"metal")
+		g.cylinder(pump + Vector3.UP * 0.5, pump + Vector3.UP * (-bottom + 0.3) + out * 0.3, 0.05, &"rusted_metal", 6)
+		for i in r.randi_range(2, 6):
+			var p := c + Vector3.UP * bottom + Vector3(r.randf_range(-inner.size.x, inner.size.x) * 0.4, 0, r.randf_range(-inner.size.y, inner.size.y) * 0.4)
+			var size := Vector3(r.randf_range(0.1, 0.35), r.randf_range(0.05, 0.15), r.randf_range(0.1, 0.3))
+			g.box(p + Vector3.UP * size.y * 0.4, size, &"concrete_dark", &"", false, Basis.from_euler(Vector3(r.randf_range(-0.4, 0.4), r.randf() * TAU, 0)))
+
+
+## A flight of steps climbing `a` from foot (at height y0) to y1, `width`
+## wide, with a walkable ramp collider over the noses (2 cm proud, as for the
+## main stairs, so the top edge never stops anybody).
+func _steps(g: GeoBuilder, foot: Vector3, a: Vector3, width: float, y0: float, y1: float, mat: StringName, open: bool) -> void:
+	var rise := y1 - y0
+	var n := maxi(int(round(rise / 0.16)), 2)
+	var lateral := a.cross(Vector3.UP)
+	for i in n - 1:
+		var top := y0 + rise * (i + 1) / n
+		var p := foot + a * (i * TREAD + TREAD * 0.5)
+		if open:
+			g.box(p + Vector3.UP * (top - 0.025), _oriented(a, Vector3(width, 0.05, TREAD + 0.02)), &"steel_grate", &"metal")
+		else:
+			g.box(p + Vector3.UP * ((y0 + top) * 0.5 - 0.01), _oriented(a, Vector3(width, top - y0 + 0.02, TREAD)), mat, &"concrete")
+	if open:
+		for e: float in [-1.0, 1.0]:
+			var q0 := foot + lateral * (e * (width * 0.5 + 0.03)) + Vector3.UP * y0
+			var q1 := q0 + a * ((n - 1) * TREAD) + Vector3.UP * rise
+			beam(g, q0 + Vector3.UP * 0.05, q1 - Vector3.UP * 0.05, Vector2(0.05, 0.2), &"painted_steel_yellow")
+	# Ramp from a tread's length before the first step to the top edge.
+	var p0 := foot - a * TREAD + Vector3.UP * y0
+	var p1 := foot + a * ((n - 1) * TREAD) + Vector3.UP * y1
+	var length := p0.distance_to(p1) + 0.1
+	var fwd := (p1 - p0).normalized()
+	var up := lateral.cross(fwd).normalized()
+	if up.y < 0.0:
+		up = -up
+	g.box((p0 + p1) * 0.5 + fwd * 0.05 - up * 0.04, Vector3(width, 0.12, length), &"", &"concrete", false,
+		Basis(up.cross(fwd).normalized(), up, fwd))
+
+
+## Railing round a platform's or pit's edge at height y, open where its
+## steps are.
+func _feature_rails(g: GeoBuilder, o: Vector3, rect: Rect2, y: float, side: int, gap: float, outward: bool) -> void:
+	var inset := 0.08 if outward else -0.12  # on the platform's edge / just outside the pit
+	var r := rect.grow(-inset)
+	var corners := [Vector2(r.position.x, r.position.y), Vector2(r.end.x, r.position.y), Vector2(r.end.x, r.end.y), Vector2(r.position.x, r.end.y)]
+	for sd in 4:
+		var a: Vector2 = corners[sd]
+		var b: Vector2 = corners[(sd + 1) % 4]
+		var pa := o + Vector3(a.x, y, a.y)
+		var pb := o + Vector3(b.x, y, b.y)
+		if sd == side:
+			var m := (pa + pb) * 0.5
+			var t := (pb - pa).normalized()
+			railing(g, pa, m - t * (gap * 0.5 + 0.1))
+			railing(g, m + t * (gap * 0.5 + 0.1), pb)
+		else:
+			railing(g, pa, pb)
+
+
+## Something on a platform: a press on its plinth, a control stand, stock.
+func _podium_load(d: ChunkData, top: Vector3, rect: Rect2, side: int, r: RandomNumberGenerator) -> void:
+	var roll := r.randf()
+	var yaw := (PI * 0.5) * side
+	if roll < 0.3 and minf(rect.size.x, rect.size.y) >= 2.7:
+		kit(d, "vat", top, r.randf() * TAU)
+	elif roll < 0.55:
+		kit(d, "desk", top + Vector3(r.randf_range(-0.3, 0.3), 0, r.randf_range(-0.3, 0.3)), yaw + PI)
+		kit(d, "electrical_cabinet", top + LevelLayout.dir_vector(side) * -0.9, yaw)
+	elif roll < 0.8:
+		for i in r.randi_range(1, 3):
+			kit(d, ["crate_wood", "barrel_rust", "barrel_blue"][r.randi_range(0, 2)],
+				top + Vector3((i - 1) * 1.1, 0, r.randf_range(-0.4, 0.4)), r.randf() * TAU)
+
+
 # --- Cramped passages -------------------------------------------------------------------
 
 ## Fills the cell solid except a narrow cross of passages toward its open
@@ -1792,6 +1983,13 @@ static func _relative(root: Node3D, n: Node3D) -> Transform3D:
 	return xf
 
 
+static func box_aabb(center: Vector3, size: Vector3, basis: Basis) -> AABB:
+	var ext := Vector3.ZERO
+	for i in 3:
+		ext += (basis[i] * size[i] * 0.5).abs()
+	return AABB(center - ext, ext * 2.0)
+
+
 ## Places a kit prop: merged into the chunk mesh with a box collider (or a
 ## node for lamps). Returns the node index for node props, else -1.
 func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary = {}, tilt: Basis = Basis.IDENTITY) -> int:
@@ -1802,6 +2000,7 @@ func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary
 		var size: Vector3 = fp[0]
 		var surf: StringName = _kit[id]["surface"] if _kit.has(id) else &"metal"
 		d.geo.box(xform * (Vector3.UP * float(fp[1])), size, &"", surf, false, xform.basis)
+		d.taken.append(box_aabb(xform * (Vector3.UP * float(fp[1])), size, xform.basis))
 	if not d.geo.visuals:
 		return -1
 	if _kit.has(id):

@@ -103,11 +103,18 @@ Key contracts:
   building (tall halls with catwalk rings and bridges, foundries,
   warehouses, docks; storeyed blocks of rooms off a hallway with a
   stairwell), stairs, doors, cut corners (`CHAMFER`), windows (`WINDOW`),
-  stub walls (`PARTIAL`), collapse, connectivity, exits, enemies, pickups,
-  anomalies. Everything that isn't a building cell (open ground, yards,
+  stub walls (`PARTIAL`), collapse, connectivity, then odd ways through
+  where they make the biggest shortcuts (per-cell `extra` flags: `BREACH`
+  holes anyone fits through, `VENT` crawl vents only the crouching player
+  fits, stash rooms whose only way in is a vent), raised platforms and
+  sunken pits (`PODIUM`, `PIT`; `ChunkBuilder.level_feature()` places them
+  clear of lanes), exits, enemies, pickups, anomalies. `links()` counts
+  breaches; vents only with `crawl`, so enemies and exits never depend on
+  them. Everything that isn't a building cell (open ground, yards,
   walkways) is "outdoor" to a building, which builds that wall whole.
   `ChunkBuilder` (architecture) and `SetPieces` (machines, conveyor lines,
-  furnaces, racks, cubicles, boilers, lockers, yards, open ground...) turn
+  furnaces, racks, cubicles, boilers, lockers, yards, open ground, and
+  `_clutter` odds and ends checked against `ChunkData.taken`) turn
   8 m cells into merged meshes, collision, occluders and navigation source on
   worker threads. Kit props are merged into the chunk meshes (lamps stay
   nodes). `ProceduralLevel.prepare()` builds the whole level while it loads

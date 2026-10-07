@@ -81,7 +81,8 @@ L4 labs, ...) are mostly data:
    (`grid_size`, `storeys`, `cell_size`, `storey_height`, `chunk_cells`),
    how the site grows (`coverage`, `max_buildings`, `touch_chance` vs
    walkways up to `max_gap` cells, `abut_chance`, `yards`, `bridges`,
-   `chamfer_chance`, `partial_chance`, `districts`), one walkway style per
+   `chamfer_chance`, `partial_chance`, `districts`, `breaches`, `vents`,
+   `stashes`, `podium_chance`, `pit_chance`), one walkway style per
    family (`corridors`), the `yard` style and the building styles,
    population (enemies, exits, weapon/ammo pickups, corpses), anomalies and
    atmosphere (environment, `daylight_energy`/`daylight_color`, ground
