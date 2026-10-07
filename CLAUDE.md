@@ -60,7 +60,8 @@ core/            Engine-agnostic building blocks
   action_timeline, mesh_kit (procedural modelling, also used by generators)
 weapons/         Weapon (runtime firearm), WeaponModel (marker contract), MuzzleFlash
 player/          Player (FPS controller) + WeaponHolder (viewmodel, ADS, sway, IK arms)
-characters/      Humanoid (procedural body + hitboxes), ArmRig (IK arm)
+characters/      NPCBody (body contract), Mannequin (rigged UAL body: clips + arm IK +
+                 bone hitboxes), Humanoid (procedural fallback), ArmRig (IK arm)
 ai/              NPC, Perception (sight + hearing), AIBrain + AIState scripts in states/
 levels/          Level base, EnemySpawn, LevelExit, FlickerLight, kit/ props
   procgen/         Procedural levels: profile/style resources, layout generator,
@@ -77,9 +78,11 @@ Key contracts:
 - **Weapon models**: scene root with `WeaponModel` script and marker nodes
   `Muzzle`, `Eject`, `ADS`, `Grip_R`, `Grip_L`, optional `Magazine`, `Bolt`,
   `Mount_<slot>`. Origin at the bore axis / rear of receiver, barrel along -Z.
-- **NPC bodies**: `setup(health) -> hitboxes`, `hold_weapon()`, `set_motion()`,
-  `set_aim()`, `die()`, plus an `eye` node. `characters/humanoid.gd` is the
-  reference implementation; a rigged imported model can implement the same API.
+- **NPC bodies**: extend `NPCBody`: `setup(health) -> hitboxes`, `hold_weapon()`,
+  `set_motion()`, `set_aim()`, `die()`, `pose_dead()`, plus an `eye` node.
+  `characters/mannequin.gd` is the rigged one (Quaternius UAL: clips play,
+  then `PoseHook` bends the chest to the aim and solves the arms onto the
+  weapon's `Grip_R`/`Grip_L`); `characters/humanoid.gd` is procedural.
 - **AI behaviour**: one `AIState` node per behaviour under the NPC's `Brain`.
   States switch with `brain.change(&"name")`. Enemy types = scene + EnemyData.
 - **Levels**: root has a `Level` script and `player_spawn_transform()`;
@@ -118,8 +121,12 @@ Key contracts:
   8 m cells into merged meshes, collision, occluders and navigation source on
   worker threads. Kit props are merged into the chunk meshes (lamps stay
   nodes). `ProceduralLevel.prepare()` builds the whole level while it loads
-  (no streaming), adds the daylight, ground and skyline, bakes one
-  navigation mesh, then snaps entities onto it.
+  (no streaming), adds the daylight, god rays (`lens_effects` compositor),
+  the landscape (`ProceduralLevel.ground_height()`: flat over the site and a
+  strip round it, then embankments and hills; a `Landscape` mesh, or
+  Terrain3D with `use_terrain3d`, off because Terrain3D 1.0.2 crashed Godot
+  4.7.2's Vulkan renderer) and the skyline, bakes one navigation mesh, then
+  snaps entities onto it.
   No two faces may share a plane (that flickers): walls run between pillars
   at the grid vertices, a slab stops at the full-height walls of the storey
   below it (their tops make the floor there), fills tuck under slabs, and
@@ -160,10 +167,14 @@ Key contracts:
   `godot --script` (autoload names aren't known yet at compile time); load
   them at runtime there, or run a scene instead (see dev/tests).
 
-## Generated assets
+## Generated and third-party assets
 
-All art and audio is generated in-repo (no third-party assets, no licenses to
-track). Regenerate with:
+Most art and audio is generated in-repo. Third-party packs live in
+`assets/third_party/` and `addons/`, each credited in `CREDITS.md` (keep it
+current when adding one): the UAL mannequin and animations, the Soviet PSX
+guns, the Sound FX Starter Pack, `lens_effects`, Terrain3D. Review any addon
+code before enabling it; pure data (glb, png, wav) is safe to drop in.
+Regenerate the generated ones with:
 
 ```
 python3 dev/asset_gen/textures.py           # PBR textures + FX sprites (numpy, scipy, Pillow)
@@ -175,6 +186,8 @@ godot --headless --path . --script res://dev/generators/build_content.gd   # ove
 godot --headless --path . --script res://dev/generators/build_l1_profile.gd  # overwrites the L1 profile
 python3 dev/asset_gen/decals.py             # wall symbols, puddles, papers, cracks, oil, moss, peeling plaster
 python3 dev/asset_gen/noise.py              # tileable noise for the world surface shader
+python3 dev/asset_gen/terrain_textures.py   # landscape textures (packed albedo+height, normal+roughness)
+godot --headless --path . --script res://dev/generators/build_psx_weapons.gd  # PSX gun scenes, markers, stats
 ```
 
 Generators are bootstraps. Once a file is hand-edited in the editor, don't

@@ -9,6 +9,9 @@ extends Node3D
 
 @export var ambience: AudioStream
 @export var ambience_volume_db: float = -2.0
+## Second looping layer under the ambience (wind, weather).
+@export var ambience_bed: AudioStream
+@export var ambience_bed_volume_db: float = -14.0
 ## Distant one-shots (drips, groans) played at random around the player.
 @export var random_sounds: Array[AudioStream] = []
 @export var random_interval := Vector2(7.0, 18.0)
@@ -43,6 +46,7 @@ func begin() -> void:
 	_apply_reverb()
 	if ambience:
 		Audio.play_ambience(ambience, ambience_volume_db, 3.0)
+	Audio.play_ambience_bed(ambience_bed, ambience_bed_volume_db, 3.0)
 	for spawn in find_children("*", "EnemySpawn", true, false):
 		(spawn as EnemySpawn).spawn()
 	_random_timer = randf_range(random_interval.x, random_interval.y)

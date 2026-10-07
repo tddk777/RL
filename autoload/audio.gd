@@ -10,6 +10,7 @@ var _pool_2d: Array[AudioStreamPlayer] = []
 var _next_3d := 0
 var _next_2d := 0
 var _ambience: AudioStreamPlayer
+var _bed: AudioStreamPlayer  # second ambience layer (wind, weather) under the first
 var _music: AudioStreamPlayer
 
 
@@ -32,6 +33,9 @@ func _ready() -> void:
 	_ambience = AudioStreamPlayer.new()
 	_ambience.bus = &"Ambience"
 	add_child(_ambience)
+	_bed = AudioStreamPlayer.new()
+	_bed.bus = &"Ambience"
+	add_child(_bed)
 	_music = AudioStreamPlayer.new()
 	_music.bus = &"Music"
 	add_child(_music)
@@ -80,12 +84,18 @@ func play_ambience(stream: AudioStream, volume_db: float = 0.0, fade: float = 2.
 	_crossfade(_ambience, stream, volume_db, fade)
 
 
+## A second looping layer under the ambience (null stops it).
+func play_ambience_bed(stream: AudioStream, volume_db: float = 0.0, fade: float = 2.0) -> void:
+	_crossfade(_bed, stream, volume_db, fade)
+
+
 func play_music(stream: AudioStream, volume_db: float = 0.0, fade: float = 2.0) -> void:
 	_crossfade(_music, stream, volume_db, fade)
 
 
 func stop_ambience(fade: float = 1.0) -> void:
 	_crossfade(_ambience, null, 0.0, fade)
+	_crossfade(_bed, null, 0.0, fade)
 
 
 func stop_music(fade: float = 1.0) -> void:

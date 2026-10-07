@@ -79,10 +79,25 @@ extends Resource
 ## reaches inside through windows, doors and roof holes). 0 = none.
 @export var daylight_energy: float = 0.8
 @export var daylight_color := Color(0.86, 0.89, 0.95)
+## Faint god rays and lens glare toward the sun (lens_effects compositor;
+## Forward+/Mobile only, medium quality and up). Alpha sets the strength.
+@export var sun_rays := Color(0.45, 0.43, 0.38, 0.35)
 ## Ground round the buildings and the distant skyline.
 @export var ground_material: StringName = &"ground"
+## Rolling landscape outside the site fence (flat inside it and for a strip
+## round it, rising into embankments and hills). Off: a flat ground plane.
+@export var terrain: bool = true
+## Highest the hills get (m), reached a couple of hundred metres out.
+@export var terrain_height: float = 22.0
+@export var terrain_material: StringName = &"terrain_ground"
+## Build the landscape with the Terrain3D extension instead of a mesh.
+## Off by default: Terrain3D 1.0.2 crashed Godot 4.7.2's Vulkan renderer in
+## testing (any Terrain3D node, even empty). Try it after updating the addon.
+@export var use_terrain3d: bool = false
 @export var skyline: bool = true
 @export var ambience: AudioStream
+@export var ambience_bed: AudioStream
+@export var ambience_bed_volume_db: float = -14.0
 @export var random_sounds: Array[AudioStream] = []
 
 

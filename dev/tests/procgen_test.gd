@@ -324,6 +324,18 @@ func _run() -> void:
 		if e["kind"] == &"locked":
 			level._on_lever_pulled(i)
 			check(L.exits[i]["unlocked"], "breaker unlocks the locked exit")
+	if level.profile.terrain:
+		var size := Vector2(L.size) * L.cell
+		var ground_space := level.get_world_3d().direct_space_state
+		var probe := func(x: float, z: float) -> float:
+			var q := PhysicsRayQueryParameters3D.create(Vector3(x, 120, z), Vector3(x, -20, z), Layers.WORLD)
+			var hit := ground_space.intersect_ray(q)
+			return hit["position"].y if hit else -99.0
+		var flat := absf(level.ground_height(size.x * 0.5, size.y * 0.5) + 0.06) < 0.001
+		var out: float = probe.call(-150.0, size.y * 0.5)
+		var want := level.ground_height(-150.0, size.y * 0.5)
+		check(flat and out > 1.0 and absf(out - want) < 0.5,
+			"landscape flat under the site, hills outside (%.1f m, collision at %.1f m)" % [want, out])
 	var pickups := 0
 	var weapons := 0
 	for p in L.pickups:

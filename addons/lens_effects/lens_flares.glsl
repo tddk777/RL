@@ -34,7 +34,7 @@ highp float length_squared(vec2 v) {
 // Converts coord obtained from gl_GlobalInvocationID
 // to normalize [0.0-1.0] for use in texture() sampling functions.
 highp vec2 coord_to_uv(ivec2 p_coord) {
-    return (vec2(p_coord) + 0.5) / scene.data.viewport_size;
+    return (vec2(p_coord) + 0.5) / vec2(textureSize(depth_sampler, 0));  // RL: was scene.data.viewport_size
 }
 
 highp float get_raw_depth(ivec2 p_coord) {
@@ -202,7 +202,7 @@ void main() {
     ivec2 image_coord = ivec2(gl_GlobalInvocationID.xy);
     vec4 previous_color = imageLoad(color_image, image_coord);
 
-    vec2 resolution = floor(scene.data.viewport_size);
+    vec2 resolution = vec2(imageSize(color_image));  // RL: was scene.data.viewport_size
     vec2 uv = image_coord / resolution - 0.5;
     vec2 sun_pos_norm = vec2(datablock.data.sun_position_x, datablock.data.sun_position_y);
     vec2 sun_position = sun_pos_norm * resolution;
@@ -232,7 +232,7 @@ void main() {
 
     vec2 ray_uv_pos = godot_uv;
     // Jitter the initial position a bit to blend the radial blur steps from the loop
-    ray_uv_pos += ray_step * (hash(godot_uv + fract(scene.data.time)) * 2.0 - 1.0);
+    ray_uv_pos += ray_step * (hash(godot_uv) * 2.0 - 1.0);  // RL: no scene.data.time
     float ray_sum = 0.0;
     for (int i = 0; i < int(sample_count); i++) {
         ray_uv_pos -= ray_step;

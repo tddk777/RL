@@ -1,10 +1,11 @@
 extends Node
 ## Renders a tour of a generated Level 1: one screenshot per kind of space
 ## (zone type and room use), each taken from a doorway looking in.
-##   godot --rendering-driver vulkan --path . res://dev/tests/procgen_tour.tscn -- <out_dir> [seed] [limit]
+##   godot --rendering-driver vulkan --path . res://dev/tests/procgen_tour.tscn -- <out_dir> [seed] [limit] [name_prefix]
 
 var _out := ""
 var _limit := 40
+var _only := ""  # only views whose name starts with this
 
 
 func _ready() -> void:
@@ -14,6 +15,8 @@ func _ready() -> void:
 	seed(int(args[1]) if args.size() > 1 else 7)
 	if args.size() > 2:
 		_limit = int(args[2])
+	if args.size() > 3:
+		_only = args[3]
 	_run.call_deferred()
 
 
@@ -154,9 +157,17 @@ func _run() -> void:
 				views.append([key, L.cell_center(x, z, 0) + v * 18.0 + side * 6.0, (-v * 18.0 - side * 6.0).normalized(), 14.0])
 				outside_views[key] = true
 				break
+	# Over the fence to the hills, and toward the sun (god rays).
+	var size := Vector2(L.size) * L.cell
+	views.append(["outside_hills", Vector3(-6.0, 3.0, size.y * 0.5), Vector3(-1, 0, 0.25).normalized(), 2.0])
+	var sun := level.builder.sun_dir()
+	var to_sun := Vector3(-sun.x, 0, -sun.z).normalized()
+	views.append(["outside_sun", Vector3(size.x * 0.5, 0, size.y * 0.5) - to_sun * (size.length() * 0.5 + 10.0), to_sun, 34.0])
 	var e: Dictionary = L.exits[0]
 	var ev := LevelLayout.dir_vector(e["dir"])
 	views.append(["exit_" + String(e["kind"]), (e["position"] as Vector3) - ev * 3.5, ev, -2.0])
+	if _only != "":
+		views = views.filter(func(v: Array) -> bool: return String(v[0]).begins_with(_only))
 	var i := 1
 	for view in views:
 		if i > _limit:

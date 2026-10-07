@@ -44,6 +44,8 @@ func prepare() -> void:
 	layout = LayoutGenerator.generate(profile, level_seed)
 	builder = ChunkBuilder.new(layout)
 	ambience = profile.ambience
+	ambience_bed = profile.ambience_bed
+	ambience_bed_volume_db = profile.ambience_bed_volume_db
 	random_sounds = profile.random_sounds
 	if profile.environment:
 		var env := WorldEnvironment.new()
@@ -52,6 +54,7 @@ func prepare() -> void:
 		add_child(env)
 	_warm_caches()
 	_add_daylight()
+	_add_sun_rays()
 	_add_surroundings()
 	var count := builder.chunk_count()
 	for cx in count.x:
@@ -120,23 +123,51 @@ func _add_daylight() -> void:
 	add_child(sun)
 	var dir := builder.sun_dir()
 	sun.global_basis = Basis.looking_at(dir, Vector3.UP)
+	_sun = sun
 
 
-## Open ground round the complex (with collision, so nothing falls forever)
+## Screen-space god rays and a soft glare round the sun (ARez's lens_effects).
+## Needs a RenderingDevice, so there's none headless or on Compatibility.
+func _add_sun_rays() -> void:
+	var env := get_node_or_null(^"WorldEnvironment") as WorldEnvironment
+	if _sun == null or env == null or profile.sun_rays.a <= 0.0 or RenderingServer.get_rendering_device() == null:
+		return
+	var fx := LensFlareEffect.new()
+	fx.sun_color = profile.sun_rays
+	fx.Effect_Multiplier = 1.2
+	fx.Anamorphic_Intensity = 60.0
+	fx.Anamorphic_Brightness = 0.25
+	fx.Weight = 0.08
+	fx.SampleCount = 48
+	env.compositor = Compositor.new()
+	env.compositor.compositor_effects = [fx]
+	_sun_fx = fx
+
+
+## Open ground round the complex (with collision, so nothing falls forever):
+## rolling hills (a Landscape mesh, or Terrain3D) or a flat plane;
 ## and a hazy skyline of ruins, stacks and towers far beyond the fence.
 func _add_surroundings() -> void:
 	var size := Vector2(layout.size) * layout.cell
 	var centre := Vector3(size.x * 0.5, 0.0, size.y * 0.5)
-	var ground := MeshInstance3D.new()
-	ground.name = "Ground"
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(1600, 1600)
-	plane.subdivide_width = 16
-	plane.subdivide_depth = 16
-	ground.mesh = plane
-	ground.material_override = _material(profile.ground_material)
-	ground.position = centre + Vector3.DOWN * 0.06
-	add_child(ground)
+	var hills := profile.terrain
+	if hills and profile.use_terrain3d and ClassDB.class_exists(&"Terrain3D"):
+		_add_terrain(centre)
+	elif hills:
+		add_child(Landscape.build(ground_height, Rect2(Vector2.ZERO, size), centre, _material(profile.terrain_material)))
+	else:
+		var ground := MeshInstance3D.new()
+		ground.name = "Ground"
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(1600, 1600)
+		plane.subdivide_width = 16
+		plane.subdivide_depth = 16
+		ground.mesh = plane
+		ground.material_override = _material(profile.ground_material)
+		ground.position = centre + Vector3.DOWN * 0.06
+		add_child(ground)
+	# Flat collision under the site either way (the terrain's own collision
+	# only follows the camera).
 	var body := StaticBody3D.new()
 	body.name = "GroundBody"
 	body.collision_mask = 0
@@ -159,6 +190,8 @@ func _add_surroundings() -> void:
 	while a < TAU:
 		var dist := radius + r.randf_range(70.0, 240.0)
 		var p := centre + Vector3(cos(a), 0, sin(a)) * dist
+		if hills:
+			p.y = ground_height(p.x, p.z) - 1.5  # sunk into the slope
 		var roll := r.randf()
 		var mat := mats[r.randi_range(0, mats.size() - 1)]
 		var yaw := Basis(Vector3.UP, a + r.randf_range(-0.3, 0.3))
@@ -200,6 +233,110 @@ func _add_surroundings() -> void:
 	sky.mesh = mesh
 	sky.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(sky)
+
+
+const TERRAIN_REGION := 1024  # Terrain3D region size (vertices)
+const TERRAIN_SPACING := 2.0  # m between terrain vertices: 2 x 2 regions = 4 km
+const TERRAIN_SAMPLES := 512  # height samples across, smoothed up to the full map
+
+var _hill_noise: FastNoiseLite
+var _swell_noise: FastNoiseLite
+var _terrain: Node3D
+var _sun: DirectionalLight3D
+var _sun_fx: CompositorEffect
+var _terrain_camera: Camera3D
+
+
+## Height of the landscape at a world position: flat over the site and a
+## strip round it, then embankments and rolling hills further out.
+func ground_height(x: float, z: float) -> float:
+	var size := Vector2(layout.size) * layout.cell
+	var dx := maxf(maxf(-x, x - size.x), 0.0)
+	var dz := maxf(maxf(-z, z - size.y), 0.0)
+	var d := Vector2(dx, dz).length()
+	if d <= 0.0 or not profile.terrain:
+		return -0.06
+	if _hill_noise == null:
+		_hill_noise = FastNoiseLite.new()
+		_hill_noise.seed = hash([level_seed, 7101])
+		_hill_noise.frequency = 0.0045
+		_hill_noise.fractal_octaves = 4
+		_swell_noise = FastNoiseLite.new()
+		_swell_noise.seed = hash([level_seed, 7102])
+		_swell_noise.frequency = 0.025
+	var hill := _hill_noise.get_noise_2d(x, z) * 0.5 + 0.5
+	var swell := _swell_noise.get_noise_2d(x, z) * 0.5 + 0.5
+	var bank := smoothstep(8.0, 40.0, d)  # embankment off the fence strip
+	var far := smoothstep(25.0, 180.0, d)
+	return -0.06 + bank * (2.0 + 4.0 * swell) + far * profile.terrain_height * hill
+
+
+func _add_terrain(centre: Vector3) -> void:
+	var terrain: Node3D = ClassDB.instantiate(&"Terrain3D")
+	terrain.name = "Terrain"
+	terrain.set(&"debug_level", 0)
+	terrain.call(&"change_region_size", TERRAIN_REGION)
+	terrain.set(&"vertex_spacing", TERRAIN_SPACING)
+	terrain.set(&"collision_layer", Layers.WORLD)
+	terrain.set(&"collision_mask", 0)
+	# Terrain3D follows a camera (LODs, collision); the player's doesn't exist
+	# yet, so start with a stand-in at the spawn and hand over in _process.
+	_terrain_camera = Camera3D.new()
+	_terrain_camera.name = "TerrainCamera"
+	_terrain_camera.position = layout.spawn_position + Vector3.UP * 1.7
+	add_child(_terrain_camera)
+	_terrain = terrain
+	add_child(terrain)
+	terrain.call(&"set_camera", _terrain_camera)
+	var mat: Resource = terrain.get(&"material")
+	mat.set(&"world_background", 0)  # nothing outside the regions
+	mat.set(&"auto_shader", true)
+	mat.call(&"set_shader_param", &"auto_slope", 2.0)
+	var assets: Resource = ClassDB.instantiate(&"Terrain3DAssets")
+	var names := ["scrub", "dirt"]
+	for i in names.size():
+		var ta: Resource = ClassDB.instantiate(&"Terrain3DTextureAsset")
+		ta.set(&"name", names[i])
+		ta.set(&"albedo_texture", load("res://assets/textures/terrain/%s_albedo_height.png" % names[i]))
+		ta.set(&"normal_texture", load("res://assets/textures/terrain/%s_normal_rough.png" % names[i]))
+		ta.set(&"uv_scale", 0.12)
+		ta.set(&"detiling_rotation", 0.2)
+		assets.call(&"set_texture", i, ta)
+	terrain.set(&"assets", assets)
+	mat.call(&"set_shader_param", &"auto_base_texture", 1)
+	mat.call(&"set_shader_param", &"auto_overlay_texture", 0)
+	# Heights on a coarse grid, smoothed up to one value per vertex.
+	var span := TERRAIN_REGION * 2 * TERRAIN_SPACING
+	# Regions sit on a fixed grid (region size x spacing); align to it.
+	var region_m := TERRAIN_REGION * TERRAIN_SPACING
+	var origin := Vector3(floorf((centre.x - span * 0.5) / region_m) * region_m, 0.0,
+		floorf((centre.z - span * 0.5) / region_m) * region_m)
+	var n := TERRAIN_SAMPLES
+	var data := PackedFloat32Array()
+	data.resize(n * n)
+	var step := span / float(n - 1)
+	for j in n:
+		for i in n:
+			data[j * n + i] = ground_height(origin.x + i * step, origin.z + j * step)
+	var img := Image.create_from_data(n, n, false, Image.FORMAT_RF, data.to_byte_array())
+	img.resize(TERRAIN_REGION * 2, TERRAIN_REGION * 2, Image.INTERPOLATE_CUBIC)
+	terrain.get(&"data").call(&"import_images", [img, null, null], origin, 0.0, 1.0)
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if _sun_fx:
+		var cam := get_viewport().get_camera_3d()
+		_sun_fx.enabled = cam != null and Settings.get_value("graphics", "quality") >= Settings.Quality.MEDIUM
+		if _sun_fx.enabled:
+			var to_sun := _sun.global_basis.z.normalized()
+			var lfx := _sun_fx as LensFlareEffect
+			lfx.sun_dir_sign = (-cam.global_basis.z).normalized().dot(to_sun)
+			lfx.sun_position = cam.unproject_position(cam.global_position + to_sun * maxf(cam.near, 1.0)) / get_viewport().get_visible_rect().size
+	if _terrain:
+		var cam := get_viewport().get_camera_3d()
+		if cam and cam != _terrain.call(&"get_camera"):
+			_terrain.call(&"set_camera", cam)
 
 
 # --- Building ---------------------------------------------------------------------------------

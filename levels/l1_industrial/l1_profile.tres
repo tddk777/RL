@@ -1,17 +1,23 @@
 [gd_resource type="Resource" script_class="LevelProfile" format=3]
 
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/industrial_interior_loop.wav" id="1_h1il2"]
-[ext_resource type="Script" path="res://levels/procgen/zone_style.gd" id="2_qp74k"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_1.wav" id="3_e52kd"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_2.wav" id="4_j4x04"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_3.wav" id="5_i123g"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_1.wav" id="6_eup3g"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_2.wav" id="7_txbi4"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_3.wav" id="8_ojqca"]
-[ext_resource type="Script" path="res://levels/procgen/level_profile.gd" id="9_lhbt5"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/industrial_interior_loop.wav" id="1_txbi4"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Environment/Wind Loop.wav" id="2_ojqca"]
+[ext_resource type="Script" path="res://levels/procgen/zone_style.gd" id="3_lhbt5"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_1.wav" id="4_yhyro"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_2.wav" id="5_kl7xd"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/metal_groan_3.wav" id="6_f0pvv"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_1.wav" id="7_fm5py"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_2.wav" id="8_4x3jn"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_3.wav" id="9_jslxu"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Horror/Metallic Trembling.wav" id="10_a6w2s"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Horror/Scrapemare.wav" id="11_by6xp"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Community Requests/Rolling Thunder.wav" id="12_fcxen"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Community Requests/Hammer Fall.wav" id="13_gkgoa"]
+[ext_resource type="AudioStream" path="res://assets/third_party/sound_fx_starter_vol1/Motions and Impacts/Impact Metal Hatch.wav" id="14_m0kbc"]
+[ext_resource type="Script" path="res://levels/procgen/level_profile.gd" id="15_opjl5"]
 
-[sub_resource type="Resource" id="Resource_yhyro"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_ql367"]
+script = ExtResource("3_lhbt5")
 type = &"hall"
 weight = 2.2
 extra_storeys = Vector2i(1, 2)
@@ -37,8 +43,8 @@ prop_density = 0.25
 leak_chance = 0.1
 roof_hole_chance = 0.1
 
-[sub_resource type="Resource" id="Resource_kl7xd"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_fulf8"]
+script = ExtResource("3_lhbt5")
 type = &"foundry"
 weight = 0.8
 extra_storeys = Vector2i(1, 2)
@@ -63,8 +69,8 @@ props = {
 prop_density = 0.15
 roof_hole_chance = 0.12
 
-[sub_resource type="Resource" id="Resource_f0pvv"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_pvw6s"]
+script = ExtResource("3_lhbt5")
 type = &"processing"
 weight = 0.8
 extra_storeys = Vector2i(0, 2)
@@ -89,8 +95,8 @@ pipe_chance = 0.6
 leak_chance = 0.2
 collapse_chance = 0.05
 
-[sub_resource type="Resource" id="Resource_fm5py"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_hgwn1"]
+script = ExtResource("3_lhbt5")
 type = &"office"
 family = &"interior"
 extra_storeys = Vector2i(1, 2)
@@ -118,8 +124,8 @@ props = {
 leak_chance = 0.1
 collapse_chance = 0.05
 
-[sub_resource type="Resource" id="Resource_4x3jn"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_xkesp"]
+script = ExtResource("3_lhbt5")
 type = &"maintenance"
 family = &"interior"
 weight = 0.9
@@ -146,8 +152,8 @@ pipe_chance = 0.7
 leak_chance = 0.25
 collapse_chance = 0.04
 
-[sub_resource type="Resource" id="Resource_jslxu"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_jqkad"]
+script = ExtResource("3_lhbt5")
 type = &"warehouse"
 family = &"storage"
 extra_storeys = Vector2i(1, 2)
@@ -172,8 +178,8 @@ props = {
 prop_density = 0.2
 roof_hole_chance = 0.07
 
-[sub_resource type="Resource" id="Resource_a6w2s"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_k4utc"]
+script = ExtResource("3_lhbt5")
 type = &"storage"
 family = &"storage"
 weight = 0.9
@@ -199,8 +205,8 @@ pipe_chance = 0.3
 leak_chance = 0.12
 collapse_chance = 0.04
 
-[sub_resource type="Resource" id="Resource_by6xp"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_vee1d"]
+script = ExtResource("3_lhbt5")
 type = &"loading_dock"
 family = &"storage"
 weight = 0.4
@@ -225,8 +231,8 @@ props = {
 prop_density = 0.3
 roof_hole_chance = 0.05
 
-[sub_resource type="Resource" id="Resource_fcxen"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_mkti5"]
+script = ExtResource("3_lhbt5")
 extra_storeys = Vector2i(0, 0)
 door_width = 2.4
 ground_door_width = 3.2
@@ -247,8 +253,8 @@ leak_chance = 0.15
 collapse_chance = 0.03
 roof_hole_chance = 0.03
 
-[sub_resource type="Resource" id="Resource_gkgoa"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_nscfd"]
+script = ExtResource("3_lhbt5")
 family = &"interior"
 extra_storeys = Vector2i(0, 0)
 floor_material = &"floor_tile"
@@ -277,8 +283,8 @@ prop_density = 0.2
 pipe_chance = 0.5
 leak_chance = 0.2
 
-[sub_resource type="Resource" id="Resource_m0kbc"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_c7bbo"]
+script = ExtResource("3_lhbt5")
 family = &"storage"
 extra_storeys = Vector2i(0, 0)
 wall_material = &"corrugated_metal"
@@ -303,7 +309,7 @@ pipe_chance = 0.35
 leak_chance = 0.1
 roof_hole_chance = 0.03
 
-[sub_resource type="Environment" id="Environment_opjl5"]
+[sub_resource type="Environment" id="Environment_gddo6"]
 background_mode = 1
 background_color = Color(0.55, 0.58, 0.61, 1)
 ambient_light_source = 2
@@ -337,8 +343,8 @@ adjustment_enabled = true
 adjustment_contrast = 1.08
 adjustment_saturation = 0.78
 
-[sub_resource type="Resource" id="Resource_ql367"]
-script = ExtResource("2_qp74k")
+[sub_resource type="Resource" id="Resource_mpg1g"]
+script = ExtResource("3_lhbt5")
 type = &"yard"
 family = &"storage"
 extra_storeys = Vector2i(0, 0)
@@ -355,12 +361,14 @@ props = {
 prop_density = 0.25
 
 [resource]
-script = ExtResource("9_lhbt5")
+script = ExtResource("15_opjl5")
 coverage = 0.5
-corridors = Array[ExtResource("2_qp74k")]([SubResource("Resource_fcxen"), SubResource("Resource_gkgoa"), SubResource("Resource_m0kbc")])
-yard = SubResource("Resource_ql367")
-buildings = Array[ExtResource("2_qp74k")]([SubResource("Resource_yhyro"), SubResource("Resource_kl7xd"), SubResource("Resource_f0pvv"), SubResource("Resource_fm5py"), SubResource("Resource_4x3jn"), SubResource("Resource_jslxu"), SubResource("Resource_a6w2s"), SubResource("Resource_by6xp")])
+corridors = Array[ExtResource("3_lhbt5")]([SubResource("Resource_mkti5"), SubResource("Resource_nscfd"), SubResource("Resource_c7bbo")])
+yard = SubResource("Resource_mpg1g")
+buildings = Array[ExtResource("3_lhbt5")]([SubResource("Resource_ql367"), SubResource("Resource_fulf8"), SubResource("Resource_pvw6s"), SubResource("Resource_hgwn1"), SubResource("Resource_xkesp"), SubResource("Resource_jqkad"), SubResource("Resource_k4utc"), SubResource("Resource_vee1d")])
 weapon_pickups = PackedStringArray("mp5", "ak47", "m16", "m40", "makarov", "tokarev", "ppsh41", "sks")
-environment = SubResource("Environment_opjl5")
-ambience = ExtResource("1_h1il2")
-random_sounds = Array[AudioStream]([ExtResource("3_e52kd"), ExtResource("4_j4x04"), ExtResource("5_i123g"), ExtResource("6_eup3g"), ExtResource("7_txbi4"), ExtResource("8_ojqca")])
+environment = SubResource("Environment_gddo6")
+ambience = ExtResource("1_txbi4")
+ambience_bed = ExtResource("2_ojqca")
+ambience_bed_volume_db = -16.0
+random_sounds = Array[AudioStream]([ExtResource("4_yhyro"), ExtResource("5_kl7xd"), ExtResource("6_f0pvv"), ExtResource("7_fm5py"), ExtResource("8_4x3jn"), ExtResource("9_jslxu"), ExtResource("10_a6w2s"), ExtResource("11_by6xp"), ExtResource("12_fcxen"), ExtResource("13_gkgoa"), ExtResource("14_m0kbc")])

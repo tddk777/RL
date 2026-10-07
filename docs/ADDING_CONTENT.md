@@ -54,10 +54,14 @@ the gun pulls back near walls.
    new kind of enemy, duplicate the scene and add or replace state scripts
    (extend `AIState`; switch with `brain.change(&"state")`; use the helpers on
    `NPC`: `move_to`, `face`, `aim_at`, `weapon`, `perception`).
-2. **Body.** The `Body` node must provide `setup(health)`,
+2. **Body.** The `Body` node extends `NPCBody`: `setup(health)`,
    `hold_weapon(weapon)`, `set_motion(speed, run)`, `set_aim(target, aiming)`,
-   `die(direction)` and an `eye` node. `characters/humanoid.gd` is the
-   procedural reference body.
+   `die(direction)`, `pose_dead(pose)` and an `eye` node.
+   `characters/mannequin.gd` drives a rigged model (the UAL mannequin): for
+   another humanoid rig with UAL-style bone names (`DEF-hips`,
+   `DEF-upper_arm.R`, ...) change `MODEL` and the materials; its hitboxes and
+   gear hang off `BoneAttachment3D`s. `characters/humanoid.gd` is the
+   procedural fallback.
 3. **Numbers.** `EnemyData` in `content/enemies/`: scene, health, weapon,
    sight range/FOV, detection time, hearing, aim error, reaction time, bursts,
    speeds.

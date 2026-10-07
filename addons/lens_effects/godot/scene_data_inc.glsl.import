@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dao6nej3bb4vp"
+path="res://.godot/imported/scene_data_inc.glsl-d55ad5548097cad3956bbbb40014b3b1.res"
+
+[deps]
+
+source_file="res://addons/lens_effects/godot/scene_data_inc.glsl"
+dest_files=["res://.godot/imported/scene_data_inc.glsl-d55ad5548097cad3956bbbb40014b3b1.res"]
+
+[params]
+

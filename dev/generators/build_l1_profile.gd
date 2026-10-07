@@ -154,9 +154,17 @@ func _initialize() -> void:
 	p.buildings = buildings
 	p.environment = _environment()
 	p.ambience = _audio("ambience/industrial_interior_loop.wav")
+	# Sound FX Starter Pack Vol. 1 (assets/third_party): wind under everything,
+	# and distant thunder, creaks and slams among the generated groans.
+	const PACK := "res://assets/third_party/sound_fx_starter_vol1/"
+	p.ambience_bed = _audio(PACK + "Environment/Wind Loop.wav")
+	p.ambience_bed_volume_db = -16.0
 	var randoms: Array[AudioStream] = []
 	for n in ["ambience/metal_groan_1.wav", "ambience/metal_groan_2.wav", "ambience/metal_groan_3.wav",
-			"ambience/drip_1.wav", "ambience/drip_2.wav", "ambience/drip_3.wav"]:
+			"ambience/drip_1.wav", "ambience/drip_2.wav", "ambience/drip_3.wav",
+			PACK + "Horror/Metallic Trembling.wav", PACK + "Horror/Scrapemare.wav",
+			PACK + "Community Requests/Rolling Thunder.wav", PACK + "Community Requests/Hammer Fall.wav",
+			PACK + "Motions and Impacts/Impact Metal Hatch.wav"]:
 		var s := _audio(n)
 		if s:
 			randoms.append(s)
@@ -229,4 +237,5 @@ func _environment() -> Environment:
 
 
 func _audio(path: String) -> AudioStream:
-	return load(AUDIO + path) if ResourceLoader.exists(AUDIO + path) else null
+	var full := path if path.begins_with("res://") else AUDIO + path
+	return load(full) if ResourceLoader.exists(full) else null
