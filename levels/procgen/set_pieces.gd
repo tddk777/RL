@@ -15,6 +15,7 @@ var cb: ChunkBuilder
 var L: LevelLayout
 var C: float
 var H: float
+var detailer: Detailer
 
 
 ## Everything a piece needs to know about the cell it is building in.
@@ -39,6 +40,7 @@ func _init(builder: ChunkBuilder) -> void:
 	L = builder.L
 	C = builder.C
 	H = builder.H
+	detailer = Detailer.new(self)
 
 
 # --- Entry ---------------------------------------------------------------------------------
@@ -58,6 +60,20 @@ func dress(d: ChunkBuilder.ChunkData, x: int, z: int, s: int, o: Vector3, st: Zo
 	k.flags = flags
 	k.r = cb.rng(x, z, s, 1)
 	k.blocked = _blocked(x, z, s, st)
+	_dress(k)
+	# Then what follows from how this cell meets its neighbours.
+	detailer.detail(k)
+
+
+func _dress(k: Cell) -> void:
+	var d := k.d
+	var x := k.x
+	var z := k.z
+	var s := k.s
+	var zn := k.zn
+	var st := k.st
+	var room := k.room
+	var flags := k.flags
 	if L.kind_at(x, z, s) == LevelLayout.Kind.CATWALK:
 		_catwalk_clutter(k)
 		return
@@ -494,36 +510,19 @@ func _passage(k: Cell) -> void:
 	elif straight_z:
 		for e: float in [-1.0, 1.0]:
 			faces.append([k.c + Vector3(e * w * 0.5, 0, 0), Vector3(-e, 0, 0), Vector3(0, 0, 1)])
+	# (Things hung on the passage walls come from Detailer; here only what
+	# stands on the floor.)
 	var furnished := false
 	for f in faces:
 		var p: Vector3 = f[0]
 		var n: Vector3 = f[1]
 		var ax: Vector3 = f[2]
-		# Conduit along the wall
-		if r.randf() < 0.6:
-			var y := r.randf_range(1.9, 2.4)
-			cyl(k, p + n * 0.05 - ax * (C * 0.5) + UP * y, p + n * 0.05 + ax * (C * 0.5) + UP * y, 0.025, &"gun_metal", 6, false)
-		var roll := r.randf()
 		var t := r.randf_range(-2.5, 2.5)
-		if roll < 0.2:
-			# Fuse box, door hanging open
-			var q := p + ax * t + n * 0.08 + UP * 1.5
-			box(k, q, _sz(ax, 0.45, 0.6, 0.16), &"painted_steel")
-			box(k, q + n * 0.1 + ax * 0.3, _sz(ax, 0.02, 0.56, 0.4), &"painted_steel", false, Basis(Vector3.UP, 0.9))
-		elif roll < 0.35:
-			# Vent grille low on the wall
-			box(k, p + ax * t + n * 0.02 + UP * 0.35, _sz(ax, 0.6, 0.35, 0.04), &"steel_grate")
-		elif roll < 0.45:
-			# Fire hose cabinet
-			box(k, p + ax * t + n * 0.1 + UP * 1.2, _sz(ax, 0.7, 0.8, 0.2), &"painted_steel_red")
-		elif roll < 0.6 and not furnished:
+		if r.randf() < 0.15 and not furnished:
 			# A locker or cabinet against the wall (the passage stays passable).
 			furnished = true
 			var id: String = ["locker", "filing_cabinet", "locker"][r.randi_range(0, 2)]
 			cb.kit(k.d, id, p + ax * t + n * 0.35, atan2(-n.x, -n.z) + PI)
-		elif roll < 0.7:
-			# Sign
-			box(k, p + ax * t + n * 0.02 + UP * 1.7, _sz(ax, 0.5, 0.3, 0.02), &"paper")
 	# A box or drum pushed against a wall
 	if r.randf() < 0.3 and not faces.is_empty() and not furnished:
 		var f: Array = faces[r.randi_range(0, faces.size() - 1)]

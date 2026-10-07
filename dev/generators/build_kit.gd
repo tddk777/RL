@@ -267,7 +267,7 @@ func locker() -> void:
 	k.box(Vector3(0.5, 1.9, 0.5), Vector3(0, 0.95, 0), paint, 0.01)
 	k.box(Vector3(0.44, 1.78, 0.012), Vector3(0, 0.96, -0.255), paint, 0.003)  # door
 	for i in 4:
-		k.box(Vector3(0.24, 0.012, 0.006), Vector3(0, 1.62 + i * 0.035, -0.263), dark, 0.0)  # vents
+		k.box(Vector3(0.24, 0.012, 0.006), Vector3(0, 1.62 + i * 0.035, -0.2655), dark, 0.0)  # vents (clear of the door face)
 	k.box(Vector3(0.03, 0.12, 0.02), Vector3(0.17, 1.0, -0.27), dark, 0.004)  # handle
 	save_prop("locker", {"Mesh": k}, [box_shape(Vector3(0.5, 1.9, 0.5), Vector3(0, 0.95, 0))], &"metal")
 

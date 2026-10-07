@@ -76,6 +76,9 @@ var record_solids: bool = false
 var _ibeam: Dictionary  # material -> [verts, normals], unit height
 ## Kit prop id -> {"arrays": material -> [verts, normals], "surface": StringName}
 var _kit: Dictionary = {}
+## Steps (cells) from each cell to the nearest exit along walkable links,
+## -1 = no way out (signs point the way with it).
+var exit_dist := PackedInt32Array()
 
 
 ## Must be created on the main thread (reads kit scenes, builds shared meshes).
@@ -86,7 +89,29 @@ func _init(layout: LevelLayout) -> void:
 	N = layout.profile.chunk_cells
 	_ibeam = _make_ibeam()
 	_load_kit()
+	_exit_distances()
 	pieces = SetPieces.new(self)
+
+
+func _exit_distances() -> void:
+	exit_dist.resize(L.size.x * L.size.y * L.storeys)
+	exit_dist.fill(-1)
+	var queue: Array[Vector3i] = []
+	for e in L.exits:
+		var c: Vector3i = e["cell"]
+		if L.inside(c.x, c.y, c.z) and exit_dist[L.idx(c.x, c.y, c.z)] < 0:
+			exit_dist[L.idx(c.x, c.y, c.z)] = 0
+			queue.append(c)
+	var head := 0
+	while head < queue.size():
+		var c := queue[head]
+		head += 1
+		var dist := exit_dist[L.idx(c.x, c.y, c.z)]
+		for n in L.links(c.x, c.y, c.z):
+			var j := L.idx(n.x, n.y, n.z)
+			if exit_dist[j] < 0:
+				exit_dist[j] = dist + 1
+				queue.append(n)
 
 
 func chunk_count() -> Vector2i:
