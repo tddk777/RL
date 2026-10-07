@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://b1vrr6dw2yuh6"
+path="res://.godot/imported/._Start.wav-148f7e1b74b8b13aac3dffa3c9614902.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Retro/._Start.wav"
+dest_files=["res://.godot/imported/._Start.wav-148f7e1b74b8b13aac3dffa3c9614902.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,4 +1,4 @@
-[gd_resource type="AudioBusLayout" format=3]
+[gd_resource type="AudioBusLayout" format=3 uid="uid://bya362u2mshpr"]
 
 [sub_resource type="AudioEffectHardLimiter" id="Limiter_master"]
 ceiling_db = -0.5
@@ -7,7 +7,6 @@ ceiling_db = -0.5
 room_size = 0.75
 damping = 0.55
 spread = 0.8
-dry = 1.0
 wet = 0.14
 
 [resource]

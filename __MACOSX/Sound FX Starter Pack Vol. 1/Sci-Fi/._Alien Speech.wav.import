@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cvx5123ml3yw2"
+path="res://.godot/imported/._Alien Speech.wav-56ca10d3b68f89d0e19aade7e84f324d.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Sci-Fi/._Alien Speech.wav"
+dest_files=["res://.godot/imported/._Alien Speech.wav-56ca10d3b68f89d0e19aade7e84f324d.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

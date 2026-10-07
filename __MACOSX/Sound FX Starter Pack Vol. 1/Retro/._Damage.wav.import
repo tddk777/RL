@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://b0iggir4l468n"
+path="res://.godot/imported/._Damage.wav-1a1490a28842923bb9e8de7467787f5a.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Retro/._Damage.wav"
+dest_files=["res://.godot/imported/._Damage.wav-1a1490a28842923bb9e8de7467787f5a.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

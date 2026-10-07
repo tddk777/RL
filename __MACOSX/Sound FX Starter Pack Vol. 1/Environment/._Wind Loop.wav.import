@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dwo1ewjdfqxte"
+path="res://.godot/imported/._Wind Loop.wav-3b53e48f4aaa64ddf75a6d1f9b67e9de.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Environment/._Wind Loop.wav"
+dest_files=["res://.godot/imported/._Wind Loop.wav-3b53e48f4aaa64ddf75a6d1f9b67e9de.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://c6ijgnoea8mu8"
+path="res://.godot/imported/._It Laughs At You.wav-e2cf0074c255dc20a6ce70b237da3253.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Horror/._It Laughs At You.wav"
+dest_files=["res://.godot/imported/._It Laughs At You.wav-e2cf0074c255dc20a6ce70b237da3253.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

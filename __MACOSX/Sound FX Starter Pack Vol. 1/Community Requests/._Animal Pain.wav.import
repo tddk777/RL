@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dxia3t2hg7f6o"
+path="res://.godot/imported/._Animal Pain.wav-15d1e97a470236bec624c2aa296e376e.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/Community Requests/._Animal Pain.wav"
+dest_files=["res://.godot/imported/._Animal Pain.wav-15d1e97a470236bec624c2aa296e376e.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

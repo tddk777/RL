@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://c1rxg2vgmy4r7"
+path="res://.godot/imported/._Hover Over.wav-4b347fe173661c5f15492668e6e1a6fb.sample"
+
+[deps]
+
+source_file="res://__MACOSX/Sound FX Starter Pack Vol. 1/UI & Menus/._Hover Over.wav"
+dest_files=["res://.godot/imported/._Hover Over.wav-4b347fe173661c5f15492668e6e1a6fb.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2
