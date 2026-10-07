@@ -73,7 +73,9 @@ func yaw_of(dir: int) -> float:
 
 
 ## A straight, open run of three ground-floor cells of one zone: a clear firing lane.
-func find_lane(L: LevelLayout) -> Array:
+## Straight, open runs of three ground-floor corridor cells: firing lanes.
+func find_lanes(L: LevelLayout) -> Array:
+	var out: Array = []
 	for z in L.size.y:
 		for x in L.size.x:
 			for d in 4:
@@ -83,15 +85,37 @@ func find_lane(L: LevelLayout) -> Array:
 					var v := LevelLayout.dir_vector(d)
 					var c := Vector3i(x + int(v.x) * i, z + int(v.z) * i, 0)
 					if not L.inside(c.x, c.y, 0) or L.kind_at(c.x, c.y, 0) != LevelLayout.Kind.FLOOR \
-							or L.has_flag(c.x, c.y, 0, LevelLayout.STAIR) or L.distance[L.idx(c.x, c.y, 0)] < 0 \
-							or L.kind_at(c.x, c.y, 1) == LevelLayout.Kind.HOLE \
+							or L.has_flag(c.x, c.y, 0, LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.NARROW) \
+							or L.distance[L.idx(c.x, c.y, 0)] < 0 or L.kind_at(c.x, c.y, 1) == LevelLayout.Kind.HOLE \
 							or L.zone_of(c.x, c.y, 0) == null or L.zone_of(c.x, c.y, 0).type != &"corridor" \
 							or (i < 2 and L.has_wall(c.x, c.y, 0, d)):
 						ok = false
 						break
 					cells.append(c)
 				if ok:
-					return [cells, d]
+					out.append([cells, d])
+	return out
+
+
+## The first lane with a clear line of sight and a navigation path end to end.
+func find_lane(L: LevelLayout) -> Array:
+	var space := Game.level.get_world_3d().direct_space_state
+	var map := Game.level.get_world_3d().navigation_map
+	for lane in find_lanes(L):
+		var cells: Array[Vector3i] = lane[0]
+		var fwd := LevelLayout.dir_vector(lane[1])
+		var a := L.cell_center(cells[0].x, cells[0].y, 0) - fwd * 2.5
+		var b := L.cell_center(cells[2].x, cells[2].y, 0)
+		var clear := true
+		for h: float in [0.5, 1.2, 1.6]:
+			for off: float in [-0.4, 0.0, 0.4]:
+				var side := fwd.cross(Vector3.UP) * off
+				var q := PhysicsRayQueryParameters3D.create(a + side + Vector3.UP * h, b + side + Vector3.UP * h)
+				if not space.intersect_ray(q).is_empty():
+					clear = false
+		var path := NavigationServer3D.map_get_path(map, a, b, true)
+		if clear and path.size() >= 2 and path[path.size() - 1].distance_to(b) < 0.8 and NavigationServer3D.map_get_closest_point(map, a).distance_to(a) < 0.6:
+			return lane
 	return []
 
 
@@ -147,10 +171,6 @@ func _run() -> void:
 	var a := L.cell_center(cells[0].x, cells[0].y, 0) - fwd * 2.5
 	var b := L.cell_center(cells[2].x, cells[2].y, 0)
 	place_player(a + Vector3.UP * 0.1, yaw_of(dir), -2.0)
-	t = 0.0
-	while not (level.loaded_chunks().has(level.builder.chunk_of(a)) and level.loaded_chunks().has(level.builder.chunk_of(b))) and t < 30.0:
-		await wait(0.25)
-		t += 0.25
 	await wait(1.0)
 	place_player(a + Vector3.UP * 0.1, yaw_of(dir), -2.0)
 	await wait(0.5)

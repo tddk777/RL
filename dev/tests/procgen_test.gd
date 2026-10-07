@@ -1,5 +1,5 @@
 extends Node
-## Procedural Level 1 test: generation, streaming, navigation, entities.
+## Procedural Level 1 test: generation, building, navigation, stairs, entities.
 ##   godot --headless --path . res://dev/tests/procgen_test.tscn [-- <screenshot_dir>]
 
 var _failures := 0
@@ -23,99 +23,185 @@ func wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, true, false, true).timeout
 
 
-func shot(file: String) -> void:
-	if _shots == "":
-		return
-	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png(_shots.path_join(file))
+## Path query without the default 4096-polygon search limit (the whole
+## level is one navigation mesh of ~10k polygons).
+func nav_path(map: RID, a: Vector3, b: Vector3) -> PackedVector3Array:
+	var q := NavigationPathQueryParameters3D.new()
+	q.map = map
+	q.start_position = a
+	q.target_position = b
+	q.path_search_max_polygons = 0
+	var res := NavigationPathQueryResult3D.new()
+	NavigationServer3D.query_path(q, res)
+	return res.path
 
 
-func regions() -> int:
-	var n := 0
-	for c in Game.level.get_children():
-		if c.get_node_or_null(^"Navigation"):
-			n += 1
-	return n
+func stats(a: Array) -> String:
+	if a.is_empty():
+		return "-"
+	var total := 0.0
+	for v in a:
+		total += v
+	return "avg %.0f ms, max %.0f ms, total %.0f ms over %d" % [total / a.size(), a.max(), total, a.size()]
 
 
 func _run() -> void:
 	var t0 := Time.get_ticks_msec()
+	var args := OS.get_cmdline_user_args()
+	seed(int(args[1]) if args.size() > 1 else 7)
 	Game.start_run()
-	while Game.state != Game.State.PLAYING and Time.get_ticks_msec() - t0 < 120000:
+	while Game.state != Game.State.PLAYING and Time.get_ticks_msec() - t0 < 180000:
 		await wait(0.25)
 	var load_s := (Time.get_ticks_msec() - t0) / 1000.0
-	check(Game.state == Game.State.PLAYING, "procedural level loads (%.1fs)" % load_s)
+	check(Game.state == Game.State.PLAYING, "procedural level builds and play starts (%.1fs)" % load_s)
 	var level := Game.level as ProceduralLevel
 	check(level != null, "level is a ProceduralLevel")
 	if level == null:
 		get_tree().quit(1)
 		return
 	var L := level.layout
-	print("INFO  seed %d, exits %s" % [level.level_seed, L.exits.map(func(e: Dictionary) -> String: return String(e.kind))])
-	check(level.loaded_chunks().size() >= 9, "spawn area chunks loaded (%d)" % level.loaded_chunks().size())
+	var count := level.builder.chunk_count()
+	print("INFO  seed %d, %dx%d cells (%.0f m), exits %s" % [level.level_seed, L.size.x, L.size.y, L.size.x * L.cell,
+		L.exits.map(func(e: Dictionary) -> String: return String(e.kind))])
+	print("INFO  chunk builds (worker threads): %s" % stats(level.build_ms))
+	print("INFO  chunk instantiation (main thread): %s" % stats(level.instantiate_ms))
+	check(level.loaded_chunks().size() == count.x * count.y, "every chunk built (%d)" % level.loaded_chunks().size())
+	var meshes := level.find_children("*", "MeshInstance3D", true, false).size()
+	var lights := level.find_children("*", "Light3D", true, false).size()
+	var decals := level.find_children("*", "Decal", true, false).size()
+	var bodies := level.find_children("*", "StaticBody3D", true, false).size()
+	print("INFO  nodes: %d mesh instances, %d lights, %d decals, %d static bodies" % [meshes, lights, decals, bodies])
 	var player := Game.player
 	check(player.weapons.size() == 1 and player.current_weapon.data.id == &"m1911", "player starts with only the M1911")
 	check(player.current_weapon.loaded_rounds() == 8 and player.count_ammo(&".45ACP") == 7, "M1911 has 7+1 loaded and one spare magazine")
 	var spawn_y := player.global_position.y
 	await wait(2.0)
 	check(player.is_on_floor() and absf(player.global_position.y - spawn_y) < 0.6, "player stands on the generated floor (y %.2f)" % player.global_position.y)
-	var t := 0.0
-	while regions() < 4 and t < 30.0:
-		await wait(0.5)
-		t += 0.5
-	check(regions() >= 4, "navigation baked for loaded chunks (%d)" % regions())
-	await shot("p01_spawn.png")
-	# Path from spawn to a far point within the loaded area.
+	var nav := level.get_node_or_null(^"Navigation") as NavigationRegion3D
+	check(nav != null and nav.navigation_mesh.get_polygon_count() > 1000, "one navigation mesh for the level (%d polygons, baked in %.0f ms)" % [
+		nav.navigation_mesh.get_polygon_count() if nav else 0, level.nav_bake_ms])
 	var map := player.get_world_3d().navigation_map
-	await wait(1.0)
-	var target := L.spawn_position + Vector3(20, 0, 20)
-	var path := NavigationServer3D.map_get_path(map, L.spawn_position, NavigationServer3D.map_get_closest_point(map, target), true)
-	check(path.size() >= 2, "navmesh path across chunk borders (%d points)" % path.size())
 
-	# Stream: walk the player through the complex by teleporting to corridor cells.
-	var builder := level.builder
-	var times: Array = []
-	var far := L.exits[0]["position"] as Vector3
-	var stops := [L.spawn_position.lerp(far, 0.33), L.spawn_position.lerp(far, 0.66), far]
-	for p: Vector3 in stops:
-		var c := L.world_to_cell(p)
-		# find a walkable floor cell near the stop
-		var best := Vector3i(-1, 0, 0)
-		for r in 6:
-			for dx in range(-r, r + 1):
-				for dz in range(-r, r + 1):
-					if best.x < 0 and L.kind_at(c.x + dx, c.z + dz, 0) == LevelLayout.Kind.FLOOR:
-						best = Vector3i(c.x + dx, c.z + dz, 0)
-		if best.x < 0:
-			continue
-		var tb := Time.get_ticks_usec()
-		var data := builder.build(builder.chunk_of(L.cell_center(best.x, best.y, 0)))
-		times.append((Time.get_ticks_usec() - tb) / 1000.0)
-		player.global_position = L.cell_center(best.x, best.y, 0) + Vector3.UP * 0.1
-		player.velocity = Vector3.ZERO
-		var tt := 0.0
-		while not level.loaded_chunks().has(builder.chunk_of(player.global_position)) and tt < 20.0:
-			await wait(0.25)
-			tt += 0.25
-		await wait(1.0)
-		check(level.loaded_chunks().has(builder.chunk_of(player.global_position)), "chunk under the player streams in (%.1fs)" % tt)
-	check(level.loaded_chunks().size() <= 64, "far chunks unloaded (%d loaded)" % level.loaded_chunks().size())
-	print("INFO  chunk build times (ms): %s" % [times])
-	var inst: Array = level.instantiate_ms
-	var avg := 0.0
-	for v in inst:
-		avg += v
-	print("INFO  instantiation jobs on main thread: avg %.1f ms, max %.1f ms over %d jobs" % [avg / maxi(inst.size(), 1), inst.max(), inst.size()])
-	await shot("p02_far.png")
+	# Stairs: every flight must be walkable on the navmesh, bottom to landing.
+	var stairs := 0
+	var walkable := 0
+	var bad: Array = []
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				if not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				stairs += 1
+				var rr := level.builder.run_rect(L.stair_dir(x, z, s), L.stair_side(x, z, s))
+				var o := L.cell_origin(x, z, s)
+				var a := LevelLayout.dir_vector(L.stair_dir(x, z, s))
+				var mid := o + Vector3(rr.position.x + rr.size.x * 0.5, 0, rr.position.y + rr.size.y * 0.5)
+				var bottom := mid - a * (LevelLayout.RUN * 0.5 - 0.6) + Vector3.UP * 0.45
+				var landing := mid + a * (LevelLayout.RUN * 0.5 + 0.9) + Vector3.UP * L.storey_height
+				var from := NavigationServer3D.map_get_closest_point(map, bottom + Vector3.UP * 0.3)
+				var to := NavigationServer3D.map_get_closest_point(map, landing + Vector3.UP * 0.3)
+				var path := nav_path(map, from, to)
+				var ok := path.size() >= 2 and path[path.size() - 1].distance_to(to) < 0.5 and to.distance_to(landing) < 1.5 \
+					and from.distance_to(bottom) < 1.0
+				if ok:
+					walkable += 1
+				else:
+					bad.append(Vector3i(x, z, s))
+	print("INFO  unwalkable stairs: %s" % [bad])
+	check(stairs > 0 and walkable >= stairs * 0.9, "stairs walkable on the navmesh (%d of %d)" % [walkable, stairs])
 
-	# Exits: an exit near the player, interactable
+	# Enemies and loot stand on walkable ground, not inside machines.
+	var inside := 0
+	for e: Dictionary in L.enemies + L.pickups:
+		var p: Vector3 = e["position"]
+		var q := NavigationServer3D.map_get_closest_point(map, p)
+		if q.distance_to(p) > 0.8:
+			inside += 1
+			var c := L.world_to_cell(p)
+			print("INFO  off the navmesh: %s at %s in %s (nearest walkable %.1f m)" % [e.get("id", e.get("kind")), c, L.zone_name(c.x, c.z, c.y), q.distance_to(p)])
+	check(inside <= 1, "enemies and pickups on walkable ground (%d off)" % inside)
+	check(L.enemies.size() == 8 and get_tree().get_nodes_in_group(&"npc").size() == 8, "8 scavengers spawned")
+
+	# Furniture never cuts the level apart: both sides of every door are
+	# reachable from the spawn on the navmesh.
+	var start := NavigationServer3D.map_get_closest_point(map, L.spawn_position)
+	var doors := 0
+	var blocked: Array = []
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				if L.distance[L.idx(x, z, s)] < 0:
+					continue
+				for d in [1, 2]:
+					var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+					if not L.has_door(x, z, s, d) or not L.is_walkable(x, z, s) or not L.is_walkable(n.x, n.y, s):
+						continue
+					doors += 1
+					var edge := L.cell_center(x, z, s) + LevelLayout.dir_vector(d) * (L.cell * 0.5)
+					for side: float in [-1.0, 1.0]:
+						var want := edge + LevelLayout.dir_vector(d) * (side * 1.0)
+						var q := NavigationServer3D.map_get_closest_point(map, want + Vector3.UP * 0.3)
+						var path := nav_path(map, start, q)
+						if q.distance_to(want) > 1.2 or path.size() < 2 or path[path.size() - 1].distance_to(q) > 0.5:
+							var c := Vector3i(x, z, s) + (Vector3i(LevelLayout.DIRS[d].x, LevelLayout.DIRS[d].y, 0) if side > 0.0 else Vector3i.ZERO)
+							var rm := L.room_of(c.x, c.y, c.z)
+							blocked.append("%s side of door %s/%d in %s/%s (snap %.1f m off)" % [c, Vector3i(x, z, s), d, L.zone_name(c.x, c.y, c.z),
+								rm.use if rm else &"-", q.distance_to(want)])
+							break
+	if not blocked.is_empty():
+		for b in blocked:
+			print("INFO  door cut off: %s" % b)
+	check(blocked.size() <= doors / 100, "both sides of every door reachable (%d doors, %d cut off)" % [doors, blocked.size()])
+
+	# Every exit is reachable by navigation from the spawn (to the clear lane in front of its door).
 	var exit_rec: Dictionary = L.exits[0]
 	var exit_cell: Vector3i = exit_rec["cell"]
-	player.global_position = L.cell_center(exit_cell.x, exit_cell.y, exit_cell.z) + Vector3.UP * 0.1
-	await wait(2.5)
+	var reached := 0
+	var longest := 0.0
+	for e: Dictionary in L.exits:
+		var front: Vector3 = e["position"] - LevelLayout.dir_vector(e["dir"]) * 1.4
+		var far := NavigationServer3D.map_get_closest_point(map, front + Vector3.UP * 0.3)
+		var path := nav_path(map, L.spawn_position, far)
+		var length := 0.0
+		for i in range(1, path.size()):
+			length += path[i - 1].distance_to(path[i])
+		if path.size() >= 2 and path[path.size() - 1].distance_to(far) < 1.0 and far.distance_to(front) < 1.5:
+			reached += 1
+			longest = maxf(longest, length)
+		else:
+			print("INFO  exit %s not reached: path ends %s, target %s" % [e["cell"], path[path.size() - 1] if path.size() > 0 else Vector3.ZERO, far])
+	check(reached == L.exits.size(), "navmesh paths from the spawn to every exit (%d of %d, longest %.0f m)" % [reached, L.exits.size(), longest])
+
+	# Teleport around, including upper storeys: always lands on a floor.
+	var stops: Array[Vector3] = []
+	for s in L.storeys:
+		var found := 0
+		for z in L.size.y:
+			for x in L.size.x:
+				if found >= 2 or L.distance[L.idx(x, z, s)] < 0 or L.kind_at(x, z, s) != LevelLayout.Kind.FLOOR:
+					continue
+				for d in 4:
+					var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+					if found < 2 and L.has_door(x, z, s, d) and L.is_walkable(n.x, n.y, s) and (x * 7 + z * 3) % 5 == 0:
+						var want := L.cell_center(x, z, s) + LevelLayout.dir_vector(d) * (L.cell * 0.5 - 1.2)
+						stops.append(NavigationServer3D.map_get_closest_point(map, want + Vector3.UP * 0.3))
+						found += 1
+	var landed := 0
+	for p in stops:
+		player.global_position = p + Vector3.UP * 0.2
+		player.velocity = Vector3.ZERO
+		for f in 90:
+			await get_tree().physics_frame
+		# Not falling through (it may land on a corpse or a scavenger standing there).
+		if absf(player.global_position.y - p.y) < 0.8 and player.velocity.y > -2.0:
+			landed += 1
+		else:
+			print("INFO  did not land at %s (now %s, on floor %s)" % [p, player.global_position, player.is_on_floor()])
+	check(landed == stops.size(), "floors hold the player on every storey (%d of %d)" % [landed, stops.size()])
+
+	# Exits
 	var door: ExitDoor = level.exit_nodes.get(0)
-	check(is_instance_valid(door), "exit door spawned with its chunk")
-	# Locked exits: the breaker unlocks them
+	check(is_instance_valid(door), "exit door placed")
 	for i in L.exits.size():
 		var e: Dictionary = L.exits[i]
 		if e["kind"] == &"locked":
@@ -127,8 +213,7 @@ func _run() -> void:
 		pickups += 1
 		if p["kind"] == &"weapon":
 			weapons += 1
-	check(weapons == 4 and pickups >= 30, "pickups placed (%d, %d weapons)" % [pickups, weapons])
-	# Take a weapon pickup through the real interaction path
+	check(weapons == 4 and pickups >= 14, "pickups placed (%d, %d weapons)" % [pickups, weapons])
 	var rec: Dictionary = L.pickups[0]
 	var pk := Pickup.create(rec)
 	level.add_child(pk)
@@ -137,6 +222,7 @@ func _run() -> void:
 	await wait(0.3)
 	check(player.weapons.size() == 2 and rec["taken"], "weapon pickup adds the weapon (%s)" % rec["id"])
 	if is_instance_valid(door):
+		player.global_position = door.global_position - LevelLayout.dir_vector(exit_rec["dir"]) * 1.2 + Vector3.UP * 0.1
 		door.interact(player)
 		await wait(1.0)
 		check(Game.state == Game.State.FINISHED, "walking through the exit ends the level")

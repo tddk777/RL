@@ -8,3 +8,4 @@ emission = Color(1, 0.12, 0.08, 1)
 emission_energy_multiplier = 5.0
 uv1_triplanar = true
 uv1_triplanar_sharpness = 4.0
+texture_filter = 5

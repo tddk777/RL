@@ -1,20 +1,34 @@
 class_name LevelLayout
 extends RefCounted
 ## The generated plan of a procedural level: a 3D grid of cells (x, z, storey)
-## plus zones (buildings, corridors) and placed entities. Pure data, no nodes;
-## LayoutGenerator fills it, ChunkBuilder turns parts of it into geometry.
+## plus districts, zones (buildings, corridors), rooms and placed entities.
+## Pure data, no nodes; LayoutGenerator fills it, ChunkBuilder turns it into
+## geometry.
 ##
 ## Grid directions: 0 = N (-Z), 1 = E (+X), 2 = S (+Z), 3 = W (-X).
 
 enum Kind { EMPTY, FLOOR, VOID, CATWALK, HOLE }
+enum District { FACTORY, INTERIOR, STORAGE }
 
 const DOOR := 1          # << dir: opening in the wall on that edge
 const CATWALK_SIDE := 16 # << dir: catwalk strip runs along that side
-const STAIR := 256       # a ramp starts here and climbs to the neighbour in stair_dir, one storey up
-const STAIR_ABOVE := 512 # this cell sits above a ramp: its floor has a hole on the ramp strip
+const STAIR := 256       # a flight starts here and climbs to the landing of this cell one storey up
+const STAIR_ABOVE := 512 # a flight from below arrives here: the floor has a hole over its run
 const ROOF_HOLE := 1024  # collapsed roof / ceiling above this cell
 const DOCK := 2048       # loading bay shutters on exterior edges
 const EXIT := 4096       # an exit door is on one of this cell's walls
+const NARROW := 8192     # cramped passage: solid fill around a narrow cross of corridors
+const BRIDGE_X := 16384  # catwalk bridge through the middle of the cell along X
+const BRIDGE_Z := 32768  # catwalk bridge through the middle of the cell along Z
+const WINDOW := 65536    # << dir: interior window in the wall on that edge
+
+## Stair geometry: a flight climbs one storey over RUN metres along its strip,
+## starting FOOT metres in from the cell edge behind it (room to step on in
+## line), and arrives on a landing inside the same cell column. Its strip is
+## STRIP wide along one side of the cell.
+const FOOT := 0.9
+const RUN := 5.6
+const STRIP := 3.2
 
 const DIRS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 
@@ -23,9 +37,31 @@ class Zone:
 	var id: int
 	var type: StringName
 	var style: ZoneStyle
+	var district: int = 0
 	var rect: Rect2i
 	var base: int = 0
 	var top: int = 0
+
+
+class Room:
+	var id: int
+	var zone: int
+	var storey: int
+	var rect: Rect2i
+	## What the room is used for (set pieces): cubicles, offices, meeting,
+	## archive, boiler, electrical, lockers, washroom, workshop, closet,
+	## parts, cages, pumps, vats, hallway, stairwell ...
+	var use: StringName = &""
+	## Extra rects merged into this room (L-shaped rooms).
+	var extra: Array[Rect2i] = []
+
+	func has_point(p: Vector2i) -> bool:
+		if rect.has_point(p):
+			return true
+		for r in extra:
+			if r.has_point(p):
+				return true
+		return false
 
 
 var seed: int
@@ -33,15 +69,20 @@ var profile: LevelProfile
 var size := Vector2i.ZERO
 var storeys: int = 1
 var cell: float = 8.0
-var storey_height: float = 6.0
+var storey_height: float = 4.5
 
 var kind := PackedByteArray()
 var zone := PackedInt32Array()
+## Room id per cell (index into `rooms` + 1; 0 = open zone space).
 var room := PackedInt32Array()
 var flags := PackedInt32Array()
-## Ramp info: bits 0-1 climb direction, bits 2-3 the side the ramp strip is on.
+## Stair info: low nibble = the flight starting here (dir | side << 2),
+## high nibble = the flight arriving from below (dir | side << 2).
 var stair := PackedByteArray()
+## District per column (x, z).
+var district := PackedByteArray()
 var zones: Array[Zone] = []
+var rooms: Array[Room] = []
 
 var spawn_cell := Vector3i.ZERO
 var spawn_position := Vector3.ZERO
@@ -74,6 +115,7 @@ func setup(p: LevelProfile, level_seed: int) -> void:
 	stair.resize(n)
 	distance.resize(n)
 	distance.fill(-1)
+	district.resize(size.x * size.y)
 
 
 # --- Indexing ---------------------------------------------------------------------
@@ -92,6 +134,15 @@ func kind_at(x: int, z: int, s: int) -> int:
 
 func zone_at(x: int, z: int, s: int) -> int:
 	return zone[idx(x, z, s)] if inside(x, z, s) else -1
+
+
+func room_at(x: int, z: int, s: int) -> int:
+	return room[idx(x, z, s)] if inside(x, z, s) else 0
+
+
+func room_of(x: int, z: int, s: int) -> Room:
+	var r := room_at(x, z, s)
+	return rooms[r - 1] if r > 0 else null
 
 
 func flags_at(x: int, z: int, s: int) -> int:
@@ -117,12 +168,38 @@ func style_at(x: int, z: int, s: int) -> ZoneStyle:
 	return zn.style if zn else null
 
 
+func district_at(x: int, z: int) -> int:
+	if x < 0 or z < 0 or x >= size.x or z >= size.y:
+		return -1
+	return district[z * size.x + x]
+
+
+## The flight starting in this cell.
 func stair_dir(x: int, z: int, s: int) -> int:
 	return stair[idx(x, z, s)] & 3
 
 
 func stair_side(x: int, z: int, s: int) -> int:
 	return (stair[idx(x, z, s)] >> 2) & 3
+
+
+## The flight arriving here from the storey below (its hole in this floor).
+func hole_dir(x: int, z: int, s: int) -> int:
+	return (stair[idx(x, z, s)] >> 4) & 3
+
+
+func hole_side(x: int, z: int, s: int) -> int:
+	return (stair[idx(x, z, s)] >> 6) & 3
+
+
+## Sides of this cell taken by a stair strip (flight or hole), as a bit mask.
+func stair_sides(x: int, z: int, s: int) -> int:
+	var m := 0
+	if has_flag(x, z, s, STAIR):
+		m |= 1 << stair_side(x, z, s)
+	if has_flag(x, z, s, STAIR_ABOVE):
+		m |= 1 << hole_side(x, z, s)
+	return m
 
 
 func is_walkable(x: int, z: int, s: int) -> bool:
@@ -150,9 +227,27 @@ func has_door(x: int, z: int, s: int, dir: int) -> bool:
 	return has_flag(x, z, s, DOOR << dir)
 
 
+func has_window(x: int, z: int, s: int, dir: int) -> bool:
+	return has_flag(x, z, s, WINDOW << dir)
+
+
 func is_exterior(x: int, z: int, dir: int) -> bool:
 	var n := Vector2i(x, z) + DIRS[dir]
 	return n.x < 0 or n.y < 0 or n.x >= size.x or n.y >= size.y
+
+
+## Edges of this cell that open onto the next cell on the same storey (open
+## space of the same room, or a door - even one onto a collapsed floor), as
+## a bit mask.
+func open_edges(x: int, z: int, s: int) -> int:
+	var m := 0
+	for d in 4:
+		var n := Vector2i(x, z) + DIRS[d]
+		if has_door(x, z, s, d) and is_enclosed(n.x, n.y, s):
+			m |= 1 << d
+		elif is_walkable(n.x, n.y, s) and not has_wall(x, z, s, d):
+			m |= 1 << d
+	return m
 
 
 # --- World space ------------------------------------------------------------------
@@ -205,25 +300,24 @@ func links(x: int, z: int, s: int) -> Array[Vector3i]:
 				open = true
 		if open:
 			out.append(Vector3i(n.x, n.y, s))
-	# Up a ramp that starts here
-	if has_flag(x, z, s, STAIR):
-		var d := stair_dir(x, z, s)
-		var t := Vector2i(x, z) + DIRS[d]
-		if is_walkable(t.x, t.y, s + 1):
-			out.append(Vector3i(t.x, t.y, s + 1))
-	# Down a ramp that arrives here
-	if s > 0:
-		for d in 4:
-			var b := Vector2i(x, z) - DIRS[d]
-			if inside(b.x, b.y, s - 1) and has_flag(b.x, b.y, s - 1, STAIR) and stair_dir(b.x, b.y, s - 1) == d \
-					and is_walkable(b.x, b.y, s - 1):
-				out.append(Vector3i(b.x, b.y, s - 1))
+	# Up the flight that starts here, down the one that arrives here.
+	if has_flag(x, z, s, STAIR) and is_walkable(x, z, s + 1):
+		out.append(Vector3i(x, z, s + 1))
+	if has_flag(x, z, s, STAIR_ABOVE) and is_walkable(x, z, s - 1):
+		out.append(Vector3i(x, z, s - 1))
 	return out
 
 
 func _catwalks_meet(i: int, j: int, dir: int) -> bool:
 	if kind[i] != Kind.CATWALK or kind[j] != Kind.CATWALK:
 		return false
+	# A catwalk strip whose near end is a stair opening doesn't connect there.
+	if (flags[i] & STAIR_ABOVE and (stair[i] >> 4) & 3 == (dir + 2) % 4) \
+			or (flags[j] & STAIR_ABOVE and (stair[j] >> 4) & 3 == dir):
+		return false
+	var bridge := BRIDGE_X if dir % 2 == 1 else BRIDGE_Z
+	if flags[i] & bridge and flags[j] & bridge:
+		return true
 	var shared := (flags[i] & flags[j]) >> 4 & 15
 	for side in 4:
 		if shared & (1 << side) and side % 2 != dir % 2:
@@ -239,7 +333,8 @@ func zone_name(x: int, z: int, s: int) -> String:
 ## Text map of one storey (tests and debugging).
 func ascii(s: int) -> String:
 	var chars := {Kind.EMPTY: " ", Kind.FLOOR: ".", Kind.VOID: "~", Kind.CATWALK: "=", Kind.HOLE: "O"}
-	var type_char := {&"corridor": "+", &"hall": "H", &"warehouse": "W", &"processing": "P", &"office": "o", &"loading_dock": "D"}
+	var type_char := {&"corridor": "+", &"hall": "H", &"foundry": "F", &"warehouse": "W", &"processing": "P",
+		&"office": "o", &"maintenance": "m", &"storage": "s", &"loading_dock": "D"}
 	var lines := PackedStringArray()
 	for z in size.y:
 		var row := ""
@@ -249,6 +344,10 @@ func ascii(s: int) -> String:
 			if k == Kind.FLOOR:
 				var zn := zone_of(x, z, s)
 				ch = type_char.get(zn.type, ".") if zn else "."
+				if has_flag(x, z, s, NARROW):
+					ch = ":"
+			if has_flag(x, z, s, BRIDGE_X | BRIDGE_Z):
+				ch = "#"
 			if has_flag(x, z, s, STAIR):
 				ch = "^"
 			if has_flag(x, z, s, EXIT):

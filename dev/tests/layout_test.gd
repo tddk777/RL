@@ -35,7 +35,26 @@ func _initialize() -> void:
 		var exit_kinds := L.exits.map(func(e: Dictionary) -> String: return "%s@%d" % [e.kind, L.distance[L.idx(e.cell.x, e.cell.y, e.cell.z)]])
 		print("seed %d: %d ms, zones %s, walkable %d reachable %d per storey %s, stairs %d, max dist %d, exits %s, enemies %d, pickups %d, anomalies %d" % [
 			seed, ms, types, walk, reach, per_storey, stairs, L.max_distance, exit_kinds, L.enemies.size(), L.pickups.size(), L.anomalies.size()])
-		var ok := L.exits.size() >= 2 and reach > 1500 and L.enemies.size() >= 15
+		var ok := L.exits.size() >= 2 and reach > 600 and L.enemies.size() >= 6
+		# Every flight lands on walkable floor in its own column, and every
+		# hole has the flight under it.
+		for s in L.storeys:
+			for z in L.size.y:
+				for x in L.size.x:
+					if L.has_flag(x, z, s, LevelLayout.STAIR):
+						if not L.is_walkable(x, z, s + 1) or not L.has_flag(x, z, s + 1, LevelLayout.STAIR_ABOVE) \
+								or L.hole_dir(x, z, s + 1) != L.stair_dir(x, z, s) or L.hole_side(x, z, s + 1) != L.stair_side(x, z, s):
+							print("  bad stair at %s" % Vector3i(x, z, s))
+							ok = false
+					if L.has_flag(x, z, s, LevelLayout.STAIR_ABOVE) and not L.has_flag(x, z, s - 1, LevelLayout.STAIR):
+						print("  hole without stair at %s" % Vector3i(x, z, s))
+						ok = false
+		var families := {}
+		for z in L.zones:
+			families[z.style.family if z.style else &"?"] = true
+		if families.size() < 3:
+			print("  missing districts: %s" % [families.keys()])
+			ok = false
 		for e in L.exits:
 			if L.distance[L.idx(e.cell.x, e.cell.y, e.cell.z)] < 0:
 				ok = false
@@ -44,7 +63,7 @@ func _initialize() -> void:
 		var reached_upper := 0
 		for s in range(1, L.storeys):
 			reached_upper += per_storey[s]
-		if reached_upper < 200:
+		if reached_upper < 100:
 			ok = false
 		# Determinism
 		var again := LayoutGenerator.generate(profile, seed)

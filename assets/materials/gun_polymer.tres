@@ -12,3 +12,4 @@ normal_texture = ExtResource("2_ghk41")
 uv1_scale = Vector3(5, 5, 5)
 uv1_triplanar = true
 uv1_triplanar_sharpness = 4.0
+texture_filter = 5

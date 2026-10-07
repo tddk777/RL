@@ -6,3 +6,4 @@ metallic = 0.3
 roughness = 0.08
 uv1_triplanar = true
 uv1_triplanar_sharpness = 4.0
+texture_filter = 5

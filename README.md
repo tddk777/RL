@@ -12,15 +12,20 @@ grow deeper level by level.
 
 ## Current build
 
-- **Level 1, The Works**: a vast abandoned industrial complex, generated
-  fresh every run (and every retry). About 48 x 48 cells of 8 m across up to
-  four storeys: factory halls with catwalk rings, warehouses with shelving
-  rows, processing rooms with vats, offices, maintenance corridors, loading
-  docks, stairwells, collapsed floors and roof holes, leaking pipes, dead and
-  flickering lights. It streams in around you, so only the nearby part is
-  built. Two or three exits are scattered far from the start; some are hidden
-  maintenance hatches, some need a breaker pulled first. A few things are not
-  quite right. The seed is shown in the pause menu.
+- **Level 1, The Works**: an abandoned industrial complex about 200 m across,
+  generated fresh every run (and every retry) and built while the level
+  loads. Three districts blend into each other: the factory floor (halls with
+  conveyor lines, presses, lathes, generators, assembly robots, catwalks and
+  bridges under a travelling crane; foundries with furnaces, moulds and slag;
+  processing plants with reactors and vats), the interior (cramped service
+  corridors and office blocks: cubicles, private offices, meeting rooms,
+  archives, boiler rooms, electrical rooms, locker rooms, washrooms,
+  workshops) and storage (pallet-rack warehouses, parts stores, wire cages,
+  loading docks). Nothing is intact: fallen ceiling tiles, toppled lockers,
+  doors off their hinges, collapsed racks, broken glass, leaks, rust and damp,
+  moss under the roof holes. Two or three exits are scattered far from the
+  start; some are hidden maintenance hatches, some need a breaker pulled
+  first. A few things are not quite right. The seed is shown in the pause menu.
 - **You start with an M1911 and one spare magazine.** The AK-47, M16A2, MP5
   and M40 and their ammunition lie around the level (placeholder pickups
   until the loot system is designed).
@@ -73,4 +78,4 @@ All local installs for this project go on the **E: drive** (see `CLAUDE.md`).
 - Architecture and conventions: `CLAUDE.md`
 - How to add weapons, attachments, enemies, levels: `docs/ADDING_CONTENT.md`
 - Tests: `godot --headless res://dev/tests/smoke_test.tscn` (end to end) and
-  `godot --headless res://dev/tests/procgen_test.tscn` (level generation and streaming)
+  `godot --headless res://dev/tests/procgen_test.tscn` (level generation, navigation, stairs, exits)

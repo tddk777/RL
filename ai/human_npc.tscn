@@ -38,6 +38,7 @@ path_desired_distance = 0.6
 target_desired_distance = 0.7
 agent_height_offset = 0.0
 radius = 0.4
+path_search_max_polygons = 0
 
 [node name="Brain" type="Node" parent="."]
 script = ExtResource("5_brain")

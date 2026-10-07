@@ -1,15 +1,35 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/textures/brick/albedo.png" id="1_43o2f"]
-[ext_resource type="Texture2D" path="res://assets/textures/brick/normal.png" id="2_ddewn"]
-[ext_resource type="Texture2D" path="res://assets/textures/brick/roughness.png" id="3_2gd1s"]
+[ext_resource type="Shader" path="res://assets/shaders/world_surface.gdshader" id="1_2gd1s"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/albedo.png" id="2_npo2f"]
+[ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="3_2okn5"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/normal.png" id="4_suyjb"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/roughness.png" id="5_qnoqx"]
 
 [resource]
-albedo_texture = ExtResource("1_43o2f")
-roughness_texture = ExtResource("3_2gd1s")
-normal_enabled = true
-normal_texture = ExtResource("2_ddewn")
-uv1_scale = Vector3(0.5, 0.5, 0.5)
-uv1_triplanar = true
-uv1_triplanar_sharpness = 4.0
-uv1_world_triplanar = true
+render_priority = 0
+shader = ExtResource("1_2gd1s")
+shader_parameter/albedo_tex = ExtResource("2_npo2f")
+shader_parameter/normal_tex = ExtResource("4_suyjb")
+shader_parameter/roughness_tex = ExtResource("5_qnoqx")
+shader_parameter/noise_tex = ExtResource("3_2okn5")
+shader_parameter/use_normal = true
+shader_parameter/use_metallic = false
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/roughness = 1.0
+shader_parameter/metallic = 0.0
+shader_parameter/normal_strength = null
+shader_parameter/scale = 0.45
+shader_parameter/object_space = false
+shader_parameter/sharpness = null
+shader_parameter/macro_strength = null
+shader_parameter/grime = null
+shader_parameter/streaks = 0.6
+shader_parameter/damp = 0.5
+shader_parameter/dust = null
+shader_parameter/rust = null
+shader_parameter/storey_height = null
+shader_parameter/grime_color = null
+shader_parameter/rust_color = null
+shader_parameter/damp_color = null
+shader_parameter/dust_color = null

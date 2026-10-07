@@ -17,6 +17,10 @@ var collision: Dictionary = {}  # key -> Array faces
 var occluder_vertices: Array = []
 var occluder_indices: Array = []
 var nav: Array = []
+## Tall solids as [footprint PackedVector3Array, elevation, height]: the
+## navigation baker sees only surfaces, so a big box would otherwise have
+## walkable floor inside it.
+var obstructions: Array = []
 var visuals: bool = true
 ## Only geometry intersecting this box goes into `nav` (empty = everything).
 var nav_bounds := AABB()
@@ -44,6 +48,8 @@ func box(center: Vector3, size: Vector3, mat: StringName, surface: StringName = 
 		for c: Vector3 in face[1]:
 			corners.append(center + basis * (c * half))
 	var in_nav := surface != &"" and (nav_bounds.size == Vector3.ZERO or _intersects(corners))
+	if in_nav and layer != 0 and minf(size.x, minf(size.y, size.z)) >= 0.5:
+		_obstruction(corners)
 	var col_key := "%s|%d" % [surface, layer]
 	for f in 6:
 		var a := corners[f * 4]
@@ -72,6 +78,35 @@ func box(center: Vector3, size: Vector3, mat: StringName, surface: StringName = 
 				occluder_indices.append(base + k)
 
 
+func _obstruction(corners: Array[Vector3]) -> void:
+	var lo := INF
+	var hi := -INF
+	var pts := PackedVector2Array()
+	for c in corners:
+		lo = minf(lo, c.y)
+		hi = maxf(hi, c.y)
+		pts.append(Vector2(c.x, c.z))
+	if hi - lo < 1.6:
+		return
+	var hull := Geometry2D.convex_hull(pts)
+	if hull.size() < 4:
+		return
+	# Thin walls are no problem (no room for an agent inside).
+	var area := 0.0
+	var perimeter := 0.0
+	for i in hull.size() - 1:
+		area += hull[i].x * hull[i + 1].y - hull[i + 1].x * hull[i].y
+		perimeter += hull[i].distance_to(hull[i + 1])
+	area = absf(area) * 0.5
+	if area / maxf(perimeter, 0.001) < 0.2:
+		return
+	var verts := PackedVector3Array()
+	for i in hull.size() - 1:
+		verts.append(Vector3(hull[i].x, lo, hull[i].y))
+	# Stop short of the top: the floor of the storey above starts there.
+	obstructions.append([verts, lo, hi - lo - 0.25])
+
+
 ## Nav-only obstacle (a prop's footprint) - no visuals or collision.
 func nav_box(center: Vector3, size: Vector3, basis: Basis = Basis.IDENTITY) -> void:
 	var half := size * 0.5
@@ -88,7 +123,13 @@ func nav_box(center: Vector3, size: Vector3, basis: Basis = Basis.IDENTITY) -> v
 
 
 ## Cylinder from a to b (visual only), for pipes and rails.
-func cylinder(a: Vector3, b: Vector3, radius: float, mat: StringName, segments: int = 8) -> void:
+func cylinder(a: Vector3, b: Vector3, radius: float, mat: StringName, segments: int = 8, caps: bool = false) -> void:
+	frustum(a, b, radius, radius, mat, segments, caps)
+
+
+## Truncated cone from a (radius ra) to b (radius rb), visual only. Caps close
+## the ends (tanks, furnaces, drums).
+func frustum(a: Vector3, b: Vector3, ra: float, rb: float, mat: StringName, segments: int = 8, caps: bool = false) -> void:
 	if not visuals:
 		return
 	var axis := b - a
@@ -98,17 +139,25 @@ func cylinder(a: Vector3, b: Vector3, radius: float, mat: StringName, segments: 
 	var dir := axis / length
 	var side := dir.cross(Vector3.UP if absf(dir.y) < 0.95 else Vector3.RIGHT).normalized()
 	var up := side.cross(dir)
+	var slope := (ra - rb) / length
 	for i in segments:
 		var a0 := TAU * i / segments
 		var a1 := TAU * (i + 1) / segments
-		var n0 := side * cos(a0) + up * sin(a0)
-		var n1 := side * cos(a1) + up * sin(a1)
-		var p0 := a + n0 * radius
-		var p1 := a + n1 * radius
-		var q0 := b + n0 * radius
-		var q1 := b + n1 * radius
+		var r0 := side * cos(a0) + up * sin(a0)
+		var r1 := side * cos(a1) + up * sin(a1)
+		var n0 := (r0 + dir * slope).normalized()
+		var n1 := (r1 + dir * slope).normalized()
+		var p0 := a + r0 * ra
+		var p1 := a + r1 * ra
+		var q0 := b + r0 * rb
+		var q1 := b + r1 * rb
 		_tri_n(mat, p0, p1, q1, n0, n1, n1)
 		_tri_n(mat, p0, q1, q0, n0, n1, n0)
+		if caps:
+			if ra > 0.001:
+				_tri(mat, a, p1, p0, -dir)
+			if rb > 0.001:
+				_tri(mat, b, q0, q1, dir)
 
 
 ## Appends another mesh (e.g. an I-beam built with MeshKit). `arrays` is

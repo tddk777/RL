@@ -64,7 +64,7 @@ characters/      Humanoid (procedural body + hitboxes), ArmRig (IK arm)
 ai/              NPC, Perception (sight + hearing), AIBrain + AIState scripts in states/
 levels/          Level base, EnemySpawn, LevelExit, FlickerLight, kit/ props
   procgen/         Procedural levels: profile/style resources, layout generator,
-                   chunk builder, streaming ProceduralLevel, entities/ (exits,
+                   chunk builder, set pieces, ProceduralLevel, entities/ (exits,
                    levers, pickups, corpses, anomalies, leaks)
   l1_industrial/   Level 1 scene + its LevelProfile (l1_profile.tres)
 content/         The data: weapons, ammo, attachments, enemies, levels, surfaces (.tres)
@@ -88,19 +88,36 @@ Key contracts:
   decides sequence). Hand-built levels use a `PlayerSpawn` marker, `EnemySpawn`
   markers, a `LevelExit` and a baked `NavigationRegion3D`.
 - **Procedural levels** (`levels/procgen/`): a `ProceduralLevel` scene with a
-  `LevelProfile` (grid size, storeys, population, anomalies, environment) whose
-  `ZoneStyle`s (hall, warehouse, processing, office, loading_dock, corridor)
-  set materials, doors, lights and dressing. `LayoutGenerator.generate(profile,
-  seed)` makes a `LevelLayout` (3D cell grid + entity records), deterministic
-  per seed: BSP blocks and corridors, rooms, catwalks, stairs, doors, collapse,
-  connectivity, exits, enemies, pickups, anomalies. `ChunkBuilder` turns 4x4
-  cells into merged meshes, collision, occluders and nav source on worker
-  threads; `ProceduralLevel` streams chunks around the player (instantiation
-  time-sliced under `frame_budget_ms`, navmesh baked per chunk) and keeps
-  entity state in the layout records so unloaded chunks remember it. A new
-  seed is drawn every run and every retry (`Game.level_seed`, shown in pause).
-  Any per-cell randomness must use a seeded RNG (`hash([seed, x, z, s,
-  purpose])`), never the global one: `Array.shuffle()` uses the global RNG.
+  `LevelProfile` (grid, storeys, districts, population, anomalies,
+  environment) whose `ZoneStyle`s set materials, doors, lights, shape (cramped
+  passages, drop ceilings) and dressing per space type. Each style belongs to
+  a family (`factory`, `interior`, `storage`); the level is split into
+  districts of those families that blend at their borders.
+  `LayoutGenerator.generate(profile, seed)` makes a `LevelLayout` (3D cell
+  grid, rooms with a use, entity records), deterministic per seed: BSP blocks
+  and corridors, districts, buildings (tall halls with catwalk rings and
+  bridges, foundries, warehouses, docks; storeyed blocks of rooms off a
+  cramped hallway with a switchback stairwell), stairs, doors, interior
+  windows, collapse, connectivity, exits, enemies, pickups, anomalies.
+  `ChunkBuilder` (architecture) and `SetPieces` (machines, conveyor lines,
+  furnaces, racks, cubicles, boilers, lockers, decay...) turn 5x5 cells into
+  merged meshes, collision, occluders and navigation source on worker
+  threads. Kit props are merged into the chunk meshes (lamps stay nodes).
+  `ProceduralLevel.prepare()` builds the whole level while it loads (no
+  streaming), bakes one navigation mesh, then snaps entities onto it.
+  A new seed is drawn every run and every retry (`Game.level_seed`, shown in
+  pause). Any per-cell randomness must use a seeded RNG (`hash([seed, x, z,
+  s, purpose])`), never the global one: `Array.shuffle()` uses the global RNG.
+  Navigation gotchas: the baker sees only surfaces, so tall solid boxes are
+  also added as projected obstructions (`GeoBuilder.obstructions`); query
+  paths across the level with `path_search_max_polygons = 0` (the default
+  4096 gives up on long paths); wait for a map iteration before querying a
+  newly added region.
+- **World surfaces**: level materials use `assets/shaders/world_surface.gdshader`
+  (world-space triplanar, no UVs needed): noise-driven texture offsets hide
+  tiling, and grime, water and rust runs, damp, dust and ceiling stains are
+  generated from world position. Materials tune it per surface
+  (`dev/generators/build_materials.gd`).
 - **Surfaces**: tag a collider with metadata `surface` (`concrete`, `metal`,
   `wood`, `flesh`, ...); `SurfaceData` drives impact sound/particles/decals,
   footsteps and casing sounds.
@@ -134,7 +151,8 @@ godot --headless --path . --script res://dev/generators/build_weapons.gd
 godot --headless --path . --script res://dev/generators/build_kit.gd
 godot --headless --path . --script res://dev/generators/build_content.gd   # overwrites content/*.tres
 godot --headless --path . --script res://dev/generators/build_l1_profile.gd  # overwrites the L1 profile
-python3 dev/asset_gen/decals.py             # wall symbols, puddle, salt circle
+python3 dev/asset_gen/decals.py             # wall symbols, puddles, papers, cracks, oil, moss, peeling plaster
+python3 dev/asset_gen/noise.py              # tileable noise for the world surface shader
 ```
 
 Generators are bootstraps. Once a file is hand-edited in the editor, don't
@@ -147,7 +165,7 @@ file as long as the contract above is kept.
 ```
 godot --headless --import                              # re-import, surfaces parse errors
 godot --headless res://dev/tests/smoke_test.tscn       # end-to-end test, prints PASS/FAIL, exit code
-godot --headless res://dev/tests/procgen_test.tscn     # generation, streaming, nav, exits, pickups
+godot --headless res://dev/tests/procgen_test.tscn     # generation, navigation, stairs, doors, exits, pickups
 godot --headless --script res://dev/tests/layout_test.gd   # layout invariants over several seeds
 godot --rendering-driver vulkan res://dev/tests/smoke_test.tscn -- <dir>   # also saves screenshots
 godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type

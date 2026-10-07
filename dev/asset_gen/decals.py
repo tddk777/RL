@@ -195,9 +195,128 @@ def salt_circle():
     save("salt_circle", rgb, alpha)
 
 
+def papers():
+    """Scattered sheets of paper, some crumpled, yellowed and trodden on."""
+    rng = np.random.default_rng(21)
+    big = Image.new("RGBA", (S * 2, S * 2), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    for i in range(14):
+        cx, cy = rng.uniform(150, S * 2 - 150, 2)
+        w, h = rng.uniform(110, 170), rng.uniform(150, 220)
+        a = rng.uniform(0, math.tau)
+        pts = []
+        for px, py in [(-w, -h), (w, -h), (w, h), (-w, h)]:
+            px += rng.normal(0, 8)
+            py += rng.normal(0, 8)
+            pts.append((cx + px * math.cos(a) - py * math.sin(a), cy + px * math.sin(a) + py * math.cos(a)))
+        tone = rng.uniform(0.55, 0.85)
+        col = (int(255 * tone), int(255 * tone * 0.96), int(255 * tone * 0.84), 235)
+        d.polygon(pts, fill=col)
+        # Lines of type
+        for j in range(8):
+            t = -0.75 + j * 0.2
+            x0, x1 = -0.8, rng.uniform(0.1, 0.8)
+            p0 = (cx + (x0 * w) * math.cos(a) - (t * h) * math.sin(a), cy + (x0 * w) * math.sin(a) + (t * h) * math.cos(a))
+            p1 = (cx + (x1 * w) * math.cos(a) - (t * h) * math.sin(a), cy + (x1 * w) * math.sin(a) + (t * h) * math.cos(a))
+            d.line([p0, p1], fill=(60, 58, 52, 140), width=3)
+    img = big.resize((S, S), Image.LANCZOS)
+    arr = np.asarray(img, dtype=np.float32) / 255.0
+    dirt = fbm(rng, S) * 0.5 + 0.5
+    rgb = arr[..., :3] * np.dstack([dirt] * 3) * np.array([1.0, 0.95, 0.85])
+    save("papers", rgb, arr[..., 3] * np.clip(fbm(rng, S) * 1.4, 0.4, 1.0))
+
+
+def crack():
+    """Cracks in a concrete floor: dark branching lines with chipped edges."""
+    rng = np.random.default_rng(22)
+    big = Image.new("L", (S * 2, S * 2), 0)
+    d = ImageDraw.Draw(big)
+
+    def branch(x, y, ang, length, width, depth):
+        steps = int(length / 18)
+        pts = [(x, y)]
+        for i in range(steps):
+            ang += rng.normal(0, 0.35)
+            x += math.cos(ang) * 18
+            y += math.sin(ang) * 18
+            pts.append((x, y))
+            if depth < 3 and rng.random() < 0.08:
+                branch(x, y, ang + rng.choice([-1, 1]) * rng.uniform(0.5, 1.2), length * 0.5, max(width - 2, 2), depth + 1)
+        d.line(pts, fill=255, width=int(width), joint="curve")
+
+    for i in range(3):
+        branch(S, S, rng.uniform(0, math.tau), rng.uniform(500, 800), 7, 0)
+    mask = np.asarray(big.resize((S, S), Image.LANCZOS), dtype=np.float32) / 255.0
+    halo = np.asarray(big.filter(ImageFilter.GaussianBlur(10)).resize((S, S)), dtype=np.float32) / 255.0
+    alpha = np.clip(mask * 0.95 + halo * 0.35, 0, 1)
+    r = np.radians(0)
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    fade = np.clip(1.3 - np.hypot(xx - S / 2, yy - S / 2) / (S / 2), 0, 1)
+    rgb = np.dstack([np.full((S, S), v, np.float32) for v in (0.05, 0.048, 0.045)])
+    save("crack", rgb, alpha * fade)
+
+
+def oil():
+    """Old oil and grease stains."""
+    rng = np.random.default_rng(23)
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    alpha = np.zeros((S, S), np.float32)
+    for i in range(5):
+        cx, cy = rng.uniform(S * 0.25, S * 0.75, 2)
+        rad = rng.uniform(S * 0.08, S * 0.25)
+        r = np.hypot(xx - cx, yy - cy) / rad
+        alpha = np.maximum(alpha, np.clip(1.0 - r + (fbm(rng, S, (64, 24, 8), (0.6, 0.3, 0.1)) - 0.5) * 0.8, 0, 1))
+    alpha = np.clip(alpha * 1.8, 0, 1) * 0.8
+    sheen = 0.03 + 0.04 * noise(rng, S, 24)
+    rgb = np.dstack([sheen, sheen * 0.95, sheen * 0.8])
+    save("oil", rgb, alpha)
+
+
+def moss():
+    """Moss and grime where daylight and rain get in."""
+    rng = np.random.default_rng(24)
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    r = np.hypot(xx - S / 2, yy - S / 2) / (S / 2)
+    patch = 1.0 - r + (fbm(rng, S, (96, 40, 12, 4), (0.5, 0.3, 0.15, 0.05)) - 0.5) * 1.2
+    alpha = np.clip((patch - 0.1) * 2.2, 0, 1) * 0.92
+    grain = rng.random((S, S)).astype(np.float32)
+    alpha *= 0.65 + 0.35 * grain
+    g = noise(rng, S, 8)
+    rgb = np.dstack([0.12 + 0.08 * g, 0.2 + 0.12 * g, 0.06 + 0.04 * g])
+    save("moss", rgb, alpha)
+
+
+def peel():
+    """Plaster fallen off a wall in patches, brick showing underneath."""
+    rng = np.random.default_rng(25)
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    r = np.hypot((xx - S / 2) / 1.0, (yy - S / 2) / 0.8) / (S / 2)
+    patch = 1.0 - r + (fbm(rng, S, (96, 40, 12, 4), (0.5, 0.3, 0.15, 0.05)) - 0.5) * 1.3
+    hole = np.clip((patch - 0.15) * 6.0, 0, 1)
+    rim = np.clip((patch - 0.05) * 6.0, 0, 1) - hole
+    # Brick: running bond in a warm red-brown, dark mortar
+    bw, bh = 64, 28
+    row = (yy // bh).astype(int)
+    off = (row % 2) * (bw // 2)
+    mortar = ((yy % bh) < 3) | (((xx + off) % bw) < 3)
+    tone = noise(rng, S, 6) * 0.25 + 0.75
+    var = noise(rng, S, 32)[(yy // bh).astype(int) % S, ((xx + off) // bw * 7).astype(int) % S]
+    brick = np.dstack([(0.5 + 0.12 * var) * tone, (0.3 + 0.06 * var) * tone, (0.2 + 0.04 * var) * tone])
+    brick[mortar] = (0.52, 0.5, 0.45)
+    lath = np.dstack([np.full((S, S), v) for v in (0.7, 0.68, 0.62)])
+    rgb = brick * hole[..., None] + lath * rim[..., None]
+    alpha = np.clip(hole + rim * 0.9, 0, 1) * 0.97
+    save("peel", rgb, alpha)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     symbols()
     puddle()
     salt_circle()
+    papers()
+    crack()
+    oil()
+    moss()
+    peel()
     print("decals written to", os.path.normpath(OUT))

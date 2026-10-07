@@ -6,6 +6,5 @@
 [node name="L1Industrial" type="Node3D"]
 script = ExtResource("1_level")
 profile = ExtResource("2_profile")
-load_radius = 3
 reverb_room_size = 0.82
 reverb_wet = 0.16

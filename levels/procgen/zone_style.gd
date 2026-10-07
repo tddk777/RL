@@ -2,9 +2,14 @@ class_name ZoneStyle
 extends Resource
 ## Look and dressing for one kind of space (a factory hall, an office block,
 ## a maintenance corridor...). `type` selects the layout rules in
-## LayoutGenerator; everything else here is look and density.
+## LayoutGenerator and the set pieces in SetPieces; everything else here is
+## look and density.
 
 @export var type: StringName = &"corridor"
+## District this style belongs to: &"factory", &"interior" or &"storage".
+## Buildings take styles from the district they stand in (blending at the
+## borders); corridors take the corridor style of their district.
+@export var family: StringName = &"factory"
 ## Relative chance among the styles allowed for a building's size.
 @export var weight: float = 1.0
 ## Storeys above the ground floor (min, max). 0 = single storey.
@@ -24,6 +29,14 @@ extends Resource
 @export var ground_door_width: float = 1.8
 @export var ground_door_height: float = 2.6
 @export var windows: bool = false
+
+@export_group("Shape")
+## Cramped passages: the cell is filled solid except a cross of corridors
+## this wide toward each open edge (interior halls and service corridors).
+@export var narrow: bool = false
+@export var passage_width: float = 2.4
+## Suspended tile ceiling at this height (0 = none, see the slab above).
+@export var drop_ceiling: float = 0.0
 
 @export_group("Lighting")
 ## &"fluorescent", &"cage", &"hanging", &"none"

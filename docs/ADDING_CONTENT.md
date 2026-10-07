@@ -71,32 +71,35 @@ Level 1 is procedural; new levels in the same spirit (L2 housing and towers,
 L4 labs, ...) are mostly data:
 
 1. **Styles.** A `ZoneStyle` (`levels/procgen/zone_style.gd`) per kind of
-   space: `type` (hall, warehouse, processing, office, loading_dock,
-   corridor), `weight`, `extra_storeys`, materials for floors, walls and
-   ceilings, door sizes, `windows`, light kind/chance/flicker/colour, props
-   with weights and density, pipe/leak/collapse/roof-hole chances.
-2. **Profile.** A `LevelProfile` (`levels/procgen/level_profile.gd`) with the
-   grid (`grid_size`, `storeys`, `cell_size`, `storey_height`, `chunk_cells`), block
-   sizes, the corridor style and building styles, population (enemy count
-   and id, exits, weapon/ammo pickups, corpses), anomalies (symbols, odd
-   corpses, odd containers), and atmosphere (`environment`, ambience, random
-   sounds). `dev/generators/build_l1_profile.gd` is the L1 example; copy it,
-   or build the resources in the Inspector.
+   space: `type` (hall, foundry, processing, office, maintenance, warehouse,
+   storage, loading_dock, corridor), `family` (factory, interior, storage),
+   `weight`, `extra_storeys`, materials, door sizes, `windows`, shape
+   (`narrow` passages and their `passage_width`, `drop_ceiling` height),
+   lights, and dressing densities (props, pipes, leaks, collapse, roof holes).
+2. **Profile.** A `LevelProfile` (`levels/procgen/level_profile.gd`): grid
+   (`grid_size`, `storeys`, `cell_size`, `storey_height`, `chunk_cells`),
+   block sizes, `districts` and `blend_chance`, one corridor style per family
+   and the building styles, population (enemies, exits, weapon/ammo pickups,
+   corpses), anomalies and atmosphere. `dev/generators/build_l1_profile.gd` is
+   the L1 example; copy it, or build the resources in the Inspector.
 3. **Scene.** A scene whose root uses `levels/procgen/procedural_level.gd`
-   with the profile assigned. `load_radius` (chunks around the player) and
-   `frame_budget_ms` trade view distance and smoothness for cost.
+   with the profile assigned.
 4. **Register** a `LevelData` with `order`, `display_name`, `subtitle` and
    `scene_path` as for any level.
 
-Zone types new to a level (e.g. `apartment`, `lab`) need a fill rule in
-`LayoutGenerator` (`_make_buildings` / `_fill_rooms` / `_fill_tall`) and
-dressing in `ChunkBuilder._dressing`; everything else (walls, doors, stairs,
-lights, pipes, streaming, navigation) is shared. New wall marks go in
+What fills a space is code in `levels/procgen/set_pieces.gd`: `dress()`
+dispatches on zone type (tall spaces) or room use (rooms; uses are chosen in
+`LayoutGenerator._room_use`). A new set piece is a function there; zone-wide
+patterns (conveyor rows, rack rows, the crane) are laid out from zone
+coordinates so every cell builds its own part. Keep `_free()` checks so door
+approaches and stair strips stay clear (`dev/tests/procgen_test.tscn` checks
+both sides of every door are reachable). New zone types need a fill rule in
+`LayoutGenerator._build_block`. New wall marks and floor stains go in
 `dev/asset_gen/decals.py`; new "odd" things in `levels/procgen/entities/`
 (spawned from `Anomalies.spawn`).
 
-Check a profile with `dev/tests/layout_test.gd` (connectivity, exits,
-determinism over several seeds) and look at it with
+Check a profile with `dev/tests/layout_test.gd` (connectivity, stairs,
+districts, determinism over several seeds) and look at it with
 `dev/tests/procgen_tour.tscn`.
 
 ## A hand-built level

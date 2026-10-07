@@ -13,125 +13,225 @@
 [sub_resource type="Resource" id="Resource_yhyro"]
 script = ExtResource("2_qp74k")
 type = &"hall"
-weight = 1.3
-extra_storeys = Vector2i(1, 3)
+weight = 2.2
+extra_storeys = Vector2i(1, 2)
 ceiling_material = &"corrugated_metal"
+door_width = 2.4
 ground_door_width = 4.2
-ground_door_height = 4.4
+ground_door_height = 4.0
 windows = true
 light_kind = &"hanging"
-light_chance = 0.45
-light_working = 0.55
+light_chance = 0.6
+light_working = 0.65
 flicker_chance = 0.25
 light_color = Color(1, 0.72, 0.42, 1)
-light_energy = 7.0
+light_energy = 6.0
 props = {
 "barrel_blue": 1.0,
 "barrel_rust": 2.0,
 "crate_wood": 2.0,
 "electrical_cabinet": 0.6,
-"pallet": 1.5,
-"rubble": 1.0
+"pallet": 1.5
 }
-prop_density = 0.3
-roof_hole_chance = 0.12
+prop_density = 0.25
+leak_chance = 0.1
+roof_hole_chance = 0.1
 
 [sub_resource type="Resource" id="Resource_kl7xd"]
 script = ExtResource("2_qp74k")
+type = &"foundry"
+weight = 0.8
+extra_storeys = Vector2i(1, 2)
+wall_material = &"brick"
+upper_wall_material = &"soot"
+ceiling_material = &"corrugated_metal"
+door_width = 2.4
+ground_door_width = 4.2
+ground_door_height = 4.0
+windows = true
+light_kind = &"hanging"
+light_chance = 0.6
+light_working = 0.65
+flicker_chance = 0.3
+light_color = Color(1, 0.62, 0.35, 1)
+light_energy = 6.0
+props = {
+"barrel_rust": 2.0,
+"crate_wood": 1.0,
+"pallet": 1.0
+}
+prop_density = 0.15
+roof_hole_chance = 0.12
+
+[sub_resource type="Resource" id="Resource_f0pvv"]
+script = ExtResource("2_qp74k")
+type = &"processing"
+weight = 0.8
+extra_storeys = Vector2i(0, 2)
+wall_material = &"painted_steel"
+upper_wall_material = &"painted_steel_green"
+ground_door_width = 2.4
+ground_door_height = 3.0
+light_kind = &"fluorescent"
+light_chance = 0.6
+light_working = 0.65
+flicker_chance = 0.3
+light_color = Color(0.84, 0.92, 1, 1)
+light_energy = 1.3
+props = {
+"barrel_blue": 1.0,
+"barrel_orange": 1.0,
+"crate_small": 1.0,
+"electrical_cabinet": 2.0
+}
+prop_density = 0.3
+pipe_chance = 0.6
+leak_chance = 0.2
+collapse_chance = 0.05
+
+[sub_resource type="Resource" id="Resource_fm5py"]
+script = ExtResource("2_qp74k")
+type = &"office"
+family = &"interior"
+extra_storeys = Vector2i(1, 2)
+floor_material = &"floor_tile"
+upper_floor_material = &"wood_planks"
+wall_material = &"plaster"
+upper_wall_material = &"plaster"
+door_width = 1.4
+door_height = 2.2
+ground_door_width = 1.5
+ground_door_height = 2.4
+passage_width = 2.2
+drop_ceiling = 2.8
+light_kind = &"fluorescent"
+light_chance = 0.7
+light_working = 0.65
+flicker_chance = 0.3
+light_color = Color(0.84, 0.92, 1, 1)
+light_energy = 1.1
+props = {
+"crate_small": 0.5,
+"filing_cabinet": 2.0,
+"locker": 1.0
+}
+leak_chance = 0.1
+collapse_chance = 0.05
+
+[sub_resource type="Resource" id="Resource_4x3jn"]
+script = ExtResource("2_qp74k")
+type = &"maintenance"
+family = &"interior"
+weight = 0.9
+extra_storeys = Vector2i(0, 2)
+upper_wall_material = &"plaster_green"
+door_width = 1.4
+door_height = 2.2
+ground_door_width = 1.4
+ground_door_height = 2.2
+passage_width = 2.0
+drop_ceiling = 2.7
+light_chance = 0.6
+light_working = 0.65
+flicker_chance = 0.35
+light_energy = 1.2
+props = {
+"barrel_rust": 1.0,
+"crate_small": 1.0,
+"electrical_cabinet": 2.0,
+"locker": 1.5
+}
+prop_density = 0.3
+pipe_chance = 0.7
+leak_chance = 0.25
+collapse_chance = 0.04
+
+[sub_resource type="Resource" id="Resource_jslxu"]
+script = ExtResource("2_qp74k")
 type = &"warehouse"
+family = &"storage"
 extra_storeys = Vector2i(1, 2)
 wall_material = &"corrugated_metal"
 upper_wall_material = &"corrugated_metal"
 ceiling_material = &"corrugated_metal"
+door_width = 2.4
 ground_door_width = 4.2
-ground_door_height = 4.4
+ground_door_height = 4.0
 windows = true
 light_kind = &"hanging"
-light_chance = 0.4
-light_working = 0.5
+light_chance = 0.6
+light_working = 0.65
 light_color = Color(1, 0.72, 0.42, 1)
-light_energy = 6.0
+light_energy = 5.5
 props = {
 "barrel_orange": 1.0,
 "crate_small": 1.0,
 "crate_wood": 2.0,
 "pallet": 2.0
 }
-prop_density = 0.3
+prop_density = 0.2
 roof_hole_chance = 0.07
 
-[sub_resource type="Resource" id="Resource_f0pvv"]
+[sub_resource type="Resource" id="Resource_a6w2s"]
 script = ExtResource("2_qp74k")
-type = &"processing"
+type = &"storage"
+family = &"storage"
+weight = 0.9
 extra_storeys = Vector2i(0, 2)
-wall_material = &"painted_steel"
-upper_wall_material = &"painted_steel"
+wall_material = &"painted_steel_blue"
+upper_wall_material = &"concrete_wall"
+ground_door_width = 2.4
+ground_door_height = 2.8
 light_kind = &"fluorescent"
 light_chance = 0.6
-flicker_chance = 0.3
-light_color = Color(0.84, 0.92, 1, 1)
-props = {
-"barrel_blue": 1.0,
-"barrel_orange": 1.0,
-"crate_small": 1.0,
-"electrical_cabinet": 2.0,
-"filing_cabinet": 0.5
-}
-prop_density = 0.4
-pipe_chance = 0.5
-leak_chance = 0.15
-collapse_chance = 0.06
-
-[sub_resource type="Resource" id="Resource_fm5py"]
-script = ExtResource("2_qp74k")
-type = &"office"
-extra_storeys = Vector2i(1, 3)
-upper_floor_material = &"wood_planks"
-upper_wall_material = &"concrete_wall"
-light_kind = &"fluorescent"
-light_chance = 0.7
+light_working = 0.65
 flicker_chance = 0.25
 light_color = Color(0.84, 0.92, 1, 1)
 light_energy = 1.3
 props = {
-"crate_small": 0.7,
-"desk": 3.0,
-"filing_cabinet": 2.0,
-"locker": 2.0,
-"rubble": 0.4
+"barrel_blue": 1.0,
+"crate_small": 2.0,
+"crate_wood": 1.0,
+"filing_cabinet": 0.5
 }
-prop_density = 0.75
-collapse_chance = 0.05
+prop_density = 0.3
+pipe_chance = 0.3
+leak_chance = 0.12
+collapse_chance = 0.04
 
-[sub_resource type="Resource" id="Resource_4x3jn"]
+[sub_resource type="Resource" id="Resource_by6xp"]
 script = ExtResource("2_qp74k")
 type = &"loading_dock"
-weight = 0.3
+family = &"storage"
+weight = 0.4
 extra_storeys = Vector2i(1, 1)
 wall_material = &"corrugated_metal"
 upper_wall_material = &"corrugated_metal"
 ceiling_material = &"corrugated_metal"
+door_width = 2.4
 ground_door_width = 4.2
-ground_door_height = 4.4
+ground_door_height = 4.0
 light_kind = &"hanging"
+light_chance = 0.6
 light_working = 0.7
 light_color = Color(1, 0.72, 0.42, 1)
-light_energy = 6.5
+light_energy = 6.0
 props = {
 "barrel_rust": 1.0,
 "crate_small": 1.0,
 "crate_wood": 3.0,
 "pallet": 3.0
 }
+prop_density = 0.3
 roof_hole_chance = 0.05
 
-[sub_resource type="Resource" id="Resource_jslxu"]
+[sub_resource type="Resource" id="Resource_fcxen"]
 script = ExtResource("2_qp74k")
 extra_storeys = Vector2i(0, 0)
-upper_wall_material = &"concrete_wall"
+door_width = 2.4
+ground_door_width = 3.2
+ground_door_height = 3.4
 light_chance = 0.6
-light_working = 0.65
-light_energy = 1.3
 props = {
 "barrel_rust": 2.0,
 "crate_small": 2.0,
@@ -139,15 +239,69 @@ props = {
 "pallet": 1.0,
 "rubble": 1.0
 }
-prop_density = 0.16
-pipe_chance = 0.75
-leak_chance = 0.12
-collapse_chance = 0.035
-roof_hole_chance = 0.02
+prop_density = 0.18
+pipe_chance = 0.8
+leak_chance = 0.15
+collapse_chance = 0.03
+roof_hole_chance = 0.03
 
-[sub_resource type="Environment" id="Environment_a6w2s"]
+[sub_resource type="Resource" id="Resource_gkgoa"]
+script = ExtResource("2_qp74k")
+family = &"interior"
+extra_storeys = Vector2i(0, 0)
+floor_material = &"floor_tile"
+upper_floor_material = &"floor_tile"
+wall_material = &"plaster_green"
+upper_wall_material = &"plaster"
+door_width = 1.4
+door_height = 2.2
+ground_door_width = 1.4
+ground_door_height = 2.2
+narrow = true
+passage_width = 2.2
+drop_ceiling = 2.7
+light_kind = &"fluorescent"
+light_chance = 0.6
+light_working = 0.65
+flicker_chance = 0.35
+light_color = Color(0.84, 0.92, 1, 1)
+light_energy = 1.0
+props = {
+"crate_small": 1.0,
+"filing_cabinet": 1.0,
+"locker": 1.0
+}
+prop_density = 0.2
+pipe_chance = 0.5
+leak_chance = 0.2
+
+[sub_resource type="Resource" id="Resource_m0kbc"]
+script = ExtResource("2_qp74k")
+family = &"storage"
+extra_storeys = Vector2i(0, 0)
+wall_material = &"corrugated_metal"
+upper_wall_material = &"corrugated_metal"
+ceiling_material = &"corrugated_metal"
+door_width = 2.4
+ground_door_width = 3.6
+ground_door_height = 3.6
+light_chance = 0.6
+light_color = Color(1, 0.72, 0.42, 1)
+light_energy = 1.5
+props = {
+"barrel_orange": 1.0,
+"crate_small": 1.5,
+"crate_wood": 1.5,
+"pallet": 2.0
+}
+prop_density = 0.22
+pipe_chance = 0.35
+leak_chance = 0.1
+roof_hole_chance = 0.03
+
+[sub_resource type="Environment" id="Environment_opjl5"]
 background_mode = 1
-background_color = Color(0.17, 0.18, 0.2, 1)
+background_color = Color(0.3, 0.32, 0.34, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.45, 0.48, 0.55, 1)
 ambient_light_energy = 0.6
@@ -162,12 +316,9 @@ glow_enabled = true
 glow_intensity = 0.55
 glow_bloom = 0.04
 fog_enabled = true
-fog_mode = 1
-fog_light_color = Color(0.17, 0.18, 0.2, 1)
-fog_density = 1.0
-fog_sky_affect = 0.0
-fog_depth_begin = 25.0
-fog_depth_end = 88.0
+fog_light_color = Color(0.2, 0.21, 0.23, 1)
+fog_density = 0.006
+fog_sky_affect = 0.5
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.022
 volumetric_fog_albedo = Color(0.72, 0.72, 0.7, 1)
@@ -180,12 +331,9 @@ adjustment_saturation = 0.78
 
 [resource]
 script = ExtResource("9_lhbt5")
-max_block = 12
-min_block = 4
-corridor = SubResource("Resource_jslxu")
-buildings = Array[ExtResource("2_qp74k")]([SubResource("Resource_yhyro"), SubResource("Resource_kl7xd"), SubResource("Resource_f0pvv"), SubResource("Resource_fm5py"), SubResource("Resource_4x3jn")])
+corridors = Array[ExtResource("2_qp74k")]([SubResource("Resource_fcxen"), SubResource("Resource_gkgoa"), SubResource("Resource_m0kbc")])
+buildings = Array[ExtResource("2_qp74k")]([SubResource("Resource_yhyro"), SubResource("Resource_kl7xd"), SubResource("Resource_f0pvv"), SubResource("Resource_fm5py"), SubResource("Resource_4x3jn"), SubResource("Resource_jslxu"), SubResource("Resource_a6w2s"), SubResource("Resource_by6xp")])
 weapon_pickups = PackedStringArray("mp5", "ak47", "m16", "m40")
-ammo_pickups = 40
-environment = SubResource("Environment_a6w2s")
+environment = SubResource("Environment_opjl5")
 ambience = ExtResource("1_h1il2")
 random_sounds = Array[AudioStream]([ExtResource("3_e52kd"), ExtResource("4_j4x04"), ExtResource("5_i123g"), ExtResource("6_eup3g"), ExtResource("7_txbi4"), ExtResource("8_ojqca")])
