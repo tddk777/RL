@@ -51,6 +51,8 @@ func prepare() -> void:
 		env.environment = profile.environment.duplicate()
 		add_child(env)
 	_warm_caches()
+	_add_daylight()
+	_add_surroundings()
 	var count := builder.chunk_count()
 	for cx in count.x:
 		for cz in count.y:
@@ -99,6 +101,105 @@ func _exit_tree() -> void:
 	for coord in _tasks:
 		WorkerThreadPool.wait_for_task_completion(_tasks[coord])
 	_tasks.clear()
+
+
+# --- Daylight and surroundings ------------------------------------------------------------------
+
+func _add_daylight() -> void:
+	if profile.daylight_energy <= 0.0:
+		return
+	var sun := DirectionalLight3D.new()
+	sun.name = "Daylight"
+	sun.light_color = profile.daylight_color
+	sun.light_energy = profile.daylight_energy
+	sun.shadow_enabled = true
+	sun.shadow_blur = 2.5  # overcast: soft edges
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_max_distance = 110.0
+	sun.light_volumetric_fog_energy = 0.2
+	add_child(sun)
+	var dir := builder.sun_dir()
+	sun.global_basis = Basis.looking_at(dir, Vector3.UP)
+
+
+## Open ground round the complex (with collision, so nothing falls forever)
+## and a hazy skyline of ruins, stacks and towers far beyond the fence.
+func _add_surroundings() -> void:
+	var size := Vector2(layout.size) * layout.cell
+	var centre := Vector3(size.x * 0.5, 0.0, size.y * 0.5)
+	var ground := MeshInstance3D.new()
+	ground.name = "Ground"
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(1600, 1600)
+	plane.subdivide_width = 16
+	plane.subdivide_depth = 16
+	ground.mesh = plane
+	ground.material_override = _material(profile.ground_material)
+	ground.position = centre + Vector3.DOWN * 0.06
+	add_child(ground)
+	var body := StaticBody3D.new()
+	body.name = "GroundBody"
+	body.collision_mask = 0
+	body.set_meta(&"surface", &"concrete")
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(1600, 1.0, 1600)
+	shape.shape = box
+	body.add_child(shape)
+	add_child(body)
+	body.position = centre + Vector3.DOWN * 0.56
+	if not profile.skyline:
+		return
+	var g := GeoBuilder.new()
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([level_seed, 7001])
+	var radius := maxf(size.x, size.y) * 0.5
+	var mats: Array[StringName] = [&"concrete_dark", &"brick", &"concrete_wall", &"rusted_metal"]
+	var a := 0.0
+	while a < TAU:
+		var dist := radius + r.randf_range(70.0, 240.0)
+		var p := centre + Vector3(cos(a), 0, sin(a)) * dist
+		var roll := r.randf()
+		var mat := mats[r.randi_range(0, mats.size() - 1)]
+		var yaw := Basis(Vector3.UP, a + r.randf_range(-0.3, 0.3))
+		if roll < 0.1:
+			# Smokestack
+			var h := r.randf_range(35.0, 70.0)
+			g.frustum(p, p + Vector3.UP * h, r.randf_range(2.2, 3.5), r.randf_range(1.2, 2.0), &"brick", 10, true)
+		elif roll < 0.16:
+			# Cooling tower
+			var h := r.randf_range(30.0, 50.0)
+			g.frustum(p, p + Vector3.UP * h * 0.65, h * 0.42, h * 0.28, &"concrete_wall", 16, false)
+			g.frustum(p + Vector3.UP * h * 0.65, p + Vector3.UP * h, h * 0.28, h * 0.32, &"concrete_wall", 16, false)
+		elif roll < 0.22:
+			# Water tower on legs
+			var h := r.randf_range(18.0, 28.0)
+			for i in 4:
+				var leg := p + Vector3(cos(i * PI * 0.5 + 0.7), 0, sin(i * PI * 0.5 + 0.7)) * 3.0
+				g.cylinder(leg, p + Vector3.UP * h, 0.35, &"rusted_metal", 6)
+			g.frustum(p + Vector3.UP * h, p + Vector3.UP * (h + 7.0), 4.5, 4.5, &"rusted_metal", 12, true)
+		else:
+			# Block of ruined buildings: a main mass and a lower wing, broken top.
+			var w := r.randf_range(18.0, 55.0)
+			var d := r.randf_range(14.0, 35.0)
+			var h := r.randf_range(7.0, 34.0)
+			g.box(p + Vector3.UP * (h * 0.5), Vector3(w, h, d), mat, &"", false, yaw)
+			g.box(p + yaw * Vector3(w * 0.5, 0, d * 0.2) + Vector3.UP * (h * 0.3), Vector3(w * 0.6, h * 0.6, d * 0.7), mat, &"", false, yaw)
+			for i in r.randi_range(0, 3):
+				var q := p + yaw * Vector3(r.randf_range(-w, w) * 0.4, 0, r.randf_range(-d, d) * 0.4)
+				var bh := r.randf_range(2.0, 6.0)
+				g.box(q + Vector3.UP * (h + bh * 0.5 - 0.5), Vector3(r.randf_range(3, 9), bh, r.randf_range(3, 9)), mat, &"", false, yaw)
+		a += r.randf_range(0.06, 0.2)
+	g.finalize()
+	var mesh := ArrayMesh.new()
+	for mat: StringName in g.packed_surfaces:
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, g.packed_surfaces[mat])
+		mesh.surface_set_material(mesh.get_surface_count() - 1, _material(mat))
+	var sky := MeshInstance3D.new()
+	sky.name = "Skyline"
+	sky.mesh = mesh
+	sky.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(sky)
 
 
 # --- Building ---------------------------------------------------------------------------------
@@ -285,7 +386,9 @@ func _bake_navigation() -> void:
 	var navmesh := NavigationMesh.new()
 	navmesh.cell_size = 0.25
 	navmesh.cell_height = 0.25
-	navmesh.agent_radius = 0.35
+	# A whole number of cells: the baker rounds the radius up to one, and at
+	# 0.5 m the 1.4 m office doors would close.
+	navmesh.agent_radius = 0.25
 	navmesh.agent_height = 1.75
 	navmesh.agent_max_climb = 0.5
 	navmesh.agent_max_slope = 42.0

@@ -24,6 +24,10 @@ var obstructions: Array = []
 var visuals: bool = true
 ## Only geometry intersecting this box goes into `nav` (empty = everything).
 var nav_bounds := AABB()
+## Debugging (dev/tests/coplanar_check): when set, every visible box and prism
+## is also listed here as [center, size, basis] or [polygon, y0, y1].
+var record_solids: bool = false
+var solids: Array = []
 
 const _FACES := [
 	[Vector3(1, 0, 0), [Vector3(1, -1, -1), Vector3(1, 1, -1), Vector3(1, 1, 1), Vector3(1, -1, 1)]],
@@ -40,6 +44,8 @@ const _FACES := [
 func box(center: Vector3, size: Vector3, mat: StringName, surface: StringName = &"", occlude: bool = false,
 		basis: Basis = Basis.IDENTITY, layer: int = 1) -> void:
 	var half := size * 0.5
+	if record_solids and visuals and mat != &"":
+		solids.append([center, size, basis])
 	var corners: Array[Vector3] = []
 	var normals: Array[Vector3] = []
 	var nb := basis.inverse().transposed()
@@ -105,6 +111,75 @@ func _obstruction(corners: Array[Vector3]) -> void:
 		verts.append(Vector3(hull[i].x, lo, hull[i].y))
 	# Stop short of the top: the floor of the storey above starts there.
 	obstructions.append([verts, lo, hi - lo - 0.25])
+
+
+## Vertical prism over a convex polygon (world x, z; either winding) from y0
+## to y1: chamfered slabs and floors. Collision and navigation like box().
+func prism(points: PackedVector2Array, y0: float, y1: float, mat: StringName, surface: StringName = &"",
+		occlude: bool = false) -> void:
+	var n := points.size()
+	if n < 3 or y1 - y0 < 0.001:
+		return
+	if record_solids and visuals and mat != &"":
+		solids.append([points, y0, y1])
+	var c := Vector2.ZERO
+	for p in points:
+		c += p
+	c /= n
+	var area := 0.0
+	for i in n:
+		area += points[i].cross(points[(i + 1) % n])
+	var pts := points
+	if area < 0.0:  # make it counter-clockwise in (x, z)
+		pts = points.duplicate()
+		pts.reverse()
+	var faces: Array = []  # [a, b, c, normal]
+	for i in range(1, n - 1):
+		var a := pts[0]
+		var b := pts[i]
+		var d := pts[i + 1]
+		faces.append([Vector3(a.x, y1, a.y), Vector3(b.x, y1, b.y), Vector3(d.x, y1, d.y), Vector3.UP])
+		faces.append([Vector3(a.x, y0, a.y), Vector3(d.x, y0, d.y), Vector3(b.x, y0, b.y), Vector3.DOWN])
+	for i in n:
+		var a := pts[i]
+		var b := pts[(i + 1) % n]
+		var e := b - a
+		var out := Vector3(e.y, 0, -e.x).normalized()
+		if Vector2(out.x, out.z).dot(a - c) < 0.0:
+			out = -out
+		var a0 := Vector3(a.x, y0, a.y)
+		var b0 := Vector3(b.x, y0, b.y)
+		var a1 := Vector3(a.x, y1, a.y)
+		var b1 := Vector3(b.x, y1, b.y)
+		faces.append([a0, b0, b1, out])
+		faces.append([a0, b1, a1, out])
+	var corners: Array[Vector3] = []
+	for p in pts:
+		corners.append(Vector3(p.x, y0, p.y))
+		corners.append(Vector3(p.x, y1, p.y))
+	var in_nav := surface != &"" and (nav_bounds.size == Vector3.ZERO or _intersects(corners))
+	var col_key := "%s|1" % surface
+	if surface != &"" and not collision.has(col_key):
+		collision[col_key] = []
+	for f in faces:
+		if visuals and mat != &"":
+			_tri(mat, f[0], f[1], f[2], f[3])
+		if surface != &"":
+			_append_face(collision[col_key], f[0], f[1], f[2], f[3])
+			if in_nav:
+				_append_face(nav, f[0], f[1], f[2], f[3])
+	if occlude and visuals:
+		var base := occluder_vertices.size()
+		for p in pts:
+			occluder_vertices.append(Vector3(p.x, y0, p.y))
+			occluder_vertices.append(Vector3(p.x, y1, p.y))
+		for i in range(1, n - 1):
+			occluder_indices.append_array([base, base + 2 * i, base + 2 * (i + 1)])
+			occluder_indices.append_array([base + 1, base + 2 * (i + 1) + 1, base + 2 * i + 1])
+		for i in n:
+			var j := (i + 1) % n
+			occluder_indices.append_array([base + 2 * i, base + 2 * j, base + 2 * j + 1])
+			occluder_indices.append_array([base + 2 * i, base + 2 * j + 1, base + 2 * i + 1])
 
 
 ## Nav-only obstacle (a prop's footprint) - no visuals or collision.

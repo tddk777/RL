@@ -62,11 +62,18 @@ func dress(d: ChunkBuilder.ChunkData, x: int, z: int, s: int, o: Vector3, st: Zo
 		_catwalk_clutter(k)
 		return
 	_decay(k)
+	if zn.type == &"yard":
+		_yard(k)
+		return
 	_walls(k)
 	if st.pipe_chance > 0.0 and k.r.randf() < st.pipe_chance:
 		_pipes(k)
 	if flags & LevelLayout.NARROW:
 		_passage(k)
+		return
+	if flags & (15 * LevelLayout.CHAMFER):
+		# Big pieces could reach through the cut corner: wall-side things only.
+		_wall_props(k, 0.5)
 		return
 	if flags & (LevelLayout.STAIR | LevelLayout.STAIR_ABOVE):
 		return
@@ -105,21 +112,38 @@ func dress(d: ChunkBuilder.ChunkData, x: int, z: int, s: int, o: Vector3, st: Zo
 func _blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 	var out: Array[Rect2] = []
 	for dir in 4:
-		if L.has_door(x, z, s, dir) or (L.has_flag(x, z, s, LevelLayout.DOCK) and L.is_exterior(x, z, dir)):
-			var w := 3.0
-			var n := Vector2i(x, z) + LevelLayout.DIRS[dir]
+		if L.has_door(x, z, s, dir) or (L.has_flag(x, z, s, LevelLayout.DOCK) and L.is_outside(x, z, s, dir)):
+			var span := Vector2(C * 0.5 - 1.5, C * 0.5 + 1.5)
 			if L.has_door(x, z, s, dir):
-				w = cb.door_width(x, z, s, n, st) + 1.2
+				span = cb.door_span(x, z, s, dir) + Vector2(-0.6, 0.6)
 			var depth := 2.2  # the approach; cells are big enough to walk round a centred piece
 			match dir:
 				0:
-					out.append(Rect2(C * 0.5 - w * 0.5, 0, w, depth))
+					out.append(Rect2(span.x, 0, span.y - span.x, depth))
 				1:
-					out.append(Rect2(C - depth, C * 0.5 - w * 0.5, depth, w))
+					out.append(Rect2(C - depth, span.x, depth, span.y - span.x))
 				2:
-					out.append(Rect2(C * 0.5 - w * 0.5, C - depth, w, depth))
+					out.append(Rect2(span.x, C - depth, span.y - span.x, depth))
 				3:
-					out.append(Rect2(0, C * 0.5 - w * 0.5, depth, w))
+					out.append(Rect2(0, span.x, depth, span.y - span.x))
+		if L.has_partial(x, z, s, dir):
+			out.append(cb.strip(dir, 0.9))
+		elif L.room_at(x, z, s) > 0 and L.open_edges(x, z, s) & (1 << dir) and not L.has_door(x, z, s, dir):
+			# Inside a room bigger than a cell: keep a way through to the next cell.
+			var lane := Rect2(C * 0.5 - 1.3, 0, 2.6, 2.7)
+			match dir:
+				1:
+					lane = Rect2(C - 2.7, C * 0.5 - 1.3, 2.7, 2.6)
+				2:
+					lane = Rect2(C * 0.5 - 1.3, C - 2.7, 2.6, 2.7)
+				3:
+					lane = Rect2(0, C * 0.5 - 1.3, 2.7, 2.6)
+			out.append(lane)
+	for corner in 4:
+		if L.has_chamfer(x, z, s, corner):
+			var e := LevelLayout.CHAMFER_CUT + 0.6
+			var k := cb._corner_point(corner)
+			out.append(Rect2(minf(k.x, C - e), minf(k.y, C - e), e, e))
 	var strips := L.stair_sides(x, z, s)
 	for side in 4:
 		if strips & (1 << side):
@@ -206,7 +230,9 @@ func _zone_index(k: Cell) -> Dictionary:
 
 func _wall_free(k: Cell, dir: int) -> bool:
 	return L.has_wall(k.x, k.z, k.s, dir) and not L.has_door(k.x, k.z, k.s, dir) and not L.has_window(k.x, k.z, k.s, dir) \
-		and not (L.stair_sides(k.x, k.z, k.s) & (1 << dir)) and not (L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK) and L.is_exterior(k.x, k.z, dir))
+		and not (L.stair_sides(k.x, k.z, k.s) & (1 << dir)) \
+		and not (L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK) and L.is_outside(k.x, k.z, k.s, dir)) \
+		and L.chamfer_at(k.x, k.z, k.s, dir, false) < 0 and L.chamfer_at(k.x, k.z, k.s, dir, true) < 0
 
 
 ## Point against the inner face of the wall on `dir`, `along` metres from the
@@ -250,7 +276,7 @@ func _decay(k: Cell) -> void:
 		decal(k, "moss", spot.call(), Vector3(2.5, 0.6, 2.5), r.randf() * TAU)
 		_weeds(k, r, 10)
 	# Cables hanging from the ceiling
-	if r.randf() < 0.12:
+	if r.randf() < 0.12 and type != &"yard":
 		var hc := cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s)
 		var a: Vector3 = spot.call() + UP * hc
 		var b: Vector3 = a + Vector3(r.randf_range(-1.5, 1.5), -r.randf_range(0.8, 2.0), r.randf_range(-1.5, 1.5))
@@ -262,7 +288,7 @@ func _decay(k: Cell) -> void:
 ## Wall dressing: skirting, a painted lower band or dado rail, vents up
 ## high, plaster peeling off to the brick.
 func _walls(k: Cell) -> void:
-	if k.flags & LevelLayout.NARROW or k.zn.type in ChunkBuilder.TALL:
+	if k.flags & LevelLayout.NARROW or k.zn.type in ChunkBuilder.TALL or k.zn.type == &"yard":
 		return
 	var r := cb.rng(k.x, k.z, k.s, 52)
 	var interior := k.zn.district == 1
@@ -273,10 +299,13 @@ func _walls(k: Cell) -> void:
 		if not L.has_wall(k.x, k.z, k.s, dir) or L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK):
 			continue
 		var segs: Array[Vector2] = [Vector2(0.15, C - 0.15)]
+		if L.chamfer_at(k.x, k.z, k.s, dir, false) >= 0:
+			segs[0].x = LevelLayout.CHAMFER_CUT + 0.15
+		if L.chamfer_at(k.x, k.z, k.s, dir, true) >= 0:
+			segs[0].y = C - LevelLayout.CHAMFER_CUT - 0.15
 		if L.has_door(k.x, k.z, k.s, dir):
-			var n := Vector2i(k.x, k.z) + LevelLayout.DIRS[dir]
-			var w := cb.door_width(k.x, k.z, k.s, n, k.st)
-			segs.assign([Vector2(0.15, C * 0.5 - w * 0.5 - 0.1), Vector2(C * 0.5 + w * 0.5 + 0.1, C - 0.15)])
+			var span := cb.door_span(k.x, k.z, k.s, dir)
+			segs.assign([Vector2(segs[0].x, span.x - 0.1), Vector2(span.y + 0.1, segs[0].y)])
 		if L.stair_sides(k.x, k.z, k.s) & (1 << dir):
 			continue
 		for sg in segs:
@@ -1019,7 +1048,7 @@ func _forklift(k: Cell, p: Vector3, A: Vector3) -> void:
 	if r.randf() < 0.5:
 		A = -A
 	box(k, p + UP * 0.6, _sz(A, 2.2, 0.8, 1.15), &"painted_steel_yellow", true)  # body
-	box(k, p - A * 0.8 + UP * 0.75, _sz(A, 0.6, 0.9, 1.1), &"gun_metal")  # counterweight
+	box(k, p - A * 0.82 + UP * 0.75, _sz(A, 0.6, 0.9, 1.1), &"gun_metal")  # counterweight, proud of the body
 	box(k, p - A * 0.2 + UP * 1.15, _sz(A, 0.5, 0.15, 0.6), &"prop_rubber")  # seat
 	for e: float in [-1.0, 1.0]:
 		box(k, p + A * 0.2 + B * (e * 0.55) + UP * 1.6, Vector3(0.06, 1.8, 0.06), &"gun_metal")  # overhead guard
@@ -1043,7 +1072,7 @@ func _dock(k: Cell) -> void:
 	if L.has_flag(k.x, k.z, 0, LevelLayout.DOCK):
 		# Dock leveller and bollards in front of each shutter
 		for dir in 4:
-			if L.is_exterior(k.x, k.z, dir):
+			if L.is_outside(k.x, k.z, 0, dir) and not L.has_door(k.x, k.z, 0, dir):
 				var p := _wall_at(k, dir, 0.0, 1.2)
 				var A := LevelLayout.dir_vector((dir + 1) % 4)
 				box(k, p + UP * 0.02, _sz(A, 3.2, 0.04, 2.2), &"painted_steel_yellow")
@@ -1064,6 +1093,114 @@ func _dock(k: Cell) -> void:
 	elif roll < 0.7:
 		_pallet_stack(k, k.c + Vector3(r.randf_range(-2, 2), 0, r.randf_range(-2, 2)))
 	_wall_props(k, 0.4, ["pallet", "crate_wood", "barrel_rust"])
+
+
+# --- Yards and open ground ----------------------------------------------------------------
+
+## Open-air courtyard: cracked asphalt gone to weeds, puddles, whatever was
+## dumped there.
+func _yard(k: Cell) -> void:
+	var r := k.r
+	_weeds(k, r, r.randi_range(6, 16))
+	for i in r.randi_range(1, 3):
+		var p := k.o + Vector3(r.randf_range(1.0, C - 1.0), 0, r.randf_range(1.0, C - 1.0))
+		decal(k, ["moss", "puddle", "crack", "oil"][r.randi_range(0, 3)], p, Vector3(r.randf_range(1.5, 3.5), 0.5, r.randf_range(1.5, 3.5)), r.randf() * TAU)
+	var roll := r.randf()
+	var p := k.c + Vector3(r.randf_range(-1.5, 1.5), 0, r.randf_range(-1.5, 1.5))
+	if roll < 0.12 and _free(k, Rect2(p.x - k.o.x - 2.6, p.z - k.o.z - 2.6, 5.2, 5.2)):
+		_wreck(k.d, p, r.randf() * TAU, r, true)
+	elif roll < 0.3:
+		_pallet_stack(k, p)
+	elif roll < 0.45:
+		for q in _cluster(r, p, r.randi_range(2, 4)):
+			if _free(k, Rect2(q.x - k.o.x - 0.4, q.z - k.o.z - 0.4, 0.8, 0.8)):
+				cb.kit(k.d, ["barrel_rust", "barrel_blue", "barrel_rust"][r.randi_range(0, 2)], q, r.randf() * TAU)
+	elif roll < 0.55 and _free(k, Rect2(p.x - k.o.x - 1.2, p.z - k.o.z - 1.2, 2.4, 2.4)):
+		cb.kit(k.d, "rubble", p, r.randf() * TAU)
+
+
+## Ground between the buildings, seen through windows and over yard walls:
+## weeds, rubble, puddles, junk, the odd wreck, a fence round the site. Pure
+## scenery: nothing out here collides.
+func outside(d: ChunkBuilder.ChunkData, x: int, z: int, o: Vector3) -> void:
+	if not d.geo.visuals:
+		return
+	var r := cb.rng(x, z, 0, 100)
+	var g := d.geo
+	var lo := 1.2
+	var hi := C - 1.2
+	for i in r.randi_range(4, 12):
+		var p := o + Vector3(r.randf_range(lo, hi), 0, r.randf_range(lo, hi))
+		for j in 3:
+			var tip := p + Vector3(r.randf_range(-0.3, 0.3), r.randf_range(0.2, 0.8), r.randf_range(-0.3, 0.3))
+			g.frustum(p, tip, 0.03, 0.0, &"moss", 4)
+	for i in r.randi_range(0, 6):
+		var p := o + Vector3(r.randf_range(lo, hi), 0, r.randf_range(lo, hi))
+		var size := Vector3(r.randf_range(0.15, 0.6), r.randf_range(0.08, 0.3), r.randf_range(0.15, 0.5))
+		g.box(p + UP * size.y * 0.3, size, &"concrete_dark", &"", false, Basis.from_euler(Vector3(r.randf_range(-0.3, 0.3), r.randf() * TAU, 0)))
+	if r.randf() < 0.35:
+		d.decals.append(["puddle", Transform3D(Basis(UP, r.randf() * TAU), o + Vector3(r.randf_range(2, 6), 0.0, r.randf_range(2, 6))),
+			Vector3(r.randf_range(2.0, 4.0), 0.5, r.randf_range(2.0, 3.5))])
+	var bridge_above := L.is_enclosed(x, z, 1)
+	var c := o + Vector3(C * 0.5 + r.randf_range(-1, 1), 0, C * 0.5 + r.randf_range(-1, 1))
+	var roll := r.randf()
+	if not bridge_above:
+		if roll < 0.07:
+			_wreck(d, c, r.randf() * TAU, r, false)
+		elif roll < 0.15:
+			for q in _cluster(r, c, r.randi_range(2, 5)):
+				cb.kit(d, ["barrel_rust", "barrel_blue", "barrel_orange"][r.randi_range(0, 2)], q, r.randf() * TAU, {"collide": false})
+		elif roll < 0.22:
+			cb.kit(d, "pallet", c, r.randf() * TAU, {"collide": false})
+			cb.kit(d, "crate_wood", c + Vector3(0, 0.15, 0), r.randf() * TAU, {"collide": false})
+		elif roll < 0.28:
+			cb.kit(d, "rubble", c, r.randf() * TAU, {"collide": false})
+		elif roll < 0.31:
+			cb.kit(d, "shipping_container", c, (PI * 0.5) * r.randi_range(0, 1) + r.randf_range(-0.1, 0.1), {"collide": false})
+	# Chain-link fence and poles round the edge of the site.
+	for dir in 4:
+		var n := Vector2i(x, z) + LevelLayout.DIRS[dir]
+		if n.x >= 0 and n.y >= 0 and n.x < L.size.x and n.y < L.size.y:
+			continue
+		var sp := cb.edge_span(o, dir)
+		var inset := -1.5  # a little way out from the cell edge
+		for i in 4:
+			var a := C * i / 4.0
+			cb.sbox(g, sp, a - 0.04, a + 0.04, 0.0, 2.6, 0.08, inset, &"gun_metal")
+		cb.sbox(g, sp, 0.0, C, 0.1, 2.5, 0.015, inset, &"steel_grate")
+		if (x * 7 + z * 3 + dir) % 4 == 0:
+			var p := sp.origin + sp.u * (C * 0.5) - sp.m * 3.0
+			g.cylinder(p, p + UP * 9.0, 0.14, &"wood_planks", 8)
+			g.box(p + UP * 8.4, Vector3(1.8, 0.12, 0.12) if absf(sp.u.x) > 0.5 else Vector3(0.12, 0.12, 1.8), &"wood_planks")
+
+
+## Up to n spots round p on a 0.7 m grid (barrels side by side, never inside
+## each other).
+static func _cluster(r: RandomNumberGenerator, p: Vector3, n: int) -> Array[Vector3]:
+	var spots: Array = []
+	for i in range(-1, 2):
+		for j in range(-1, 2):
+			spots.append(Vector3(i * 0.7, 0, j * 0.7))
+	var out: Array[Vector3] = []
+	for i in mini(n, spots.size()):
+		var q: Vector3 = spots.pop_at(r.randi_range(0, spots.size() - 1))
+		out.append(p + q + Vector3(r.randf_range(-0.04, 0.04), 0, r.randf_range(-0.04, 0.04)))
+	return out
+
+
+## A burnt-out car on its rims.
+func _wreck(d: ChunkBuilder.ChunkData, p: Vector3, yaw: float, r: RandomNumberGenerator, collide: bool) -> void:
+	var b := Basis(UP, yaw) * Basis(Vector3.FORWARD, r.randf_range(-0.05, 0.05))
+	var mat: StringName = [&"prop_rust", &"rusted_metal", &"prop_steel_blue"][r.randi_range(0, 2)]
+	d.geo.box(p + b * Vector3(0, 0.62, 0), Vector3(4.2, 0.62, 1.75), mat, &"", false, b)
+	d.geo.box(p + b * Vector3(-0.3, 1.18, 0), Vector3(2.1, 0.5, 1.6), mat, &"", false, b)
+	d.geo.box(p + b * Vector3(-0.3, 1.18, 0), Vector3(1.9, 0.42, 1.64), &"soot", &"", false, b)  # empty window frames
+	for e: float in [-1.0, 1.0]:
+		for f: float in [-1.0, 1.0]:
+			var w := p + b * Vector3(e * 1.35, 0.3, f * 0.8)
+			d.geo.cylinder(w - b * Vector3(0, 0, 0.1), w + b * Vector3(0, 0, 0.1), 0.3, &"gun_metal", 10, true)
+	if collide:
+		d.geo.box(p + b * Vector3(0, 0.7, 0), Vector3(4.2, 1.4, 1.75), &"", &"metal", false, b)
 
 
 # --- Corridors -----------------------------------------------------------------------------
@@ -1186,11 +1323,25 @@ func _wall_props(k: Cell, density: float, ids: Array = []) -> void:
 		var fallen_at := k.o + local + (k.c - (k.o + local)).normalized() * 0.9
 		if id in ["locker", "filing_cabinet", "electrical_cabinet"] and r.randf() < 0.15 \
 				and _free(k, Rect2(fallen_at.x - k.o.x - 1.1, fallen_at.z - k.o.z - 1.1, 2.2, 2.2)):
-			cb.kit(k.d, id, k.o + local + (k.c - (k.o + local)).normalized() * 0.6 + UP * size.z * 0.5, yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))
+			# (a hair above the floor: parts of its face sit proud of the footprint)
+			cb.kit(k.d, id, k.o + local + (k.c - (k.o + local)).normalized() * 0.6 + UP * (size.z * 0.5 + 0.012), yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))
 			continue
 		cb.kit(k.d, id, k.o + local, yaw)
 		if id.begins_with("crate") and r.randf() < 0.3:
 			cb.kit(k.d, "crate_small", k.o + local + UP * size.y, r.randf() * TAU)
+
+
+## Up to n positions in -half..half for things `width` wide that don't
+## overlap (two overlapping boxes flicker where their faces meet).
+static func _slots(r: RandomNumberGenerator, n: int, half: float, width: float) -> Array[float]:
+	var out: Array[float] = []
+	var count := maxi(int(floor(half * 2.0 / (width + 0.02))), 1)
+	var free: Array = range(count)
+	for i in mini(n, count):
+		var pick: int = free.pop_at(r.randi_range(0, free.size() - 1))
+		var step := half * 2.0 / count
+		out.append(-half + step * (pick + 0.5) + r.randf_range(-1.0, 1.0) * maxf(step - width - 0.02, 0.0) * 0.5)
+	return out
 
 
 func _weighted(r: RandomNumberGenerator, table: Dictionary) -> String:
@@ -1329,9 +1480,9 @@ func _meeting(k: Cell) -> void:
 					_chair(k, q, atan2(-B.x * e, -B.z * e) + PI + r.randf_range(-0.5, 0.5), r)
 	for dir in 4:
 		if _wall_free(k, dir):
-			var q := _wall_at(k, dir, 0.0, 0.03, 1.5)
+			var q := _wall_at(k, dir, 0.0, 0.03, 1.6)
 			var W := LevelLayout.dir_vector((dir + 1) % 4)
-			box(k, q, _sz(W, 2.2, 1.1, 0.03), &"plaster")  # whiteboard
+			box(k, q, _sz(W, 2.2, 1.1, 0.03), &"plaster")  # whiteboard, clear of the dado rail
 			box(k, q + Vector3.DOWN * 0.6 - LevelLayout.dir_vector(dir) * 0.05, _sz(W, 2.0, 0.03, 0.08), &"gun_metal")
 			break
 
@@ -1351,8 +1502,8 @@ func _archive(k: Cell) -> void:
 				continue
 			cb.kit(k.d, "shelf", p, atan2(B.x, B.z) if along_x else atan2(A.x, A.z) + PI * 0.5)
 			for y: float in [0.25, 1.15, 2.05]:
-				for j in r.randi_range(1, 4):
-					box(k, p + A * r.randf_range(-0.8, 0.8) + UP * (y + 0.18), _sz(A, 0.4, 0.3, 0.35), &"fabric_canvas")
+				for t in _slots(r, r.randi_range(1, 4), 0.8, 0.4):
+					box(k, p + A * t + UP * (y + 0.18), _sz(A, 0.4, 0.3, 0.33), &"fabric_canvas")
 	for i in 3:
 		decal(k, "papers", k.o + Vector3(r.randf_range(1, C - 1), 0, r.randf_range(1, C - 1)), Vector3(1.6, 0.4, 1.6), r.randf() * TAU)
 
@@ -1430,7 +1581,7 @@ func _lockers(k: Cell) -> void:
 				continue
 			var yaw := atan2(B.x * e, B.z * e)
 			if r.randf() < 0.08 and _free(k, _rect(k, p + B * (e * 1.2), A, 0.6, 2.0)):
-				cb.kit(k.d, "locker", p + B * (e * 0.9) + UP * 0.25, yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))
+				cb.kit(k.d, "locker", p + B * (e * 0.9) + UP * 0.262, yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))
 			elif r.randf() < 0.9:
 				cb.kit(k.d, "locker", p, yaw)
 	# Benches either side
@@ -1525,9 +1676,9 @@ func _parts(k: Cell) -> void:
 				continue
 			cb.kit(k.d, "shelf", p, atan2(B.x, B.z) if along_x else atan2(A.x, A.z) + PI * 0.5)
 			for y: float in [0.25, 1.15, 2.05]:
-				for j in r.randi_range(2, 5):
+				for t in _slots(r, r.randi_range(2, 5), 0.8, 0.3):
 					var mat: StringName = [&"painted_steel_blue", &"painted_steel_red", &"painted_steel", &"painted_steel_yellow"][r.randi_range(0, 3)]
-					box(k, p + A * r.randf_range(-0.8, 0.8) + UP * (y + 0.12), _sz(A, 0.3, 0.2, 0.45), mat)  # bins
+					box(k, p + A * t + UP * (y + 0.12), _sz(A, 0.3, 0.2, 0.45), mat)  # bins
 	if r.randf() < 0.4:
 		_trolley(k, k.c + A * r.randf_range(-2, 2))
 

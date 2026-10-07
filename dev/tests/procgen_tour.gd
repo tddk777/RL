@@ -62,10 +62,9 @@ func _run() -> void:
 				elif L.has_flag(x, z, s, LevelLayout.NARROW):
 					key = "passage_" + String(zn.type)
 				if zn.type in ChunkBuilder.TALL and s == 0:
-					var ix := x - zn.rect.position.x
-					var iz := z - zn.rect.position.y
-					if ix != 0 or iz != zn.rect.size.y / 2:
-						continue  # tall spaces: from the middle of one end wall, looking down the hall
+					# Tall spaces: from a west wall, looking down the hall.
+					if zn.cols.has(Vector2i(x - 1, z)) or not zn.cols.has(Vector2i(x + 1, z)) or not zn.cols.has(Vector2i(x + 2, z)):
+						continue
 					key = String(zn.type)
 				if seen.has(key):
 					continue
@@ -95,6 +94,35 @@ func _run() -> void:
 		var c: Vector3i = a["cell"]
 		var floor_y := L.cell_center(c.x, c.y, c.z).y
 		views.append([key, Vector3(at.x, floor_y, at.z) - v * (2.2 if a["kind"] == &"odd_corpse" else 3.2), v, -22.0 if a["kind"] != &"symbol" else 0.0])
+	# From outside: a hall's windowed facade, a covered walkway, a corner of the complex.
+	var outside_views := {}
+	for z in L.size.y:
+		for x in L.size.x:
+			var zn := L.zone_of(x, z, 0)
+			if zn == null:
+				continue
+			var key := ""
+			if zn.type in [&"hall", &"foundry", &"warehouse"]:
+				key = "outside_hall"
+			elif zn.type == &"connector":
+				key = "outside_walkway"
+			elif zn.type in [&"office", &"maintenance"]:
+				key = "outside_block"
+			if key == "" or outside_views.has(key):
+				continue
+			for d in 4:
+				var clear := true
+				for k in range(1, 4):
+					var n := Vector2i(x, z) + LevelLayout.DIRS[d] * k
+					if L.is_enclosed(n.x, n.y, 0) or L.is_enclosed(n.x, n.y, 1):
+						clear = false
+				if not clear:
+					continue
+				var v := LevelLayout.dir_vector(d)
+				var side := LevelLayout.dir_vector((d + 1) % 4)
+				views.append([key, L.cell_center(x, z, 0) + v * 18.0 + side * 6.0, (-v * 18.0 - side * 6.0).normalized(), 14.0])
+				outside_views[key] = true
+				break
 	var e: Dictionary = L.exits[0]
 	var ev := LevelLayout.dir_vector(e["dir"])
 	views.append(["exit_" + String(e["kind"]), (e["position"] as Vector3) - ev * 3.5, ev, -2.0])

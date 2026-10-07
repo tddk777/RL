@@ -72,16 +72,21 @@ L4 labs, ...) are mostly data:
 
 1. **Styles.** A `ZoneStyle` (`levels/procgen/zone_style.gd`) per kind of
    space: `type` (hall, foundry, processing, office, maintenance, warehouse,
-   storage, loading_dock, corridor), `family` (factory, interior, storage),
+   storage, loading_dock; `corridor` for walkways, `yard` for courtyards),
+   `family` (factory, interior, storage),
    `weight`, `extra_storeys`, materials, door sizes, `windows`, shape
    (`narrow` passages and their `passage_width`, `drop_ceiling` height),
    lights, and dressing densities (props, pipes, leaks, collapse, roof holes).
 2. **Profile.** A `LevelProfile` (`levels/procgen/level_profile.gd`): grid
    (`grid_size`, `storeys`, `cell_size`, `storey_height`, `chunk_cells`),
-   block sizes, `districts` and `blend_chance`, one corridor style per family
-   and the building styles, population (enemies, exits, weapon/ammo pickups,
-   corpses), anomalies and atmosphere. `dev/generators/build_l1_profile.gd` is
-   the L1 example; copy it, or build the resources in the Inspector.
+   how the site grows (`coverage`, `max_buildings`, `touch_chance` vs
+   walkways up to `max_gap` cells, `abut_chance`, `yards`, `bridges`,
+   `chamfer_chance`, `partial_chance`, `districts`), one walkway style per
+   family (`corridors`), the `yard` style and the building styles,
+   population (enemies, exits, weapon/ammo pickups, corpses), anomalies and
+   atmosphere (environment, `daylight_energy`/`daylight_color`, ground
+   material, `skyline`). `dev/generators/build_l1_profile.gd` is the L1
+   example; copy it, or build the resources in the Inspector.
 3. **Scene.** A scene whose root uses `levels/procgen/procedural_level.gd`
    with the profile assigned.
 4. **Register** a `LevelData` with `order`, `display_name`, `subtitle` and
@@ -93,8 +98,13 @@ dispatches on zone type (tall spaces) or room use (rooms; uses are chosen in
 patterns (conveyor rows, rack rows, the crane) are laid out from zone
 coordinates so every cell builds its own part. Keep `_free()` checks so door
 approaches and stair strips stay clear (`dev/tests/procgen_test.tscn` checks
-both sides of every door are reachable). New zone types need a fill rule in
-`LayoutGenerator._build_block`. New wall marks and floor stains go in
+both sides of every door are reachable, and that the player can walk up and
+down flights). New building types need a shape in
+`LayoutGenerator._make_shape` and a fill rule in `_fill_building`.
+Architecture lives in `levels/procgen/chunk_builder.gd`; keep its rule that
+no two faces share a plane (walls run between pillars, slabs stop at the
+walls below them, trim overlaps cut edges instead of meeting them flush),
+or surfaces flicker. New wall marks and floor stains go in
 `dev/asset_gen/decals.py`; new "odd" things in `levels/procgen/entities/`
 (spawned from `Anomalies.spawn`).
 

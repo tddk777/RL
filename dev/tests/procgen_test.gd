@@ -199,6 +199,39 @@ func _run() -> void:
 			print("INFO  did not land at %s (now %s, on floor %s)" % [p, player.global_position, player.is_on_floor()])
 	check(landed == stops.size(), "floors hold the player on every storey (%d of %d)" % [landed, stops.size()])
 
+	# Walk up and down flights: the player must get onto the landing and back
+	# off the bottom step (no lip at the top, no snag at the foot).
+	player.health.max_health = 1e9
+	player.health.current = 1e9
+	for npc in get_tree().get_nodes_in_group(&"npc"):
+		npc.process_mode = Node.PROCESS_MODE_DISABLED
+	var flights := 0
+	var climbed := 0
+	var descended := 0
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				if flights >= 5 or not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				flights += 1
+				var rr := level.builder.run_rect(L.stair_dir(x, z, s), L.stair_side(x, z, s))
+				var o := L.cell_origin(x, z, s)
+				var a := LevelLayout.dir_vector(L.stair_dir(x, z, s))
+				var mid := o + Vector3(rr.position.x + rr.size.x * 0.5, 0, rr.position.y + rr.size.y * 0.5)
+				if await _walk(player, mid - a * (LevelLayout.RUN * 0.5 + 0.5), a,
+						func() -> bool: return player.global_position.y > o.y + L.storey_height - 0.2 and (player.global_position - mid).dot(a) > LevelLayout.RUN * 0.5):
+					climbed += 1
+				else:
+					print("INFO  stuck going up the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
+				if await _walk(player, mid + a * (LevelLayout.RUN * 0.5 + 0.8) + Vector3.UP * L.storey_height, -a,
+						func() -> bool: return player.global_position.y < o.y + 0.2 and (player.global_position - mid).dot(a) < -LevelLayout.RUN * 0.5):
+					descended += 1
+				else:
+					print("INFO  stuck going down the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
+	check(flights > 0 and climbed == flights and descended == flights, "player walks up and down flights (%d of %d up, %d down)" % [climbed, flights, descended])
+	for npc in get_tree().get_nodes_in_group(&"npc"):
+		npc.process_mode = Node.PROCESS_MODE_INHERIT
+
 	# Exits
 	var door: ExitDoor = level.exit_nodes.get(0)
 	check(is_instance_valid(door), "exit door placed")
@@ -228,3 +261,22 @@ func _run() -> void:
 		check(Game.state == Game.State.FINISHED, "walking through the exit ends the level")
 	print("FAILURES: %d" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+## Holds forward from `from` facing `dir` until `arrived` or 12 s pass.
+func _walk(player: Player, from: Vector3, dir: Vector3, arrived: Callable) -> bool:
+	player.global_position = from + Vector3.UP * 0.1
+	player.velocity = Vector3.ZERO
+	player.rotation.y = atan2(-dir.x, -dir.z)
+	player.set(&"_pitch", 0.0)
+	for f in 10:
+		await get_tree().physics_frame
+	Input.action_press(&"move_forward")
+	var ok := false
+	for f in 720:
+		await get_tree().physics_frame
+		if arrived.call():
+			ok = true
+			break
+	Input.action_release(&"move_forward")
+	return ok

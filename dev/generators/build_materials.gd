@@ -36,6 +36,8 @@ const DEFS := {
 	"glass_dirty": ["", Color(0.55, 0.6, 0.58, 0.35), 0.15, 0.0, 1.0, true, {"transparent": true}],
 	"cable": ["rubber", Color(0.35, 0.35, 0.35), 0.7, 0.0, 2.0, true, {}],
 	"paper": ["fabric_canvas", Color(1.15, 1.12, 1.0), 0.95, 0.0, 1.2, true, {}],
+	"asphalt": ["concrete_floor", Color(0.5, 0.5, 0.5), 0.95, 0.0, 0.22, true, {"shader": true, "dust": 0.5, "grime": 0.7, "macro": 0.45}],
+	"ground": ["concrete_floor", Color(0.58, 0.52, 0.42), 1.0, 0.0, 0.12, true, {"shader": true, "dust": 0.8, "grime": 0.8, "macro": 0.6}],
 	"moss": ["fabric_dark", Color(0.55, 0.85, 0.35), 0.95, 0.0, 2.0, true, {}],
 	# Props: object-space triplanar when used as nodes, world space when merged
 	# into level geometry.

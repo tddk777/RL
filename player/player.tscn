@@ -33,7 +33,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.68, 0)
 current = true
 fov = 75.0
 near = 0.02
-far = 300.0
+far = 520.0
 
 [node name="WeaponHolder" type="Node3D" parent="Head/Camera3D"]
 script = ExtResource("2_holder")

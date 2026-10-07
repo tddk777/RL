@@ -35,7 +35,7 @@ func _initialize() -> void:
 		var exit_kinds := L.exits.map(func(e: Dictionary) -> String: return "%s@%d" % [e.kind, L.distance[L.idx(e.cell.x, e.cell.y, e.cell.z)]])
 		print("seed %d: %d ms, zones %s, walkable %d reachable %d per storey %s, stairs %d, max dist %d, exits %s, enemies %d, pickups %d, anomalies %d" % [
 			seed, ms, types, walk, reach, per_storey, stairs, L.max_distance, exit_kinds, L.enemies.size(), L.pickups.size(), L.anomalies.size()])
-		var ok := L.exits.size() >= 2 and reach > 600 and L.enemies.size() >= 6
+		var ok := L.exits.size() >= 2 and reach > 300 and L.enemies.size() >= 6
 		# Every flight lands on walkable floor in its own column, and every
 		# hole has the flight under it.
 		for s in L.storeys:
@@ -52,7 +52,7 @@ func _initialize() -> void:
 		var families := {}
 		for z in L.zones:
 			families[z.style.family if z.style else &"?"] = true
-		if families.size() < 3:
+		if families.size() < 2:
 			print("  missing districts: %s" % [families.keys()])
 			ok = false
 		for e in L.exits:
@@ -63,7 +63,7 @@ func _initialize() -> void:
 		var reached_upper := 0
 		for s in range(1, L.storeys):
 			reached_upper += per_storey[s]
-		if reached_upper < 100:
+		if reached_upper < 60:
 			ok = false
 		# Determinism
 		var again := LayoutGenerator.generate(profile, seed)

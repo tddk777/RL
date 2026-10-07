@@ -10,17 +10,32 @@ extends Resource
 @export var cell_size: float = 8.0
 @export var storey_height: float = 4.5
 @export var chunk_cells: int = 5
-## Building blocks are cut until both sides are at most this many cells.
-@export var max_block: int = 8
-@export var min_block: int = 3
+## Share of the site covered by buildings; the rest is yards and open ground.
+@export_range(0.1, 0.9) var coverage: float = 0.42
+@export var max_buildings: int = 22
+## Chance a new building is built against its neighbour instead of being
+## joined to it by a covered walkway.
+@export_range(0.0, 1.0) var touch_chance: float = 0.45
+## Longest walkway, in cells.
+@export var max_gap: int = 3
+## Chance a building may also touch buildings other than the one it grew from.
+@export_range(0.0, 1.0) var abut_chance: float = 0.3
+## Open-air courtyards and bridges between upper floors.
+@export var yards: int = 2
+@export var bridges: int = 2
+## Chance per eligible outer corner of being cut at 45 degrees.
+@export_range(0.0, 1.0) var chamfer_chance: float = 0.3
+## Chance per room of a stub of wall partly dividing it.
+@export_range(0.0, 1.0) var partial_chance: float = 0.35
 ## District centres; each gets one family (factory, interior, storage).
 @export var districts: int = 3
-## Chance that a building straddling two districts takes the other one's style.
-@export_range(0.0, 1.0) var blend_chance: float = 0.4
 
 @export_group("Spaces")
-## Corridor styles, one per family (see ZoneStyle.family).
+## Walkway styles, one per family (see ZoneStyle.family): covered passages
+## between buildings and bridges between upper floors.
 @export var corridors: Array[ZoneStyle] = []
+## Open-air courtyards.
+@export var yard: ZoneStyle
 ## Building styles. Their `type` must be one LayoutGenerator knows:
 ## hall, foundry, processing, office, maintenance, warehouse, storage,
 ## loading_dock.
@@ -48,6 +63,13 @@ extends Resource
 
 @export_group("Atmosphere")
 @export var environment: Environment
+## Overcast daylight (a soft directional light with shadows, so it only
+## reaches inside through windows, doors and roof holes). 0 = none.
+@export var daylight_energy: float = 0.8
+@export var daylight_color := Color(0.86, 0.89, 0.95)
+## Ground round the buildings and the distant skyline.
+@export var ground_material: StringName = &"ground"
+@export var skyline: bool = true
 @export var ambience: AudioStream
 @export var random_sounds: Array[AudioStream] = []
 

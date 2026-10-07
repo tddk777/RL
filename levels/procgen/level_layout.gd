@@ -20,7 +20,15 @@ const EXIT := 4096       # an exit door is on one of this cell's walls
 const NARROW := 8192     # cramped passage: solid fill around a narrow cross of corridors
 const BRIDGE_X := 16384  # catwalk bridge through the middle of the cell along X
 const BRIDGE_Z := 32768  # catwalk bridge through the middle of the cell along Z
-const WINDOW := 65536    # << dir: interior window in the wall on that edge
+const WINDOW := 65536    # << dir: window in the wall on that edge
+const CHAMFER := 1 << 20 # << corner: the building's outer corner is cut at 45 degrees
+const PARTIAL := 1 << 24 # << dir: a stub of wall on an open edge inside a room
+
+## Corners of a cell: 0 = N-W, 1 = N-E, 2 = S-E, 3 = S-W. CORNER_DIRS[c] are
+## the two sides that meet there.
+const CORNER_DIRS: Array = [[0, 3], [0, 1], [2, 1], [2, 3]]
+## How far a chamfer cuts along each of the two walls.
+const CHAMFER_CUT := 2.8
 
 ## Stair geometry: a flight climbs one storey over RUN metres along its strip,
 ## starting FOOT metres in from the cell edge behind it (room to step on in
@@ -38,7 +46,10 @@ class Zone:
 	var type: StringName
 	var style: ZoneStyle
 	var district: int = 0
+	## Bounding box of the footprint.
 	var rect: Rect2i
+	## Footprint: column (Vector2i) -> top storey of that column.
+	var cols: Dictionary = {}
 	var base: int = 0
 	var top: int = 0
 
@@ -236,6 +247,37 @@ func is_exterior(x: int, z: int, dir: int) -> bool:
 	return n.x < 0 or n.y < 0 or n.x >= size.x or n.y >= size.y
 
 
+## Open air on this side at this storey: past the edge of the site or a
+## column with nothing built at this storey.
+func is_outside(x: int, z: int, s: int, dir: int) -> bool:
+	var n := Vector2i(x, z) + DIRS[dir]
+	return not is_enclosed(n.x, n.y, s)
+
+
+func has_chamfer(x: int, z: int, s: int, corner: int) -> bool:
+	return has_flag(x, z, s, CHAMFER << corner)
+
+
+## The chamfered corner at the start (along = 0) or end (along = cell) of
+## the wall on `dir`, as a corner index, or -1.
+func chamfer_at(x: int, z: int, s: int, dir: int, at_end: bool) -> int:
+	for c in 4:
+		if not has_chamfer(x, z, s, c):
+			continue
+		var dirs: Array = CORNER_DIRS[c]
+		if dir != dirs[0] and dir != dirs[1]:
+			continue
+		# Along runs +X for N/S walls and +Z for E/W walls.
+		var corner_is_end := (c == 1 or c == 2) if dir % 2 == 0 else (c == 2 or c == 3)
+		if corner_is_end == at_end:
+			return c
+	return -1
+
+
+func has_partial(x: int, z: int, s: int, dir: int) -> bool:
+	return has_flag(x, z, s, PARTIAL << dir)
+
+
 ## Edges of this cell that open onto the next cell on the same storey (open
 ## space of the same room, or a door - even one onto a collapsed floor), as
 ## a bit mask.
@@ -333,8 +375,8 @@ func zone_name(x: int, z: int, s: int) -> String:
 ## Text map of one storey (tests and debugging).
 func ascii(s: int) -> String:
 	var chars := {Kind.EMPTY: " ", Kind.FLOOR: ".", Kind.VOID: "~", Kind.CATWALK: "=", Kind.HOLE: "O"}
-	var type_char := {&"corridor": "+", &"hall": "H", &"foundry": "F", &"warehouse": "W", &"processing": "P",
-		&"office": "o", &"maintenance": "m", &"storage": "s", &"loading_dock": "D"}
+	var type_char := {&"corridor": "+", &"connector": "+", &"yard": "#", &"hall": "H", &"foundry": "F", &"warehouse": "W",
+		&"processing": "P", &"office": "o", &"maintenance": "m", &"storage": "s", &"loading_dock": "D"}
 	var lines := PackedStringArray()
 	for z in size.y:
 		var row := ""
@@ -347,7 +389,7 @@ func ascii(s: int) -> String:
 				if has_flag(x, z, s, NARROW):
 					ch = ":"
 			if has_flag(x, z, s, BRIDGE_X | BRIDGE_Z):
-				ch = "#"
+				ch = "="
 			if has_flag(x, z, s, STAIR):
 				ch = "^"
 			if has_flag(x, z, s, EXIT):

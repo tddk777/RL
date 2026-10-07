@@ -88,28 +88,43 @@ Key contracts:
   decides sequence). Hand-built levels use a `PlayerSpawn` marker, `EnemySpawn`
   markers, a `LevelExit` and a baked `NavigationRegion3D`.
 - **Procedural levels** (`levels/procgen/`): a `ProceduralLevel` scene with a
-  `LevelProfile` (grid, storeys, districts, population, anomalies,
-  environment) whose `ZoneStyle`s set materials, doors, lights, shape (cramped
-  passages, drop ceilings) and dressing per space type. Each style belongs to
-  a family (`factory`, `interior`, `storage`); the level is split into
-  districts of those families that blend at their borders.
+  `LevelProfile` (grid, storeys, how the site grows, districts, population,
+  anomalies, atmosphere and daylight) whose `ZoneStyle`s set materials,
+  doors, lights, shape (cramped passages, drop ceilings) and dressing per
+  space type. Each style belongs to a family (`factory`, `interior`,
+  `storage`); districts of those families blend at their borders.
   `LayoutGenerator.generate(profile, seed)` makes a `LevelLayout` (3D cell
-  grid, rooms with a use, entity records), deterministic per seed: BSP blocks
-  and corridors, districts, buildings (tall halls with catwalk rings and
-  bridges, foundries, warehouses, docks; storeyed blocks of rooms off a
-  cramped hallway with a switchback stairwell), stairs, doors, interior
-  windows, collapse, connectivity, exits, enemies, pickups, anomalies.
+  grid, zones with an irregular footprint `cols`, rooms with a use, entity
+  records), deterministic per seed. It grows the site like a real one: a
+  loading dock at the edge, then buildings of irregular shape (wings,
+  notches, setbacks) each set against its parent or joined to it by a
+  covered walkway (zone type `connector`), biased toward open ground; then
+  walled courtyards (`yard`), bridges between upper floors, fills each
+  building (tall halls with catwalk rings and bridges, foundries,
+  warehouses, docks; storeyed blocks of rooms off a hallway with a
+  stairwell), stairs, doors, cut corners (`CHAMFER`), windows (`WINDOW`),
+  stub walls (`PARTIAL`), collapse, connectivity, exits, enemies, pickups,
+  anomalies. Everything that isn't a building cell (open ground, yards,
+  walkways) is "outdoor" to a building, which builds that wall whole.
   `ChunkBuilder` (architecture) and `SetPieces` (machines, conveyor lines,
-  furnaces, racks, cubicles, boilers, lockers, decay...) turn 5x5 cells into
-  merged meshes, collision, occluders and navigation source on worker
-  threads. Kit props are merged into the chunk meshes (lamps stay nodes).
-  `ProceduralLevel.prepare()` builds the whole level while it loads (no
-  streaming), bakes one navigation mesh, then snaps entities onto it.
+  furnaces, racks, cubicles, boilers, lockers, yards, open ground...) turn
+  8 m cells into merged meshes, collision, occluders and navigation source on
+  worker threads. Kit props are merged into the chunk meshes (lamps stay
+  nodes). `ProceduralLevel.prepare()` builds the whole level while it loads
+  (no streaming), adds the daylight, ground and skyline, bakes one
+  navigation mesh, then snaps entities onto it.
+  No two faces may share a plane (that flickers): walls run between pillars
+  at the grid vertices, a slab stops at the full-height walls of the storey
+  below it (their tops make the floor there), fills tuck under slabs, and
+  trim (sills, frames, lintels) overlaps the cut edges of a wall rather than
+  meeting them flush.
   A new seed is drawn every run and every retry (`Game.level_seed`, shown in
   pause). Any per-cell randomness must use a seeded RNG (`hash([seed, x, z,
   s, purpose])`), never the global one: `Array.shuffle()` uses the global RNG.
   Navigation gotchas: the baker sees only surfaces, so tall solid boxes are
-  also added as projected obstructions (`GeoBuilder.obstructions`); query
+  also added as projected obstructions (`GeoBuilder.obstructions`); the
+  agent radius must be a whole number of cells (it is rounded up, and 0.5 m
+  closes the 1.4 m office doors); query
   paths across the level with `path_search_max_polygons = 0` (the default
   4096 gives up on long paths); wait for a map iteration before querying a
   newly added region.
@@ -168,7 +183,8 @@ godot --headless res://dev/tests/smoke_test.tscn       # end-to-end test, prints
 godot --headless res://dev/tests/procgen_test.tscn     # generation, navigation, stairs, doors, exits, pickups
 godot --headless --script res://dev/tests/layout_test.gd   # layout invariants over several seeds
 godot --rendering-driver vulkan res://dev/tests/smoke_test.tscn -- <dir>   # also saves screenshots
-godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type
+godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type, plus views from outside
+godot --headless res://dev/tests/coplanar_check.tscn -- <file> [seed] && python3 dev/tests/coplanar_check.py <file>   # faces that would flicker
 ```
 
 ## Planned, not built

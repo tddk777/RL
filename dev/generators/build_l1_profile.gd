@@ -17,10 +17,16 @@ func _initialize() -> void:
 	p.cell_size = 8.0
 	p.storey_height = 4.5
 	p.chunk_cells = 5
-	p.max_block = 8
-	p.min_block = 3
+	p.coverage = 0.5
+	p.max_buildings = 22
+	p.touch_chance = 0.45
+	p.max_gap = 3
+	p.abut_chance = 0.3
+	p.yards = 2
+	p.bridges = 2
+	p.chamfer_chance = 0.3
+	p.partial_chance = 0.35
 	p.districts = 3
-	p.blend_chance = 0.4
 	p.enemy_count = 8
 	p.exits_min = 2
 	p.exits_max = 3
@@ -36,6 +42,7 @@ func _initialize() -> void:
 
 	# --- Corridors, one per district ---
 	var c_factory := _style(&"corridor", &"factory", 1.0, Vector2i(0, 0), {
+		"narrow": true, "passage_width": 3.2,
 		"wall_material": &"concrete_wall", "upper_wall_material": &"brick", "ceiling_material": &"concrete_dark",
 		"door_width": 2.4, "ground_door_width": 3.2, "ground_door_height": 3.4,
 		"light_kind": &"cage", "light_chance": 0.6, "light_working": 0.6, "flicker_chance": 0.2,
@@ -54,6 +61,7 @@ func _initialize() -> void:
 		"prop_density": 0.2, "pipe_chance": 0.5, "leak_chance": 0.2,
 	})
 	var c_storage := _style(&"corridor", &"storage", 1.0, Vector2i(0, 0), {
+		"narrow": true, "passage_width": 3.6,
 		"wall_material": &"corrugated_metal", "upper_wall_material": &"corrugated_metal", "ceiling_material": &"corrugated_metal",
 		"door_width": 2.4, "ground_door_width": 3.6, "ground_door_height": 3.6,
 		"light_kind": &"cage", "light_chance": 0.6, "light_working": 0.6, "flicker_chance": 0.2,
@@ -63,6 +71,12 @@ func _initialize() -> void:
 	})
 	var corridors: Array[ZoneStyle] = [c_factory, c_interior, c_storage]
 	p.corridors = corridors
+	p.yard = _style(&"yard", &"storage", 1.0, Vector2i(0, 0), {
+		"floor_material": &"asphalt", "wall_material": &"brick", "upper_wall_material": &"brick",
+		"light_kind": &"none", "light_chance": 0.0,
+		"props": {"barrel_rust": 2.0, "pallet": 2.0, "crate_wood": 1.0, "rubble": 1.5},
+		"prop_density": 0.25, "leak_chance": 0.0,
+	})
 
 	# --- Factory district ---
 	var hall := _style(&"hall", &"factory", 2.2, Vector2i(1, 2), {
@@ -165,10 +179,10 @@ func _style(type: StringName, family: StringName, weight: float, extra: Vector2i
 
 func _environment() -> Environment:
 	var env := Environment.new()
-	# Interior level: the "outside" (seen through roof holes and windows) is an
-	# overcast haze rather than open sky.
+	# Overcast day: a flat grey sky; the daylight itself is the level's
+	# DirectionalLight (see LevelProfile.daylight_energy).
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.3, 0.32, 0.34)
+	env.background_color = Color(0.55, 0.58, 0.61)
 	# Interiors: light comes from fixtures and shafts, not the sky.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.45, 0.48, 0.55)
@@ -187,10 +201,11 @@ func _environment() -> Environment:
 	env.glow_intensity = 0.55
 	env.glow_bloom = 0.04
 	env.fog_enabled = true
-	# Soft exponential haze: distance fades gently instead of going black.
+	# Soft exponential haze: the skyline fades into the overcast, and long
+	# halls get a little murk without turning grey.
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.2, 0.21, 0.23)
-	env.fog_density = 0.006
+	env.fog_light_color = Color(0.33, 0.35, 0.38)
+	env.fog_density = 0.0048
 	env.fog_sky_affect = 0.5
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.022

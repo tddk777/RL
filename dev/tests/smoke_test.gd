@@ -72,8 +72,8 @@ func yaw_of(dir: int) -> float:
 	return atan2(-v.x, -v.z)
 
 
-## A straight, open run of three ground-floor cells of one zone: a clear firing lane.
-## Straight, open runs of three ground-floor corridor cells: firing lanes.
+## Straight runs of three ground-floor cells open (or doored) to each other:
+## candidate firing lanes. find_lane() checks which are actually clear.
 func find_lanes(L: LevelLayout) -> Array:
 	var out: Array = []
 	for z in L.size.y:
@@ -85,10 +85,9 @@ func find_lanes(L: LevelLayout) -> Array:
 					var v := LevelLayout.dir_vector(d)
 					var c := Vector3i(x + int(v.x) * i, z + int(v.z) * i, 0)
 					if not L.inside(c.x, c.y, 0) or L.kind_at(c.x, c.y, 0) != LevelLayout.Kind.FLOOR \
-							or L.has_flag(c.x, c.y, 0, LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.NARROW) \
+							or L.has_flag(c.x, c.y, 0, LevelLayout.STAIR | LevelLayout.STAIR_ABOVE) \
 							or L.distance[L.idx(c.x, c.y, 0)] < 0 or L.kind_at(c.x, c.y, 1) == LevelLayout.Kind.HOLE \
-							or L.zone_of(c.x, c.y, 0) == null or L.zone_of(c.x, c.y, 0).type != &"corridor" \
-							or (i < 2 and L.has_wall(c.x, c.y, 0, d)):
+							or (i < 2 and L.has_wall(c.x, c.y, 0, d) and not L.has_door(c.x, c.y, 0, d)):
 						ok = false
 						break
 					cells.append(c)
@@ -159,9 +158,9 @@ func _run() -> void:
 	player.health.max_health = 100000.0  # survive the test
 	player.health.current = 100000.0
 
-	# --- Firing lane: a straight corridor ---
+	# --- Firing lane: a straight run of clear floor ---
 	var lane := find_lane(L)
-	check(not lane.is_empty(), "found a straight corridor to test in")
+	check(not lane.is_empty(), "found a straight lane to test in")
 	if lane.is_empty():
 		get_tree().quit(1)
 		return
@@ -174,7 +173,7 @@ func _run() -> void:
 	await wait(1.0)
 	place_player(a + Vector3.UP * 0.1, yaw_of(dir), -2.0)
 	await wait(0.5)
-	check(player.is_on_floor(), "player stands in the test corridor")
+	check(player.is_on_floor(), "player stands in the test lane")
 
 	# --- M1911: semi, reload ---
 	var pistol := player.current_weapon
@@ -267,7 +266,7 @@ func _run() -> void:
 
 	var map := player.get_world_3d().navigation_map
 	var path := NavigationServer3D.map_get_path(map, b, a, true)
-	check(path.size() >= 2 and path[path.size() - 1].distance_to(a) < 1.5, "navmesh path along the corridor (%d points)" % path.size())
+	check(path.size() >= 2 and path[path.size() - 1].distance_to(a) < 1.5, "navmesh path along the lane (%d points)" % path.size())
 
 	# --- AI: hears a shot, spots the player, fights ---
 	place_player(a + Vector3.UP * 0.1, yaw_of(dir) + PI, -30.0)

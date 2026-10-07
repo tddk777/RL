@@ -231,6 +231,8 @@ extra_storeys = Vector2i(0, 0)
 door_width = 2.4
 ground_door_width = 3.2
 ground_door_height = 3.4
+narrow = true
+passage_width = 3.2
 light_chance = 0.6
 props = {
 "barrel_rust": 2.0,
@@ -285,6 +287,8 @@ ceiling_material = &"corrugated_metal"
 door_width = 2.4
 ground_door_width = 3.6
 ground_door_height = 3.6
+narrow = true
+passage_width = 3.6
 light_chance = 0.6
 light_color = Color(1, 0.72, 0.42, 1)
 light_energy = 1.5
@@ -301,7 +305,7 @@ roof_hole_chance = 0.03
 
 [sub_resource type="Environment" id="Environment_opjl5"]
 background_mode = 1
-background_color = Color(0.3, 0.32, 0.34, 1)
+background_color = Color(0.55, 0.58, 0.61, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.45, 0.48, 0.55, 1)
 ambient_light_energy = 0.6
@@ -316,8 +320,8 @@ glow_enabled = true
 glow_intensity = 0.55
 glow_bloom = 0.04
 fog_enabled = true
-fog_light_color = Color(0.2, 0.21, 0.23, 1)
-fog_density = 0.006
+fog_light_color = Color(0.33, 0.35, 0.38, 1)
+fog_density = 0.0048
 fog_sky_affect = 0.5
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.022
@@ -329,9 +333,28 @@ adjustment_enabled = true
 adjustment_contrast = 1.08
 adjustment_saturation = 0.78
 
+[sub_resource type="Resource" id="Resource_ql367"]
+script = ExtResource("2_qp74k")
+type = &"yard"
+family = &"storage"
+extra_storeys = Vector2i(0, 0)
+floor_material = &"asphalt"
+wall_material = &"brick"
+light_kind = &"none"
+light_chance = 0.0
+props = {
+"barrel_rust": 2.0,
+"crate_wood": 1.0,
+"pallet": 2.0,
+"rubble": 1.5
+}
+prop_density = 0.25
+
 [resource]
 script = ExtResource("9_lhbt5")
+coverage = 0.5
 corridors = Array[ExtResource("2_qp74k")]([SubResource("Resource_fcxen"), SubResource("Resource_gkgoa"), SubResource("Resource_m0kbc")])
+yard = SubResource("Resource_ql367")
 buildings = Array[ExtResource("2_qp74k")]([SubResource("Resource_yhyro"), SubResource("Resource_kl7xd"), SubResource("Resource_f0pvv"), SubResource("Resource_fm5py"), SubResource("Resource_4x3jn"), SubResource("Resource_jslxu"), SubResource("Resource_a6w2s"), SubResource("Resource_by6xp")])
 weapon_pickups = PackedStringArray("mp5", "ak47", "m16", "m40")
 environment = SubResource("Environment_opjl5")

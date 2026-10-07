@@ -14,7 +14,13 @@ grow deeper level by level.
 
 - **Level 1, The Works**: an abandoned industrial complex about 200 m across,
   generated fresh every run (and every retry) and built while the level
-  loads. Three districts blend into each other: the factory floor (halls with
+  loads. It grows like a real site: buildings of irregular shape (wings,
+  notches, setbacks, the odd corner cut at 45 degrees) added one against
+  another or linked by covered walkways with ribbon windows, bridges between
+  upper floors, a walled courtyard or two, open ground and a hazy skyline
+  beyond the fence. Overcast daylight falls in through tall arched hall
+  windows, office windows and roof holes. Three districts blend into each
+  other: the factory floor (halls with
   conveyor lines, presses, lathes, generators, assembly robots, catwalks and
   bridges under a travelling crane; foundries with furnaces, moulds and slag;
   processing plants with reactors and vats), the interior (cramped service
