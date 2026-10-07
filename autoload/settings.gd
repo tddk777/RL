@@ -46,6 +46,7 @@ const DEFAULT_BINDINGS := {
 	"reload": [KEY_R],
 	"fire_mode": [KEY_B],
 	"interact": [KEY_F],
+	"flashlight": [KEY_T],
 	"weapon_1": [KEY_1],
 	"weapon_2": [KEY_2],
 	"weapon_3": [KEY_3],

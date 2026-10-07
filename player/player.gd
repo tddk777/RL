@@ -36,6 +36,7 @@ var weapons: Array[Weapon] = []
 var current_weapon: Weapon
 var ammo_reserve: Dictionary = {}
 var is_crouching: bool = false
+var flashlight: Flashlight
 var is_sprinting: bool = false
 var is_aiming: bool = false
 var alive: bool = true
@@ -71,6 +72,9 @@ func _ready() -> void:
 			add_weapon(data)
 	if not weapons.is_empty():
 		equip(0)
+	flashlight = Flashlight.new()
+	add_child(flashlight)
+	flashlight.setup(camera)
 	if ResourceLoader.exists(HEARTBEAT):
 		_heartbeat = AudioStreamPlayer.new()
 		_heartbeat.stream = load(HEARTBEAT)
@@ -99,6 +103,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			current_weapon.reload()
 		elif event.is_action_pressed(&"fire_mode"):
 			current_weapon.cycle_fire_mode()
+	if event.is_action_pressed(&"flashlight"):
+		flashlight.toggle()
 	if event.is_action_pressed(&"interact") and _interact_target:
 		_interact_target.interact(self)
 

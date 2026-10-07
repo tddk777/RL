@@ -141,5 +141,11 @@ func _run() -> void:
 		player.velocity = Vector3.ZERO
 		await wait(1.0)
 		await shot("t%02d_%s.png" % [i, view[0]])
+		# The same view by torchlight, now and then.
+		if i % 4 == 2 and not String(view[0]).begins_with("outside"):
+			player.flashlight.toggle()
+			await wait(0.5)
+			await shot("t%02d_%s_torch.png" % [i, view[0]])
+			player.flashlight.toggle()
 		i += 1
 	get_tree().quit()

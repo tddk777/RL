@@ -199,6 +199,52 @@ func _run() -> void:
 			print("INFO  did not land at %s (now %s, on floor %s)" % [p, player.global_position, player.is_on_floor()])
 	check(landed == stops.size(), "floors hold the player on every storey (%d of %d)" % [landed, stops.size()])
 
+	# No holes: rays straight down across every reachable floor and catwalk
+	# strip find something to stand on at floor height.
+	var space := player.get_world_3d().direct_space_state
+	var holes: Array = []
+	var probes := 0
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				if L.distance[L.idx(x, z, s)] < 0:
+					continue
+				var k := L.kind_at(x, z, s)
+				var pts: Array[Vector2] = []
+				if k == LevelLayout.Kind.FLOOR:
+					var rects: Array[Rect2] = [Rect2(0.5, 0.5, L.cell - 1.0, L.cell - 1.0)]
+					if L.zone_of(x, z, s).type == &"connector" or L.has_flag(x, z, s, LevelLayout.NARROW):
+						rects.assign(level.builder.narrow_open(x, z, s, L.style_at(x, z, s)))
+					for r in rects:
+						for i in 3:
+							for j in 3:
+								pts.append(r.position + r.size * Vector2((i + 0.5) / 3.0, (j + 0.5) / 3.0))
+				elif k == LevelLayout.Kind.CATWALK:
+					var sides := (L.flags_at(x, z, s) >> 4) & 15
+					for side in 4:
+						if sides & (1 << side):
+							var r := level.builder.strip(side, LevelLayout.STRIP)
+							for i in 5:
+								var f := (i + 0.5) / 5.0
+								pts.append(r.position + r.size * (Vector2(f, 0.5) if r.size.x > r.size.y else Vector2(0.5, f)))
+				var hole := Rect2()
+				if L.has_flag(x, z, s, LevelLayout.STAIR_ABOVE):
+					hole = level.builder.run_rect(L.hole_dir(x, z, s), L.hole_side(x, z, s)).grow(0.3)
+				var o := L.cell_origin(x, z, s)
+				for p in pts:
+					if hole.has_point(p):
+						continue
+					probes += 1
+					var from := o + Vector3(p.x, 1.2, p.y)
+					var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 1.6, Layers.WORLD)
+					var hit := space.intersect_ray(q)
+					if hit.is_empty() or hit["position"].y < o.y - 0.12:
+						holes.append(Vector3i(x, z, s))
+						if holes.size() <= 12:
+							print("INFO  nothing to stand on at %s in %s %s (cell %s)" % [o + Vector3(p.x, 0, p.y), L.zone_name(x, z, s),
+								LevelLayout.Kind.keys()[k], Vector3i(x, z, s)])
+	check(holes.is_empty(), "solid footing across every floor and catwalk (%d probes, %d holes)" % [probes, holes.size()])
+
 	# Walk up and down flights: the player must get onto the landing and back
 	# off the bottom step (no lip at the top, no snag at the foot).
 	player.health.max_health = 1e9

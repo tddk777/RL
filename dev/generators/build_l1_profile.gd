@@ -183,20 +183,28 @@ func _environment() -> Environment:
 	# DirectionalLight (see LevelProfile.daylight_energy).
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.55, 0.58, 0.61)
-	# Interiors: light comes from fixtures and shafts, not the sky.
+	# Interiors: light comes from fixtures, windows and the player's torch. A
+	# faint flat ambient keeps unlit corners readable on low settings; on high
+	# settings SDFGI replaces it: the overcast sky lights the outside and
+	# reaches in only through openings, so rooms nothing lights go dark.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.45, 0.48, 0.55)
-	env.ambient_light_energy = 0.6
+	env.ambient_light_color = Color(0.34, 0.37, 0.43)
+	env.ambient_light_energy = 0.14
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 1.35
 	env.ssao_enabled = true
-	env.ssao_radius = 1.4
-	env.ssao_intensity = 2.2
+	env.ssao_radius = 1.6
+	env.ssao_intensity = 3.0
+	env.ssao_power = 1.8
 	env.ssil_enabled = true
-	# No SDFGI: in enclosed spaces it replaces the ambient light, so every room a
-	# lamp doesn't reach (and the haze outside) renders pitch black.
-	env.sdfgi_enabled = false
+	env.sdfgi_enabled = true
+	env.sdfgi_use_occlusion = true
+	env.sdfgi_read_sky_light = true
+	env.sdfgi_cascades = 4
+	env.sdfgi_min_cell_size = 0.2
+	env.sdfgi_energy = 1.0
+	env.sdfgi_bounce_feedback = 0.35
 	env.glow_enabled = true
 	env.glow_intensity = 0.55
 	env.glow_bloom = 0.04
@@ -204,7 +212,7 @@ func _environment() -> Environment:
 	# Soft exponential haze: the skyline fades into the overcast, and long
 	# halls get a little murk without turning grey.
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.33, 0.35, 0.38)
+	env.fog_light_color = Color(0.26, 0.28, 0.31)
 	env.fog_density = 0.0048
 	env.fog_sky_affect = 0.5
 	env.volumetric_fog_enabled = true
@@ -212,7 +220,7 @@ func _environment() -> Environment:
 	env.volumetric_fog_albedo = Color(0.72, 0.72, 0.7)
 	env.volumetric_fog_anisotropy = 0.55
 	env.volumetric_fog_length = 64.0
-	env.volumetric_fog_ambient_inject = 0.2
+	env.volumetric_fog_ambient_inject = 0.05
 	env.volumetric_fog_sky_affect = 0.1
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 0.78

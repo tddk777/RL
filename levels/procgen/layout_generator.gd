@@ -1363,10 +1363,8 @@ func _connect_all() -> void:
 				if L.is_walkable(x, z, s) and not reached.has(Vector3i(x, z, s)):
 					var i := L.idx(x, z, s)
 					var zn := L.zone_of(x, z, s)
-					if L.kind[i] == LevelLayout.Kind.CATWALK:
-						L.kind[i] = LevelLayout.Kind.VOID
-						L.flags[i] &= ~(LevelLayout.BRIDGE_X | LevelLayout.BRIDGE_Z | (15 << 4))
-					elif zn.type == &"connector":
+					# Catwalks nobody can reach stay up (out of reach, not missing).
+					if zn.type == &"connector":
 						L.kind[i] = LevelLayout.Kind.EMPTY
 						L.zone[i] = -1
 						L.flags[i] = 0

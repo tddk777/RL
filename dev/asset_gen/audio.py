@@ -1189,6 +1189,16 @@ def gen_player():
         x = unit(body) + 0.07 * unit(ring)
         write_wav(f"{base}hurt_impact_{i}.wav", finish(x, -2.0, trim_db=-50))
 
+    # flashlight switch: a stiff plastic slide-click, on and off ---------------
+    for i, name in enumerate(("flashlight_on", "flashlight_off")):
+        r = rng_for(name)
+        n = ns(0.18)
+        x = np.zeros(n)
+        place(x, mclick(r, 2600 + 500 * i, 0.03, tick=0.8, dur=0.06), 0.0, 1.0)
+        place(x, mclick(r, 3400 - 400 * i, 0.02, tick=0.6, dur=0.05), 0.012 + 0.006 * i, 0.55)
+        x += 0.2 * unit(bp(white(r, n), 900, 3000)) * env_ad(n, 0.0005, 0.02)
+        write_wav(f"{base}{name}.wav", finish(x, -6.0, trim_db=-50))
+
     # heartbeat loop: 4 beats at ~58 bpm --------------------------------------
     beat = 60.0 / 58.0
     T = 4 * beat

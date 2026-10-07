@@ -992,8 +992,10 @@ func _tall_window(d: ChunkData, x: int, z: int, s: int, sp: Span, a_lo: float, a
 	var sill := sb * H + 1.2 - base
 	var head := (se + 1) * H - 1.0 - base
 	var rise := minf(0.8, w * 0.22)
+	# A band of wall at each floor line between storeys of the window, which
+	# the catwalk or floor inside rests against.
 	var y0 := sill if s == sb else 0.0
-	var y1 := head if s == se else top
+	var y1 := head if s == se else top - 0.4
 	var r := RandomNumberGenerator.new()
 	r.seed = hash([L.seed, key, s, 11])
 	var arch := Callable()

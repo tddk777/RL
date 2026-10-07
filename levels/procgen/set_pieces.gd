@@ -187,7 +187,12 @@ static func _across(A: Vector3) -> Vector3:
 	return Vector3(A.z, 0, A.x).abs()
 
 
+## Anything big enough to look like you could stand on it or bump into it
+## collides, asked or not (so nobody falls into a pallet stack); thin trim,
+## papers, small debris and wall-hung things stay visual only.
 func box(k: Cell, center: Vector3, size: Vector3, mat: StringName, collide: bool = false, basis: Basis = Basis.IDENTITY) -> void:
+	if not collide and size.y >= 0.25 and minf(size.x, size.z) >= 0.3 and maxf(size.x, size.z) >= 0.4:
+		collide = true
 	k.d.geo.box(center, size, mat, cb.surface_of(mat) if collide else &"", false, basis)
 
 
@@ -198,6 +203,12 @@ func solid(k: Cell, center: Vector3, size: Vector3, surface: StringName = &"meta
 
 func cyl(k: Cell, a: Vector3, b: Vector3, radius: float, mat: StringName, seg: int = 12, caps: bool = true) -> void:
 	k.d.geo.cylinder(a, b, radius, mat, seg, caps)
+	# Drums, tanks, vessels: a box collider inside the round body.
+	var length := a.distance_to(b)
+	if radius >= 0.2 and length >= 0.3:
+		var axis := (b - a) / length
+		var basis := Basis.looking_at(axis, Vector3.UP if absf(axis.y) < 0.98 else Vector3.FORWARD)
+		k.d.geo.box((a + b) * 0.5, Vector3(radius * 1.6, radius * 1.6, length), &"", cb.surface_of(mat), false, basis)
 
 
 func decal(k: Cell, tex: String, p: Vector3, size: Vector3, yaw: float) -> void:
