@@ -1,10 +1,10 @@
 [gd_resource type="ShaderMaterial" format=3]
 
 [ext_resource type="Shader" path="res://assets/shaders/world_surface.gdshader" id="1_iyfpp"]
-[ext_resource type="Texture2D" path="res://assets/textures/concrete_floor/albedo.png" id="2_h5ygf"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/concrete_floor_02/albedo.jpg" id="2_h5ygf"]
 [ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="3_xvbrr"]
-[ext_resource type="Texture2D" path="res://assets/textures/concrete_floor/normal.png" id="4_0ow47"]
-[ext_resource type="Texture2D" path="res://assets/textures/concrete_floor/roughness.png" id="5_mmogp"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/concrete_floor_02/normal.jpg" id="4_0ow47"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/concrete_floor_02/roughness.jpg" id="5_mmogp"]
 
 [resource]
 render_priority = 0
@@ -19,16 +19,18 @@ shader_parameter/tint = Color(1, 1, 1, 1)
 shader_parameter/roughness = 1.0
 shader_parameter/metallic = 0.0
 shader_parameter/normal_strength = null
-shader_parameter/scale = 0.3
+shader_parameter/scale = 0.5
 shader_parameter/object_space = false
 shader_parameter/sharpness = null
 shader_parameter/macro_strength = null
-shader_parameter/grime = 0.55
+shader_parameter/grime = 0.4
 shader_parameter/streaks = null
 shader_parameter/damp = null
-shader_parameter/dust = 0.6
+shader_parameter/dust = 0.4
 shader_parameter/rust = null
 shader_parameter/storey_height = null
+shader_parameter/cavity = null
+shader_parameter/relief = null
 shader_parameter/grime_color = null
 shader_parameter/rust_color = null
 shader_parameter/damp_color = null

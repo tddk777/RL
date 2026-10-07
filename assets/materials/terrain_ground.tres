@@ -1,17 +1,26 @@
 [gd_resource type="ShaderMaterial" format=3]
 
 [ext_resource type="Shader" path="res://assets/shaders/terrain.gdshader" id="1_shader"]
-[ext_resource type="Texture2D" path="res://assets/textures/terrain/scrub_albedo_height.png" id="2_fa"]
-[ext_resource type="Texture2D" path="res://assets/textures/terrain/scrub_normal_rough.png" id="3_fn"]
-[ext_resource type="Texture2D" path="res://assets/textures/terrain/dirt_albedo_height.png" id="4_sa"]
-[ext_resource type="Texture2D" path="res://assets/textures/terrain/dirt_normal_rough.png" id="5_sn"]
-[ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="6_noise"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/withered_grass/albedo.jpg" id="2_fa"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/withered_grass/normal.jpg" id="3_fn"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/withered_grass/roughness.jpg" id="4_fr"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/dry_ground_rocks/albedo.jpg" id="5_sa"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/dry_ground_rocks/normal.jpg" id="6_sn"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/dry_ground_rocks/roughness.jpg" id="7_sr"]
+[ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="8_noise"]
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_shader")
 shader_parameter/flat_albedo = ExtResource("2_fa")
 shader_parameter/flat_normal = ExtResource("3_fn")
-shader_parameter/slope_albedo = ExtResource("4_sa")
-shader_parameter/slope_normal = ExtResource("5_sn")
-shader_parameter/noise_tex = ExtResource("6_noise")
+shader_parameter/flat_rough = ExtResource("4_fr")
+shader_parameter/slope_albedo = ExtResource("5_sa")
+shader_parameter/slope_normal = ExtResource("6_sn")
+shader_parameter/slope_rough = ExtResource("7_sr")
+shader_parameter/noise_tex = ExtResource("8_noise")
+shader_parameter/packed = false
+shader_parameter/scale = 0.5
+shader_parameter/slope_scale = 0.25
+shader_parameter/tint = Color(0.74, 0.72, 0.68, 1)
+shader_parameter/normal_strength = 1.0

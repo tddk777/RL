@@ -2117,7 +2117,8 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 	var hc := ceiling_height(st, zn, room, x, z, s)
 	var narrow := flags & LevelLayout.NARROW != 0
 	var kind := st.light_kind
-	if narrow or (room and room.use in [&"cubicles", &"offices", &"meeting", &"archive", &"washroom", &"lab"]):
+	# Tunnels keep their caged bulkhead lamps, on the roof of the passage.
+	if (narrow and zn.type != &"tunnel") or (room and room.use in [&"cubicles", &"offices", &"meeting", &"archive", &"washroom", &"lab"]):
 		kind = &"fluorescent"
 	match kind:
 		&"cage":
@@ -2129,7 +2130,16 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 					break
 			var pos: Vector3
 			var yaw := 0.0
-			if wall >= 0:
+			var oe := narrow_edges(x, z, s) if narrow else 0
+			var run := 0 if oe & 10 == 0 else (1 if oe & 5 == 0 else -1)  # 0 along z, 1 along x
+			if narrow and run >= 0:
+				# On a side wall of a straight tunnel passage, under the pipes.
+				var side := 1.0 if r.randf() < 0.5 else -1.0
+				var inward := Vector3(-side, 0, 0) if run == 0 else Vector3(0, 0, -side)
+				pos = o + Vector3(C * 0.5, minf(hc - 1.2, 2.3), C * 0.5) - inward * (st.passage_width * 0.5) \
+					+ inward * Detailer.NUDGE + inward.cross(Vector3.UP) * r.randf_range(-1.0, 1.0)
+				yaw = atan2(inward.x, inward.z)
+			elif wall >= 0:
 				pos = L.wall_point(x, z, s, wall, minf(hc - 0.6, 3.0), r.randf_range(-1.5, 1.5))
 				var inward := -LevelLayout.dir_vector(wall)
 				yaw = atan2(inward.x, inward.z)

@@ -71,10 +71,13 @@ void sample_plane(vec2 uv, vec2 dx, vec2 dy, out vec3 alb, out vec3 tn, out floa
 	float b = smoothstep(0.2, 0.8, f - 0.1 * (ca.r + ca.g + ca.b - cb.r - cb.g - cb.b));
 	alb = mix(ca, cb, b);
 	if (use_normal) {
-		vec3 na = textureGrad(normal_tex, uv + offa, dx, dy).rgb;
-		vec3 nb = textureGrad(normal_tex, uv + offb, dx, dy).rgb;
-		tn = normalize(mix(na, nb, b) * 2.0 - 1.0);
-		tn.xy *= normal_strength;
+		// Z rebuilt from X and Y: VRAM-compressed normal maps (RGTC) keep
+		// only the red and green channels.
+		vec2 na = textureGrad(normal_tex, uv + offa, dx, dy).rg;
+		vec2 nb = textureGrad(normal_tex, uv + offb, dx, dy).rg;
+		vec2 nxy = mix(na, nb, b) * 2.0 - 1.0;
+		tn = vec3(nxy * normal_strength, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
+		tn = normalize(tn);
 	} else {
 		tn = vec3(0.0, 0.0, 1.0);
 	}

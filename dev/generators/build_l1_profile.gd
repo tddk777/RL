@@ -165,8 +165,8 @@ func _initialize() -> void:
 		"floor_material": &"concrete_dark", "upper_floor_material": &"concrete_dark",
 		"wall_material": &"concrete_wall", "upper_wall_material": &"concrete_wall", "ceiling_material": &"concrete_dark",
 		"door_width": 1.4, "door_height": 2.2, "ground_door_width": 1.4, "ground_door_height": 2.2,
-		"light_kind": &"cage", "light_chance": 0.7, "light_working": 0.6, "flicker_chance": 0.35,
-		"light_color": bulb, "light_energy": 1.1,
+		"light_kind": &"cage", "light_chance": 0.85, "light_working": 0.7, "flicker_chance": 0.35,
+		"light_color": bulb, "light_energy": 1.8,
 		"props": {"barrel_rust": 2.0, "crate_small": 1.0, "rubble": 1.0, "electrical_cabinet": 1.0},
 		"prop_density": 0.2, "pipe_chance": 1.0, "leak_chance": 0.35, "collapse_chance": 0.0,
 	})

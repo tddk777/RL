@@ -1,27 +1,25 @@
 [gd_resource type="ShaderMaterial" format=3]
 
-[ext_resource type="Shader" path="res://assets/shaders/world_surface.gdshader" id="1_2q5wq"]
-[ext_resource type="Texture2D" path="res://assets/textures/painted_steel/albedo.png" id="2_k4vb8"]
-[ext_resource type="Texture2D" path="res://assets/textures/painted_steel/metallic.png" id="3_o71aj"]
-[ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="4_8lgs5"]
-[ext_resource type="Texture2D" path="res://assets/textures/painted_steel/normal.png" id="5_68q7h"]
-[ext_resource type="Texture2D" path="res://assets/textures/painted_steel/roughness.png" id="6_06viw"]
+[ext_resource type="Shader" path="res://assets/shaders/world_surface.gdshader" id="1_bx7ok"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/rusty_metal_02/albedo.jpg" id="2_2q5wq"]
+[ext_resource type="Texture2D" path="res://assets/textures/noise/world_noise.png" id="3_k4vb8"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/rusty_metal_02/normal.jpg" id="4_o71aj"]
+[ext_resource type="Texture2D" path="res://assets/third_party/polyhaven/textures/rusty_metal_02/roughness.jpg" id="5_8lgs5"]
 
 [resource]
 render_priority = 0
-shader = ExtResource("1_2q5wq")
-shader_parameter/albedo_tex = ExtResource("2_k4vb8")
-shader_parameter/normal_tex = ExtResource("5_68q7h")
-shader_parameter/roughness_tex = ExtResource("6_06viw")
-shader_parameter/metallic_tex = ExtResource("3_o71aj")
-shader_parameter/noise_tex = ExtResource("4_8lgs5")
+shader = ExtResource("1_bx7ok")
+shader_parameter/albedo_tex = ExtResource("2_2q5wq")
+shader_parameter/normal_tex = ExtResource("4_o71aj")
+shader_parameter/roughness_tex = ExtResource("5_8lgs5")
+shader_parameter/noise_tex = ExtResource("3_k4vb8")
 shader_parameter/use_normal = true
-shader_parameter/use_metallic = true
-shader_parameter/tint = Color(0.55, 0.72, 1, 1)
+shader_parameter/use_metallic = false
+shader_parameter/tint = Color(0.45, 0.6, 0.85, 1)
 shader_parameter/roughness = 1.0
-shader_parameter/metallic = 1.0
+shader_parameter/metallic = 0.3
 shader_parameter/normal_strength = null
-shader_parameter/scale = 0.45
+shader_parameter/scale = 1.0
 shader_parameter/object_space = false
 shader_parameter/sharpness = null
 shader_parameter/macro_strength = null
@@ -29,8 +27,10 @@ shader_parameter/grime = null
 shader_parameter/streaks = null
 shader_parameter/damp = null
 shader_parameter/dust = null
-shader_parameter/rust = 0.45
+shader_parameter/rust = 0.2
 shader_parameter/storey_height = null
+shader_parameter/cavity = null
+shader_parameter/relief = null
 shader_parameter/grime_color = null
 shader_parameter/rust_color = null
 shader_parameter/damp_color = null

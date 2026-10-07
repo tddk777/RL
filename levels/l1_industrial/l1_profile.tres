@@ -356,9 +356,10 @@ ground_door_width = 1.4
 ground_door_height = 2.2
 narrow = true
 passage_width = 2.6
-light_chance = 0.7
+light_chance = 0.85
+light_working = 0.7
 flicker_chance = 0.35
-light_energy = 1.1
+light_energy = 1.8
 props = {
 "barrel_rust": 2.0,
 "crate_small": 1.0,

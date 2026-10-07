@@ -14,38 +14,38 @@ const TEX := "res://assets/textures/"
 const DEFS := {
 	# Environment: world-space triplanar through the world surface shader
 	# (anti-tiling + decay); extra keys tune the decay.
-	"concrete_floor": ["concrete_floor", Color(1, 1, 1), 0.9, 0.0, 0.3, true, {"shader": true, "dust": 0.6, "grime": 0.55}],
-	"concrete_wall": ["concrete_wall", Color(1, 1, 1), 0.92, 0.0, 0.3, true, {"shader": true, "streaks": 0.65, "damp": 0.5}],
-	"concrete_dark": ["concrete_wall", Color(0.55, 0.55, 0.55), 0.95, 0.0, 0.3, true, {"shader": true, "streaks": 0.5, "damp": 0.4}],
-	"plaster": ["concrete_wall", Color(1.12, 1.08, 0.98), 0.95, 0.0, 0.22, true, {"shader": true, "streaks": 0.75, "damp": 0.65, "normal_strength": 0.35}],
-	"plaster_green": ["concrete_wall", Color(0.72, 0.86, 0.74), 0.95, 0.0, 0.22, true, {"shader": true, "streaks": 0.75, "damp": 0.6, "normal_strength": 0.35}],
+	"concrete_floor": ["ph/concrete_floor_02", Color(1, 1, 1), 0.9, 0.0, 0.5, true, {"shader": true, "dust": 0.4, "grime": 0.4}],
+	"concrete_wall": ["ph/concrete_layers_02", Color(1, 1, 1), 0.92, 0.0, 0.5, true, {"shader": true, "streaks": 0.55, "damp": 0.45}],
+	"concrete_dark": ["ph/dirty_concrete", Color(0.62, 0.62, 0.62), 0.95, 0.0, 0.33, true, {"shader": true, "streaks": 0.45, "damp": 0.4}],
+	"plaster": ["ph/plastered_wall_04", Color(1, 1, 1), 0.95, 0.0, 0.31, true, {"shader": true, "streaks": 0.65, "damp": 0.55, "normal_strength": 0.6}],
+	"plaster_green": ["ph/painted_plaster_wall", Color(0.74, 0.9, 0.76), 0.95, 0.0, 0.5, true, {"shader": true, "streaks": 0.65, "damp": 0.55, "normal_strength": 0.6}],
 	"ceiling_tile": ["concrete_wall", Color(1.25, 1.22, 1.12), 0.95, 0.0, 0.9, true, {"shader": true, "damp": 0.85, "macro": 0.45, "normal_strength": 0.25}],
-	"floor_tile": ["tiles_dirty", Color(0.62, 0.58, 0.5), 0.6, 0.0, 0.3, true, {"shader": true, "dust": 0.55, "grime": 0.6}],
-	"rusted_metal": ["rusted_metal", Color(1, 1, 1), 0.8, 0.5, 0.45, true, {"shader": true, "rust": 0.3}],
-	"painted_steel": ["painted_steel", Color(1, 1, 1), 0.7, 0.3, 0.45, true, {"shader": true, "rust": 0.45}],
-	"painted_steel_yellow": ["painted_steel", Color(1.35, 1.1, 0.45), 0.7, 0.3, 0.45, true, {"shader": true, "rust": 0.45}],
-	"painted_steel_red": ["painted_steel", Color(1.2, 0.45, 0.38), 0.7, 0.3, 0.45, true, {"shader": true, "rust": 0.4}],
-	"painted_steel_blue": ["painted_steel", Color(0.55, 0.72, 1.0), 0.7, 0.3, 0.45, true, {"shader": true, "rust": 0.45}],
-	"painted_steel_green": ["painted_steel", Color(0.62, 0.85, 0.62), 0.7, 0.3, 0.45, true, {"shader": true, "rust": 0.5}],
-	"corrugated_metal": ["corrugated_metal", Color(1, 1, 1), 0.6, 0.6, 0.45, true, {"shader": true, "rust": 0.55, "streaks": 0.7}],
+	"floor_tile": ["ph/floor_tiles_08", Color(0.85, 0.83, 0.8), 0.6, 0.0, 0.67, true, {"shader": true, "dust": 0.45, "grime": 0.5}],
+	"rusted_metal": ["ph/rusty_metal_04", Color(1, 1, 1), 0.8, 0.5, 0.5, true, {"shader": true, "rust": 0.15}],
+	"painted_steel": ["ph/rusty_metal_02", Color(0.85, 0.85, 0.85), 0.7, 0.3, 1.0, true, {"shader": true, "rust": 0.2}],
+	"painted_steel_yellow": ["ph/rusty_metal_02", Color(1.25, 1.0, 0.35), 0.7, 0.3, 1.0, true, {"shader": true, "rust": 0.2}],
+	"painted_steel_red": ["ph/rusty_metal_02", Color(1.05, 0.36, 0.3), 0.7, 0.3, 1.0, true, {"shader": true, "rust": 0.2}],
+	"painted_steel_blue": ["ph/rusty_metal_02", Color(0.45, 0.6, 0.85), 0.7, 0.3, 1.0, true, {"shader": true, "rust": 0.2}],
+	"painted_steel_green": ["ph/rusty_metal_02", Color(0.5, 0.72, 0.52), 0.7, 0.3, 1.0, true, {"shader": true, "rust": 0.25}],
+	"corrugated_metal": ["ph/corrugated_iron_02", Color(1, 1, 1), 0.6, 0.6, 0.37, true, {"shader": true, "rust": 0.4, "streaks": 0.6}],
 	"steel_grate": ["steel_grate", Color(1, 1, 1), 0.65, 0.7, 1.0, true, {"alpha_scissor": true}],
-	"wood_planks": ["wood_planks", Color(1, 1, 1), 0.85, 0.0, 0.45, true, {"shader": true, "dust": 0.55, "damp": 0.4}],
-	"brick": ["brick", Color(1, 1, 1), 0.9, 0.0, 0.45, true, {"shader": true, "streaks": 0.6, "damp": 0.5}],
-	"tiles_dirty": ["tiles_dirty", Color(1, 1, 1), 0.35, 0.0, 0.55, true, {"shader": true, "grime": 0.75, "streaks": 0.7}],
-	"soot": ["concrete_wall", Color(0.2, 0.19, 0.18), 0.97, 0.0, 0.3, true, {"shader": true, "streaks": 0.3, "damp": 0.1, "macro": 0.5}],
+	"wood_planks": ["ph/old_wood_floor", Color(1, 1, 1), 0.85, 0.0, 0.33, true, {"shader": true, "dust": 0.45, "damp": 0.35}],
+	"brick": ["ph/brick_wall_09", Color(1, 1, 1), 0.9, 0.0, 0.5, true, {"shader": true, "streaks": 0.5, "damp": 0.45}],
+	"tiles_dirty": ["ph/dirty_tiles", Color(1, 1, 1), 0.35, 0.0, 0.44, true, {"shader": true, "grime": 0.6, "streaks": 0.6}],
+	"soot": ["ph/dirty_concrete", Color(0.22, 0.21, 0.2), 0.97, 0.0, 0.33, true, {"shader": true, "streaks": 0.3, "damp": 0.1, "macro": 0.5}],
 	"glass_dirty": ["", Color(0.55, 0.6, 0.58, 0.35), 0.15, 0.0, 1.0, true, {"transparent": true}],
 	"cable": ["rubber", Color(0.35, 0.35, 0.35), 0.7, 0.0, 2.0, true, {}],
 	"paper": ["fabric_canvas", Color(1.15, 1.12, 1.0), 0.95, 0.0, 1.2, true, {}],
-	"asphalt": ["concrete_floor", Color(0.5, 0.5, 0.5), 0.95, 0.0, 0.22, true, {"shader": true, "dust": 0.5, "grime": 0.7, "macro": 0.45}],
-	"ground": ["concrete_floor", Color(0.58, 0.52, 0.42), 1.0, 0.0, 0.12, true, {"shader": true, "dust": 0.8, "grime": 0.8, "macro": 0.6}],
+	"asphalt": ["ph/asphalt_02", Color(1, 1, 1), 0.95, 0.0, 0.33, true, {"shader": true, "dust": 0.4, "grime": 0.5, "macro": 0.45}],
+	"ground": ["ph/gravel_ground_01", Color(1, 1, 1), 1.0, 0.0, 0.33, true, {"shader": true, "dust": 0.5, "grime": 0.5, "macro": 0.6}],
 	"moss": ["fabric_dark", Color(0.55, 0.85, 0.35), 0.95, 0.0, 2.0, true, {}],
 	# Props: object-space triplanar when used as nodes, world space when merged
 	# into level geometry.
-	"prop_wood": ["wood_planks", Color(1, 1, 1), 0.85, 0.0, 1.2, false, {"shader": true, "dust": 0.5}],
-	"prop_rust": ["rusted_metal", Color(1, 1, 1), 0.8, 0.5, 1.2, false, {"shader": true, "rust": 0.3}],
-	"prop_steel": ["painted_steel", Color(1, 1, 1), 0.7, 0.3, 1.2, false, {"shader": true, "rust": 0.5}],
-	"prop_steel_blue": ["painted_steel", Color(0.55, 0.75, 1.05), 0.7, 0.3, 1.2, false, {"shader": true, "rust": 0.5}],
-	"prop_steel_orange": ["painted_steel", Color(1.4, 0.75, 0.35), 0.7, 0.3, 1.2, false, {"shader": true, "rust": 0.5}],
+	"prop_wood": ["ph/old_wood_floor", Color(1, 1, 1), 0.85, 0.0, 1.0, false, {"shader": true, "dust": 0.4}],
+	"prop_rust": ["ph/rusty_metal_04", Color(1, 1, 1), 0.8, 0.5, 1.0, false, {"shader": true, "rust": 0.15}],
+	"prop_steel": ["ph/rusty_metal_02", Color(0.85, 0.85, 0.85), 0.7, 0.3, 1.5, false, {"shader": true, "rust": 0.2}],
+	"prop_steel_blue": ["ph/rusty_metal_02", Color(0.45, 0.62, 0.9), 0.7, 0.3, 1.5, false, {"shader": true, "rust": 0.2}],
+	"prop_steel_orange": ["ph/rusty_metal_02", Color(1.25, 0.65, 0.28), 0.7, 0.3, 1.5, false, {"shader": true, "rust": 0.2}],
 	"prop_rubber": ["rubber", Color(1, 1, 1), 0.8, 0.0, 2.0, false, {}],
 	"lamp_emissive": ["", Color(1.0, 0.95, 0.85), 0.5, 0.0, 1.0, false, {"emission": Color(1.0, 0.92, 0.78), "energy": 4.0}],
 	"lamp_emissive_red": ["", Color(1.0, 0.2, 0.15), 0.5, 0.0, 1.0, false, {"emission": Color(1.0, 0.12, 0.08), "energy": 5.0}],
@@ -172,6 +172,15 @@ func _build_standard(def: Array) -> StandardMaterial3D:
 	return mat
 
 
+## A texture map: generated ones in assets/textures/<folder>/, scanned ones
+## (folder "ph/<name>") in assets/third_party/polyhaven/textures/<name>/ (see
+## dev/asset_gen/fetch_polyhaven.py). Missing maps give null.
 func _tex(folder: String, map: String) -> Texture2D:
-	var path := TEX + folder + "/" + map + ".png"
-	return load(path) as Texture2D if ResourceLoader.exists(path) else null
+	var base := TEX + folder
+	if folder.begins_with("ph/"):
+		base = "res://assets/third_party/polyhaven/textures/" + folder.substr(3)
+	for ext in [".png", ".jpg"]:
+		var path: String = base + "/" + map + ext
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
+	return null
