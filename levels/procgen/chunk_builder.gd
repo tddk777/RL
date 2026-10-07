@@ -21,6 +21,11 @@ const PARAPET := 0.9
 const YARD_WALL := 3.2
 const FOUNDATION := 0.3
 const PASSAGE := 3.2
+## Below ground: walls stop this far under the next storey's floor level (the
+## underside of a ground-floor slab); a tunnel's own roof is buried just under
+## the ground.
+const BURIED := 0.5
+const BURIED_ROOF := 0.1
 ## Kit props that stay separate nodes (lamps swap their emissive material).
 const NODE_PROPS := ["cage_lamp", "fluorescent", "lamp_hanging", "fire_pit"]
 
@@ -94,7 +99,7 @@ func _init(layout: LevelLayout) -> void:
 
 
 func _exit_distances() -> void:
-	exit_dist.resize(L.size.x * L.size.y * L.storeys)
+	exit_dist.resize(L.size.x * L.size.y * (L.storeys + L.basement))
 	exit_dist.fill(-1)
 	var queue: Array[Vector3i] = []
 	for e in L.exits:
@@ -119,7 +124,8 @@ func chunk_count() -> Vector2i:
 
 
 func chunk_bounds(coord: Vector2i) -> AABB:
-	return AABB(Vector3(coord.x * N * C, -1.0, coord.y * N * C), Vector3(N * C, L.storeys * H + 2.0, N * C))
+	var y0 := -L.basement * H - 1.0
+	return AABB(Vector3(coord.x * N * C, y0, coord.y * N * C), Vector3(N * C, L.storeys * H + 2.0 - y0 - 1.0, N * C))
 
 
 func chunk_of(p: Vector3) -> Vector2i:
@@ -134,7 +140,7 @@ func build(coord: Vector2i) -> ChunkData:
 	d.geo.record_solids = record_solids
 	for x in range(coord.x * N, (coord.x + 1) * N):
 		for z in range(coord.y * N, (coord.y + 1) * N):
-			for s in L.storeys:
+			for s: int in L.all_storeys():
 				_cell(d, x, z, s, true)
 	# Everything that collides is navigation source too; the level bakes one
 	# navigation mesh from all chunks.
@@ -305,6 +311,10 @@ func slab_over(x: int, z: int, s: int) -> bool:
 
 func needs_ceiling(x: int, z: int, s: int, zn: LevelLayout.Zone) -> bool:
 	var above := L.kind_at(x, z, s + 1)
+	if s < 0:
+		# Under a building or yard its ground floor is the tunnel's roof;
+		# anywhere else the tunnel has its own, buried under the ground.
+		return above != LevelLayout.Kind.FLOOR or L.zone_of(x, z, s + 1).type == &"connector"
 	return above == LevelLayout.Kind.EMPTY or (L.zone_at(x, z, s + 1) != zn.id and above != LevelLayout.Kind.FLOOR
 		and above != LevelLayout.Kind.CATWALK)
 
@@ -414,6 +424,12 @@ func _floor(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: StringName, f
 	var rects := _rects(Rect2(0, 0, C, C))
 	if flags & LevelLayout.STAIR_ABOVE:
 		rects = subtract(rects[0], run_rect(L.hole_dir(x, z, s), L.hole_side(x, z, s)))
+	if L.has_drop(x, z, s):
+		var cut: Array[Rect2] = []
+		for r in rects:
+			cut.append_array(subtract(r, drop_rect(x, z, s)))
+		rects = cut
+		_drop_edge(d, x, z, s, o, thick)
 	var f := level_feature(x, z, s)
 	if not f.is_empty() and f["kind"] == &"pit":
 		var cut: Array[Rect2] = []
@@ -670,6 +686,8 @@ func wall_kind(x: int, z: int, s: int, dir: int) -> int:
 ## Height of the wall this cell builds on `dir` (storey-local): the storey
 ## height, a parapet above the roofline, or a yard's boundary wall.
 func wall_top(x: int, z: int, s: int, dir: int) -> float:
+	if s < 0:
+		return H - BURIED  # up to the underside of the ground floor / buried roof
 	var zn := L.zone_of(x, z, s)
 	if zn.type == &"yard":
 		return YARD_WALL
@@ -1256,6 +1274,48 @@ func _yard_wall(d: ChunkData, x: int, z: int, s: int, sp: Span, a_lo: float, a_h
 
 ## The pillar at grid vertex (vx, vz) on storey s: [top, half size] or [] for
 ## none. Pillars stand wherever walls meet or end; tall halls get brick piers.
+## Cell-local rect of a drop-down's hole (its corner of the cell).
+func drop_rect(x: int, z: int, s: int) -> Rect2:
+	const SIZE := 2.3
+	const INSET := 0.45
+	var k := _corner_point(L.drop_corner(x, z, s))
+	var x0 := INSET if k.x < C * 0.5 else C - INSET - SIZE
+	var z0 := INSET if k.y < C * 0.5 else C - INSET - SIZE
+	return Rect2(x0, z0, SIZE, SIZE)
+
+
+## The broken edge of a drop-down: chunks of slab along the rim, bent rebar
+## reaching into the hole, a piece hanging down; below, the heap it made.
+func _drop_edge(d: ChunkData, x: int, z: int, s: int, o: Vector3, thick: float) -> void:
+	var r := rng(x, z, s, 160)
+	var h := drop_rect(x, z, s)
+	var g := d.geo
+	var edges := [[Vector2(h.position.x, h.position.y), Vector2(h.end.x, h.position.y)],
+		[Vector2(h.end.x, h.position.y), Vector2(h.end.x, h.end.y)],
+		[Vector2(h.end.x, h.end.y), Vector2(h.position.x, h.end.y)],
+		[Vector2(h.position.x, h.end.y), Vector2(h.position.x, h.position.y)]]
+	for e in edges:
+		var a: Vector2 = e[0]
+		var b: Vector2 = e[1]
+		var t := 0.12
+		while t < 0.95:
+			var p := a.lerp(b, t)
+			var inward := (h.get_center() - p).normalized() * 0.08
+			var sz := Vector3(r.randf_range(0.18, 0.4), r.randf_range(0.1, 0.22), r.randf_range(0.15, 0.3))
+			g.box(o + Vector3(p.x - inward.x, -thick * 0.5, p.y - inward.y), sz, &"concrete_dark", &"", false,
+				Basis.from_euler(Vector3(r.randf_range(-0.5, 0.5), r.randf() * TAU, r.randf_range(-0.5, 0.5))))
+			if r.randf() < 0.45:
+				var bar := Vector3(p.x, -thick * 0.6, p.y)
+				var into := Vector3(h.get_center().x - p.x, 0, h.get_center().y - p.y).normalized()
+				var tip := bar + into * r.randf_range(0.3, 0.7) + Vector3.DOWN * r.randf_range(0.0, 0.5)
+				g.cylinder(o + bar, o + tip, 0.012, &"rusted_metal", 4)
+			t += r.randf_range(0.18, 0.32)
+	# A slab fragment still hanging by its bars.
+	var c := h.get_center()
+	g.box(o + Vector3(c.x + r.randf_range(-0.4, 0.4), -thick - 0.9, c.y + r.randf_range(-0.4, 0.4)), Vector3(1.0, 0.18, 0.8),
+		&"concrete_dark", &"", false, Basis.from_euler(Vector3(r.randf_range(0.9, 1.3), r.randf() * TAU, 0.0)))
+
+
 func pillar(vx: int, vz: int, s: int) -> Array:
 	var cells: Array[Vector2i] = [Vector2i(vx - 1, vz - 1), Vector2i(vx, vz - 1), Vector2i(vx, vz), Vector2i(vx - 1, vz)]
 	const CORNER_OF := [2, 3, 0, 1]
@@ -1613,6 +1673,8 @@ func _narrow(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, ma
 	# Tucked under the slab above (never level with its top), and clear of the
 	# walls round the cell.
 	var top := H - 0.3 if slab_over(x, z, s) and not L.has_flag(x, z, s + 1, LevelLayout.STAIR_ABOVE) else H
+	if s < 0:
+		top = H - BURIED
 	var y0 := -FOUNDATION if s == 0 else 0.0
 	var e := T * 0.5
 	var solids := narrow_solids(x, z, s, st)
@@ -1817,6 +1879,8 @@ func _connector(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle)
 # --- Ceilings and columns -----------------------------------------------------------------
 
 func ceiling_height(st: ZoneStyle, zn: LevelLayout.Zone, room: LevelLayout.Room, x: int, z: int, s: int) -> float:
+	if s < 0:
+		return H - BURIED
 	if zn.type == &"connector":
 		return st.drop_ceiling if st.drop_ceiling > 0.0 and st.drop_ceiling < PASSAGE else PASSAGE
 	if st.drop_ceiling > 0.0 and not L.has_flag(x, z, s, LevelLayout.STAIR | LevelLayout.STAIR_ABOVE) \
@@ -1832,7 +1896,7 @@ func _ceiling(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, z
 		full: bool) -> void:
 	var room := L.room_of(x, z, s)
 	var hc := ceiling_height(st, zn, room, x, z, s)
-	if hc < H - 0.01:
+	if hc < H - 0.01 and s >= 0:
 		_drop_ceiling(d, x, z, s, o, st, hc)
 	if not needs_ceiling(x, z, s, zn):
 		return
@@ -1854,6 +1918,9 @@ func _ceiling(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, z
 			d.lights.append({"type": "spot", "position": hole - sun * 10.0, "target": hole + sun * 6.0,
 				"color": Color(0.78, 0.83, 0.92), "energy": 8.0, "range": 40.0, "angle": 17.0,
 				"shadow": true, "fog": 4.0})
+		return
+	if s < 0:
+		emit_slab(d, o, slab_pieces(x, z, s, _rects(Rect2(0, 0, C, C)), s), H - BURIED_ROOF, BURIED - BURIED_ROOF, st.ceiling_material, true)
 		return
 	emit_slab(d, o, slab_pieces(x, z, s, _rects(Rect2(0, 0, C, C)), s), H, 0.3, st.ceiling_material, true)
 	if L.flags_at(x, z, s) & (15 * LevelLayout.CHAMFER):
@@ -1877,6 +1944,7 @@ func _drop_ceiling(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneSty
 		areas = narrow_open(x, z, s, st)
 	var tile := Vector2(1.2, 0.6)
 	var decay := r.randf_range(0.05, 0.4)
+	var hole := drop_rect(x, z, s + 1) if L.has_drop(x, z, s + 1) else Rect2()
 	for area in areas:
 		var nx := int(round(area.size.x / tile.x)) if area.size.x >= tile.x else 1
 		var nz := int(round(area.size.y / tile.y)) if area.size.y >= tile.y else 1
@@ -1886,6 +1954,8 @@ func _drop_ceiling(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneSty
 			for j in nz:
 				var p := o + Vector3(area.position.x + (i + 0.5) * tw, hc + 0.01, area.position.y + (j + 0.5) * tz)
 				var roll := r.randf()
+				if hole.has_area() and hole.intersects(Rect2(area.position.x + i * tw, area.position.y + j * tz, tw, tz)):
+					continue  # the floor above came down through here
 				if roll < decay:
 					continue  # missing
 				if roll < decay + 0.03:
@@ -2071,7 +2141,10 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 					"color": st.light_color, "energy": st.light_energy, "range": 9.0, "shadow": r.randf() < 0.15,
 					"flicker": 0.85 if flicker else 0.0, "prop": prop, "emissive": "Bulb", "fog": 1.2})
 		&"fluorescent":
-			var pos := o + Vector3(C * 0.5, hc - (0.07 if hc < H - 0.01 else 1.0), C * 0.5)
+			# Flush under a tiled ceiling; otherwise on its rods (below ground the
+			# ceiling is solid: on rods too).
+			var tiled := hc < H - 0.01 and s >= 0
+			var pos := o + Vector3(C * 0.5, hc - (0.07 if tiled else 1.0), C * 0.5)
 			var yaw := 0.0 if r.randf() < 0.5 else PI * 0.5
 			if narrow:
 				yaw = PI * 0.5 if L.open_edges(x, z, s) & 5 else 0.0

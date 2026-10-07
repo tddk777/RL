@@ -29,6 +29,7 @@ const VENT := 1     # << dir: crawl vent through the wall on that edge (crouchin
 const BREACH := 16  # << dir: a hole broken through the wall on that edge
 const PODIUM := 256 # a raised platform stands in the cell (steps up to it)
 const PIT := 512    # a sunken pit is let into the floor (steps down into it)
+const DROP := 1024  # the floor has broken through in one corner (bits 11-12): a way down, not back up
 
 ## Corners of a cell: 0 = N-W, 1 = N-E, 2 = S-E, 3 = S-W. CORNER_DIRS[c] are
 ## the two sides that meet there.
@@ -85,6 +86,9 @@ var seed: int
 var profile: LevelProfile
 var size := Vector2i.ZERO
 var storeys: int = 1
+## Storeys below ground (index -1, -2...): the maintenance tunnels. Storey 0
+## is always the ground floor.
+var basement: int = 0
 var cell: float = 8.0
 var storey_height: float = 4.5
 
@@ -122,9 +126,10 @@ func setup(p: LevelProfile, level_seed: int) -> void:
 	seed = level_seed
 	size = p.grid_size
 	storeys = p.storeys
+	basement = p.basement
 	cell = p.cell_size
 	storey_height = p.storey_height
-	var n := size.x * size.y * storeys
+	var n := size.x * size.y * (storeys + basement)
 	kind.resize(n)
 	zone.resize(n)
 	zone.fill(-1)
@@ -140,11 +145,16 @@ func setup(p: LevelProfile, level_seed: int) -> void:
 # --- Indexing ---------------------------------------------------------------------
 
 func idx(x: int, z: int, s: int) -> int:
-	return (s * size.y + z) * size.x + x
+	return ((s + basement) * size.y + z) * size.x + x
 
 
 func inside(x: int, z: int, s: int) -> bool:
-	return x >= 0 and z >= 0 and s >= 0 and x < size.x and z < size.y and s < storeys
+	return x >= 0 and z >= 0 and s >= -basement and x < size.x and z < size.y and s < storeys
+
+
+## Every storey index, basement first.
+func all_storeys() -> Array:
+	return range(-basement, storeys)
 
 
 func kind_at(x: int, z: int, s: int) -> int:
@@ -304,6 +314,14 @@ func has_gap(x: int, z: int, s: int, dir: int) -> bool:
 	return extra_at(x, z, s) & ((VENT | BREACH) << dir) != 0
 
 
+func has_drop(x: int, z: int, s: int) -> bool:
+	return extra_at(x, z, s) & DROP != 0
+
+
+func drop_corner(x: int, z: int, s: int) -> int:
+	return (extra_at(x, z, s) >> 11) & 3
+
+
 func has_partial(x: int, z: int, s: int, dir: int) -> bool:
 	return has_flag(x, z, s, PARTIAL << dir)
 
@@ -333,7 +351,7 @@ func cell_center(x: int, z: int, s: int) -> Vector3:
 
 
 func world_to_cell(p: Vector3) -> Vector3i:
-	return Vector3i(floori(p.x / cell), clampi(floori((p.y + 0.5) / storey_height), 0, storeys - 1), floori(p.z / cell))
+	return Vector3i(floori(p.x / cell), clampi(floori((p.y + 0.5) / storey_height), -basement, storeys - 1), floori(p.z / cell))
 
 
 static func dir_vector(dir: int) -> Vector3:

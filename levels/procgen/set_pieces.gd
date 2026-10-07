@@ -79,6 +79,8 @@ func _dress(k: Cell) -> void:
 		return
 	_decay(k)
 	_gap_cover(k)
+	if L.has_drop(x, z, s + 1):
+		_drop_heap(k)
 	if zn.type == &"yard":
 		_yard(k)
 		return
@@ -188,6 +190,10 @@ func base_blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 					var off := e * (ChunkBuilder.BRIDGE * 0.5 + 0.06)
 					var p := Vector2(C * 0.5, C * 0.5 + off) if axis == 0 else Vector2(C * 0.5 + off, C * 0.5)
 					out.append(Rect2(p - Vector2(0.35, 0.35), Vector2(0.7, 0.7)))
+	if L.has_drop(x, z, s):
+		out.append(cb.drop_rect(x, z, s).grow(0.45))
+	if L.has_drop(x, z, s + 1):
+		out.append(cb.drop_rect(x, z, s + 1).grow(0.25))
 	for corner in 4:
 		if L.has_chamfer(x, z, s, corner):
 			var e := LevelLayout.CHAMFER_CUT + 0.6
@@ -403,6 +409,22 @@ func _walls(k: Cell) -> void:
 			var q := _wall_at(k, dir, r.randf_range(-2.5, 2.5), 0.0, r.randf_range(0.6, 2.2))
 			var sz := r.randf_range(1.0, 2.2)
 			k.d.decals.append(["peel", Transform3D(Basis(right, up, right.cross(up)), q), Vector3(sz * 1.3, 0.4, sz)])
+
+
+## Under a drop-down: the slab that came down, in pieces, and its dust.
+func _drop_heap(k: Cell) -> void:
+	var r := cb.rng(k.x, k.z, k.s, 161)
+	var h := cb.drop_rect(k.x, k.z, k.s + 1)
+	var c := k.o + Vector3(h.get_center().x, 0, h.get_center().y)
+	cb.kit(k.d, "rubble", c, r.randf() * TAU)
+	for i in r.randi_range(5, 9):
+		var p := c + Vector3(r.randf_range(-1.3, 1.3), 0, r.randf_range(-1.3, 1.3))
+		var size := Vector3(r.randf_range(0.2, 0.6), r.randf_range(0.08, 0.2), r.randf_range(0.2, 0.5))
+		box(k, p + UP * size.y * 0.5, size, &"concrete_dark", false, Basis.from_euler(Vector3(r.randf_range(-0.3, 0.3), r.randf() * TAU, r.randf_range(-0.3, 0.3))))
+	for i in 3:
+		var a := c + Vector3(r.randf_range(-1, 1), 0.3, r.randf_range(-1, 1))
+		k.d.geo.cylinder(a, a + Vector3(r.randf_range(-0.8, 0.8), r.randf_range(0.1, 0.5), r.randf_range(-0.8, 0.8)), 0.012, &"rusted_metal", 4)
+	decal(k, "crack", c, Vector3(3.2, 0.4, 3.2), r.randf() * TAU)
 
 
 ## Small broken concrete, scraps and dust piles.
@@ -1903,7 +1925,7 @@ func _lockers(k: Cell) -> void:
 				continue
 			var yaw := atan2(B.x * e, B.z * e)
 			if r.randf() < 0.08 and _free(k, _rect(k, p + B * (e * 1.2), A, 0.6, 2.0)):
-				cb.kit(k.d, "locker", p + B * (e * 0.9) + UP * 0.262, yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))
+				cb.kit(k.d, "locker", p + B * (e * 0.9) + UP * 0.282, yaw, {}, Basis(Vector3.RIGHT, -PI * 0.5))  # face down, on its handle
 			elif r.randf() < 0.9:
 				cb.kit(k.d, "locker", p, yaw)
 	# Benches either side

@@ -150,11 +150,14 @@ func _add_sun_rays() -> void:
 func _add_surroundings() -> void:
 	var size := Vector2(layout.size) * layout.cell
 	var centre := Vector3(size.x * 0.5, 0.0, size.y * 0.5)
-	var hills := profile.terrain
+	# With tunnels the ground must open where stairs go down through a
+	# building's floor: a Landscape leaves out what's under buildings.
+	var hills := profile.terrain or layout.basement > 0
 	if hills and profile.use_terrain3d and ClassDB.class_exists(&"Terrain3D"):
 		_add_terrain(centre)
 	elif hills:
-		add_child(Landscape.build(ground_height, Rect2(Vector2.ZERO, size), centre, _material(profile.terrain_material)))
+		add_child(Landscape.build(ground_height, Rect2(Vector2.ZERO, size), centre, _material(profile.terrain_material),
+			80.0, _under_floor))
 	else:
 		var ground := MeshInstance3D.new()
 		ground.name = "Ground"
@@ -166,19 +169,20 @@ func _add_surroundings() -> void:
 		ground.material_override = _material(profile.ground_material)
 		ground.position = centre + Vector3.DOWN * 0.06
 		add_child(ground)
-	# Flat collision under the site either way (the terrain's own collision
-	# only follows the camera).
-	var body := StaticBody3D.new()
-	body.name = "GroundBody"
-	body.collision_mask = 0
-	body.set_meta(&"surface", &"concrete")
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(1600, 1.0, 1600)
-	shape.shape = box
-	body.add_child(shape)
-	add_child(body)
-	body.position = centre + Vector3.DOWN * 0.56
+	if layout.basement == 0:
+		# Flat collision under the site (the terrain's own collision only
+		# follows the camera); with tunnels the Landscape's collision does.
+		var body := StaticBody3D.new()
+		body.name = "GroundBody"
+		body.collision_mask = 0
+		body.set_meta(&"surface", &"concrete")
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(1600, 1.0, 1600)
+		shape.shape = box
+		body.add_child(shape)
+		add_child(body)
+		body.position = centre + Vector3.DOWN * 0.56
 	if not profile.skyline:
 		return
 	var g := GeoBuilder.new()
@@ -245,6 +249,16 @@ var _terrain: Node3D
 var _sun: DirectionalLight3D
 var _sun_fx: CompositorEffect
 var _terrain_camera: Camera3D
+
+
+## A ground-floor cell with its own floor slab is there (not open ground or
+## a walkway, whose floor doesn't cover the cell).
+func _under_floor(x: float, z: float) -> bool:
+	var cx := floori(x / layout.cell)
+	var cz := floori(z / layout.cell)
+	if not layout.is_enclosed(cx, cz, 0):
+		return false
+	return layout.zone_of(cx, cz, 0).type != &"connector"
 
 
 ## Height of the landscape at a world position: flat over the site and a

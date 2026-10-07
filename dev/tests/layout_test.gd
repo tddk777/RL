@@ -36,9 +36,23 @@ func _initialize() -> void:
 		print("seed %d: %d ms, zones %s, walkable %d reachable %d per storey %s, stairs %d, max dist %d, exits %s, enemies %d, pickups %d, anomalies %d" % [
 			seed, ms, types, walk, reach, per_storey, stairs, L.max_distance, exit_kinds, L.enemies.size(), L.pickups.size(), L.anomalies.size()])
 		var ok := L.exits.size() >= 2 and reach > 300 and L.enemies.size() >= 6
+		# Maintenance tunnels: reachable, with stairs up into buildings.
+		var tunnel := 0
+		var tunnel_stairs := 0
+		for s: int in range(-L.basement, 0):
+			for z in L.size.y:
+				for x in L.size.x:
+					if L.is_walkable(x, z, s) and L.distance[L.idx(x, z, s)] >= 0:
+						tunnel += 1
+					if L.has_flag(x, z, s, LevelLayout.STAIR):
+						tunnel_stairs += 1
+		if L.basement > 0:
+			print("  tunnels: %d reachable cells, %d stairs up" % [tunnel, tunnel_stairs])
+			if tunnel < 8 or tunnel_stairs < 2:
+				ok = false
 		# Every flight lands on walkable floor in its own column, and every
 		# hole has the flight under it.
-		for s in L.storeys:
+		for s: int in L.all_storeys():
 			for z in L.size.y:
 				for x in L.size.x:
 					if L.has_flag(x, z, s, LevelLayout.STAIR):
@@ -94,7 +108,7 @@ func _initialize() -> void:
 			failures += 1
 			print("  FAIL")
 		if seed == 1:
-			for s in L.storeys:
+			for s: int in L.all_storeys():
 				print("--- storey %d ---" % s)
 				print(L.ascii(s))
 	print("FAILURES: %d" % failures)

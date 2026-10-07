@@ -10,8 +10,10 @@ const EXTENT := 800.0  # m from the centre to each edge
 
 
 ## `height` maps (x, z) -> y. `site` is the flat area (world XZ); the fine
-## grid reaches `margin` past it.
-static func build(height: Callable, site: Rect2, centre: Vector3, material: Material, margin: float = 80.0) -> StaticBody3D:
+## grid reaches `margin` past it. `skip` (x, z) -> bool leaves out the quads
+## whose centre it returns true for (under buildings, which have floors).
+static func build(height: Callable, site: Rect2, centre: Vector3, material: Material, margin: float = 80.0,
+		skip: Callable = Callable()) -> StaticBody3D:
 	var xs := _lines(site.position.x - margin, site.end.x + margin, centre.x)
 	var zs := _lines(site.position.y - margin, site.end.y + margin, centre.z)
 	var nx := xs.size()
@@ -33,6 +35,8 @@ static func build(height: Callable, site: Rect2, centre: Vector3, material: Mate
 	var idx := PackedInt32Array()
 	for j in nz - 1:
 		for i in nx - 1:
+			if skip.is_valid() and skip.call((xs[i] + xs[i + 1]) * 0.5, (zs[j] + zs[j + 1]) * 0.5):
+				continue
 			var a := j * nx + i
 			idx.append_array([a, a + 1, a + nx, a + 1, a + nx + 1, a + nx])
 	var arrays := []

@@ -76,7 +76,8 @@ L4 labs, ...) are mostly data:
 
 1. **Styles.** A `ZoneStyle` (`levels/procgen/zone_style.gd`) per kind of
    space: `type` (hall, foundry, processing, office, maintenance, warehouse,
-   storage, loading_dock; `corridor` for walkways, `yard` for courtyards),
+   storage, loading_dock; `corridor` for walkways, `yard` for courtyards,
+   `tunnel` for the maintenance tunnels),
    `family` (factory, interior, storage),
    `weight`, `extra_storeys`, materials, door sizes, `windows`, shape
    (`narrow` passages and their `passage_width`, `drop_ceiling` height),
@@ -86,8 +87,10 @@ L4 labs, ...) are mostly data:
    how the site grows (`coverage`, `max_buildings`, `touch_chance` vs
    walkways up to `max_gap` cells, `abut_chance`, `yards`, `bridges`,
    `chamfer_chance`, `partial_chance`, `districts`, `breaches`, `vents`,
-   `stashes`, `podium_chance`, `pit_chance`), one walkway style per
-   family (`corridors`), the `yard` style and the building styles,
+   `stashes`, `podium_chance`, `pit_chance`, `drops`), tunnels under the
+   site (`basement`, `tunnel_rooms`, `tunnel_loops` and the `tunnel` style),
+   one walkway style per family (`corridors`), the `yard` style and the
+   building styles,
    population (enemies, exits, weapon/ammo pickups, corpses), anomalies and
    atmosphere (environment, `daylight_energy`/`daylight_color`, ground
    material, `skyline`). `dev/generators/build_l1_profile.gd` is the L1
@@ -96,6 +99,12 @@ L4 labs, ...) are mostly data:
    with the profile assigned.
 4. **Register** a `LevelData` with `order`, `display_name`, `subtitle` and
    `scene_path` as for any level.
+
+What lines the walls, corners and doors is `levels/procgen/detailer.gd`:
+`FLOOR_KITS`, `HUNG_KITS` and `FILL` say, per room use or zone type, what
+stands against the walls, what hangs on them and how full they get; add a
+key for a new room use. Sign textures (room plates, sector names, hazard
+labels, posters) come from `dev/asset_gen/signs.py`.
 
 What fills a space is code in `levels/procgen/set_pieces.gd`: `dress()`
 dispatches on zone type (tall spaces) or room use (rooms; uses are chosen in

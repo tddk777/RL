@@ -12,18 +12,26 @@ const AUDIO := "res://assets/audio/"
 func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	var p := LevelProfile.new()
-	p.grid_size = Vector2i(25, 25)
-	p.storeys = 3
+	# Compact and stacked: a big facility in a small footprint (~128 m), four
+	# storeys and maintenance tunnels under it, buildings mostly built
+	# against each other with little open ground between.
+	p.grid_size = Vector2i(16, 16)
+	p.storeys = 4
 	p.cell_size = 8.0
 	p.storey_height = 4.5
-	p.chunk_cells = 5
-	p.coverage = 0.5
-	p.max_buildings = 22
-	p.touch_chance = 0.45
-	p.max_gap = 3
-	p.abut_chance = 0.3
-	p.yards = 2
+	p.chunk_cells = 4
+	p.basement = 1
+	p.tunnel_rooms = 4
+	p.tunnel_loops = 2
+	p.coverage = 0.78
+	p.max_buildings = 14
+	p.touch_chance = 0.85
+	p.max_gap = 1
+	p.abut_chance = 0.65
+	p.yards = 1
 	p.bridges = 2
+	p.breaches = 10
+	p.vents = 8
 	p.chamfer_chance = 0.3
 	p.partial_chance = 0.35
 	p.districts = 3
@@ -95,7 +103,7 @@ func _initialize() -> void:
 		"props": {"barrel_rust": 2.0, "crate_wood": 1.0, "pallet": 1.0},
 		"prop_density": 0.15, "roof_hole_chance": 0.12,
 	})
-	var processing := _style(&"processing", &"factory", 0.8, Vector2i(0, 2), {
+	var processing := _style(&"processing", &"factory", 0.8, Vector2i(1, 3), {
 		"wall_material": &"painted_steel", "upper_wall_material": &"painted_steel_green", "ceiling_material": &"concrete_dark",
 		"door_width": 1.8, "ground_door_width": 2.4, "ground_door_height": 3.0,
 		"light_kind": &"fluorescent", "light_chance": 0.6, "light_working": 0.65, "flicker_chance": 0.3,
@@ -105,7 +113,7 @@ func _initialize() -> void:
 	})
 
 	# --- Interior district ---
-	var office := _style(&"office", &"interior", 1.0, Vector2i(1, 2), {
+	var office := _style(&"office", &"interior", 1.0, Vector2i(1, 3), {
 		"floor_material": &"floor_tile", "upper_floor_material": &"wood_planks",
 		"wall_material": &"plaster", "upper_wall_material": &"plaster", "ceiling_material": &"concrete_dark",
 		"passage_width": 2.2, "drop_ceiling": 2.8,
@@ -115,7 +123,7 @@ func _initialize() -> void:
 		"props": {"filing_cabinet": 2.0, "locker": 1.0, "crate_small": 0.5},
 		"prop_density": 0.35, "collapse_chance": 0.05, "leak_chance": 0.1,
 	})
-	var maintenance := _style(&"maintenance", &"interior", 0.9, Vector2i(0, 2), {
+	var maintenance := _style(&"maintenance", &"interior", 0.9, Vector2i(1, 3), {
 		"wall_material": &"concrete_wall", "upper_wall_material": &"plaster_green", "ceiling_material": &"concrete_dark",
 		"passage_width": 2.0, "drop_ceiling": 2.7,
 		"door_width": 1.4, "door_height": 2.2, "ground_door_width": 1.4, "ground_door_height": 2.2,
@@ -134,7 +142,7 @@ func _initialize() -> void:
 		"props": {"pallet": 2.0, "crate_wood": 2.0, "crate_small": 1.0, "barrel_orange": 1.0},
 		"prop_density": 0.2, "roof_hole_chance": 0.07,
 	})
-	var storage := _style(&"storage", &"storage", 0.9, Vector2i(0, 2), {
+	var storage := _style(&"storage", &"storage", 0.9, Vector2i(1, 2), {
 		"wall_material": &"painted_steel_blue", "upper_wall_material": &"concrete_wall", "ceiling_material": &"concrete_dark",
 		"door_width": 1.8, "ground_door_width": 2.4, "ground_door_height": 2.8,
 		"light_kind": &"fluorescent", "light_chance": 0.6, "light_working": 0.65, "flicker_chance": 0.25,
@@ -151,6 +159,17 @@ func _initialize() -> void:
 		"prop_density": 0.3, "roof_hole_chance": 0.05,
 	})
 	var buildings: Array[ZoneStyle] = [hall, foundry, processing, office, maintenance, warehouse, storage, dock]
+	# --- Under it all ---
+	p.tunnel = _style(&"tunnel", &"factory", 1.0, Vector2i(0, 0), {
+		"narrow": true, "passage_width": 2.6,
+		"floor_material": &"concrete_dark", "upper_floor_material": &"concrete_dark",
+		"wall_material": &"concrete_wall", "upper_wall_material": &"concrete_wall", "ceiling_material": &"concrete_dark",
+		"door_width": 1.4, "door_height": 2.2, "ground_door_width": 1.4, "ground_door_height": 2.2,
+		"light_kind": &"cage", "light_chance": 0.7, "light_working": 0.6, "flicker_chance": 0.35,
+		"light_color": bulb, "light_energy": 1.1,
+		"props": {"barrel_rust": 2.0, "crate_small": 1.0, "rubble": 1.0, "electrical_cabinet": 1.0},
+		"prop_density": 0.2, "pipe_chance": 1.0, "leak_chance": 0.35, "collapse_chance": 0.0,
+	})
 	p.buildings = buildings
 	p.environment = _environment()
 	p.ambience = _audio("ambience/industrial_interior_loop.wav")

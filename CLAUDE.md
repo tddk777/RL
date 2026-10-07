@@ -105,13 +105,20 @@ Key contracts:
   walled courtyards (`yard`), bridges between upper floors, fills each
   building (tall halls with catwalk rings and bridges, foundries,
   warehouses, docks; storeyed blocks of rooms off a hallway with a
-  stairwell), stairs, doors, cut corners (`CHAMFER`), windows (`WINDOW`),
-  stub walls (`PARTIAL`), collapse, connectivity, then odd ways through
+  stairwell), stairs, doors, maintenance tunnels (`profile.basement`: a
+  storey below ground, index -1; `LevelLayout.basement`, `all_storeys()`;
+  storey 0 is always the ground floor, so loops over `range(L.storeys)`
+  skip the tunnels unless they use `all_storeys()`; tunnel walls stop under
+  the ground-floor slab, `ChunkBuilder.BURIED`), cut corners (`CHAMFER`),
+  windows (`WINDOW`, upper rooms overlook halls), stub walls (`PARTIAL`),
+  collapse, connectivity, then odd ways through
   where they make the biggest shortcuts (per-cell `extra` flags: `BREACH`
   holes anyone fits through, `VENT` crawl vents only the crouching player
   fits, stash rooms whose only way in is a vent), raised platforms and
   sunken pits (`PODIUM`, `PIT`; `ChunkBuilder.level_feature()` places them
-  clear of lanes), exits, enemies, pickups, anomalies. `links()` counts
+  clear of lanes), drop-downs (`DROP`: a corner of an upper floor broken
+  through where it saves the longest walk; one way, not in `links()`),
+  exits, enemies, pickups, anomalies. `links()` counts
   breaches; vents only with `crawl`, so enemies and exits never depend on
   them. Everything that isn't a building cell (open ground, yards,
   walkways) is "outdoor" to a building, which builds that wall whole.
@@ -119,7 +126,15 @@ Key contracts:
   furnaces, racks, cubicles, boilers, lockers, yards, open ground, and
   `_clutter` odds and ends checked against `ChunkData.taken`) turn
   8 m cells into merged meshes, collision, occluders and navigation source on
-  worker threads. Kit props are merged into the chunk meshes (lamps stay
+  worker threads. Then `Detailer` dresses each cell from how it meets its
+  neighbours (the Townscaper idea: detail follows whatever the layout
+  does): every free wall run filled from the room's kit (floor pieces, then
+  things hung in the gaps), riser pipes or rubbish in inside corners, room
+  plates over doors, sector letters and names between buildings, EXIT
+  signs from `ChunkBuilder.exit_dist`, storey numbers in stairwells, pipes
+  and cables down every cramped passage at a fixed side and height per axis
+  so runs join cell to cell, walkway lines on factory floors. Hung things
+  stand `Detailer.NUDGE` proud so they never share a plane with wall trim. Kit props are merged into the chunk meshes (lamps stay
   nodes). `ProceduralLevel.prepare()` builds the whole level while it loads
   (no streaming), adds the daylight, god rays (`lens_effects` compositor),
   the landscape (`ProceduralLevel.ground_height()`: flat over the site and a

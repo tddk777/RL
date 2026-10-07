@@ -10,6 +10,13 @@ extends Resource
 @export var cell_size: float = 8.0
 @export var storey_height: float = 4.5
 @export var chunk_cells: int = 5
+## Maintenance tunnels under the site (0 = none, 1 = a tunnel storey below
+## ground): passages joining the buildings' stairwells and halls, with plant
+## rooms and sumps off them.
+@export_range(0, 1) var basement: int = 0
+@export var tunnel_rooms: int = 4
+## Extra tunnel links beyond the ones that join everything (loops).
+@export var tunnel_loops: int = 2
 ## Share of the site covered by buildings; the rest is yards and open ground.
 @export_range(0.1, 0.9) var coverage: float = 0.42
 @export var max_buildings: int = 22
@@ -40,6 +47,9 @@ extends Resource
 ## (machine pit, sump) with steps.
 @export_range(0.0, 1.0) var podium_chance: float = 0.14
 @export_range(0.0, 1.0) var pit_chance: float = 0.07
+## Drop-downs: a corner of an upper floor broken through onto the room below,
+## put where it saves the longest walk round (one way: no climbing back).
+@export var drops: int = 3
 
 @export_group("Spaces")
 ## Walkway styles, one per family (see ZoneStyle.family): covered passages
@@ -47,6 +57,8 @@ extends Resource
 @export var corridors: Array[ZoneStyle] = []
 ## Open-air courtyards.
 @export var yard: ZoneStyle
+## The maintenance tunnels (type `tunnel`; narrow).
+@export var tunnel: ZoneStyle
 ## Building styles. Their `type` must be one LayoutGenerator knows:
 ## hall, foundry, processing, office, maintenance, warehouse, storage,
 ## loading_dock.

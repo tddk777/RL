@@ -255,6 +255,8 @@ func _corners(k: SetPieces.Cell) -> void:
 		var dirs: Array = LevelLayout.CORNER_DIRS[c]
 		if not (L.has_wall(k.x, k.z, k.s, dirs[0]) and L.has_wall(k.x, k.z, k.s, dirs[1])) or L.has_chamfer(k.x, k.z, k.s, c):
 			continue
+		if L.has_drop(k.x, k.z, k.s) and L.drop_corner(k.x, k.z, k.s) == c:
+			continue
 		var corner := cb._corner_point(c)
 		var inward := Vector2(1.0 if corner.x < C * 0.5 else -1.0, 1.0 if corner.y < C * 0.5 else -1.0)
 		var r := cb.rng(k.x, k.z, k.s, 300 + c)
@@ -668,7 +670,8 @@ func _passage_services(k: SetPieces.Cell) -> void:
 	if top < 2.6:
 		return
 	var off := w * 0.5 - 0.22  # toward +X / +Z of the passage centre line
-	var heights := [[top - 0.3, top - 0.52], [top - 0.44, top - 0.66]]  # [axis X, axis Z][pipe]
+	var y0 := k.o.y
+	var heights := [[y0 + top - 0.3, y0 + top - 0.52], [y0 + top - 0.44, y0 + top - 0.66]]  # [axis X, axis Z][pipe]
 	var radii := [0.075, 0.05]
 	var mats := [&"rusted_metal", &"painted_steel_green"]
 	var axes := [false, false]
@@ -691,7 +694,7 @@ func _passage_services(k: SetPieces.Cell) -> void:
 		# Cables, highest, on the same side.
 		for j in 2:
 			var lat := off - 0.06 - j * 0.08
-			var a := Vector3(k.c.x + lat, top - 0.12 - j * 0.03, k.c.z + lat)
+			var a := Vector3(k.c.x + lat, y0 + top - 0.12 - j * 0.03, k.c.z + lat)
 			var b := a
 			if axis == 0:
 				b.x = k.c.x + v.x * C * 0.5
@@ -701,14 +704,14 @@ func _passage_services(k: SetPieces.Cell) -> void:
 		# Hangers from the ceiling every couple of metres.
 		for t: float in [1.6, 3.4]:
 			var h := k.c + v * t + (Vector3(0, 0, off - 0.09) if axis == 0 else Vector3(off - 0.09, 0, 0))
-			var y0: float = heights[axis][1] - radii[1]
-			k.d.geo.box(Vector3(h.x, (y0 + top) * 0.5, h.z), Vector3(0.025, top - y0, 0.025), &"gun_metal")
+			var low: float = heights[axis][1] - radii[1]
+			k.d.geo.box(Vector3(h.x, (low + y0 + top) * 0.5, h.z), Vector3(0.025, y0 + top - low, 0.025), &"gun_metal")
 	# Where runs on both axes meet: a riser joins their heights.
 	if axes[0] and axes[1]:
 		for i in 2:
 			var lat: float = off - i * 0.18
 			var p := Vector3(k.c.x + lat, 0, k.c.z + lat)
-			k.d.geo.cylinder(p + UP * heights[1][i], p + UP * heights[0][i], radii[i], mats[i], 10, false)
+			k.d.geo.cylinder(p + UP * heights[1][i], p + UP * heights[0][i], radii[i], mats[i], 10, false)  # (heights are world y)
 	else:
 		# The run stops in this cell: blank flanges on the ends.
 		for i in 2:

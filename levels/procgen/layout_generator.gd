@@ -20,6 +20,9 @@ extends RefCounted
 ##     hallway (offices, maintenance, storage, processing).
 ##  5. Doors (along every join first), stairs, chamfered corners, windows,
 ##     partial walls, collapse.
+##  5b. Maintenance tunnels under the site (profile.basement): stairs down
+##     from stairwells and halls, cramped passages joining them, plant rooms
+##     and sumps off the passages.
 ##  6. Spawn in the dock; connect everything reachable from it.
 ##  7. Exits far away (open / hidden / locked), enemies, pickups, anomalies.
 
@@ -73,6 +76,7 @@ func _run(p: LevelProfile, level_seed: int) -> LevelLayout:
 	_link_doors()
 	_make_stairs()
 	_make_doors()
+	_make_tunnels()
 	_make_chamfers()
 	_make_windows()
 	_make_partials()
@@ -85,6 +89,7 @@ func _run(p: LevelProfile, level_seed: int) -> LevelLayout:
 	_make_stashes()
 	_compute_distances()
 	_make_levels()
+	_make_drops()
 	_place_exits()
 	_place_enemies()
 	_place_pickups()
@@ -1031,6 +1036,192 @@ func _catwalk_stairs(z: LevelLayout.Zone) -> void:
 					break
 
 
+# --- 5b. Maintenance tunnels ---------------------------------------------------------------
+
+func _make_tunnels() -> void:
+	if L.basement < 1 or profile.tunnel == null:
+		return
+	const S := -1
+	var id := _add_zone(&"tunnel", profile.tunnel, Rect2i(Vector2i.ZERO, L.size), S, S, L.district_at(L.size.x / 2, L.size.y / 2))
+	var zn := L.zones[id]
+	# Stairs down: one per stairwell, one in some of the halls.
+	var entries: Array[Vector2i] = []
+	var stairs := {}  # column -> true
+	var spots: Array = []
+	for b in _buildings:
+		var bz := L.zones[b["zone"]]
+		var spot := _tunnel_stair_spot(bz, b)
+		if not spot.is_empty():
+			spots.append(spot)
+	_shuffle(spots)
+	for spot in spots:
+		var c: Vector2i = spot[0]
+		var dir: int = spot[1]
+		var side: int = spot[2]
+		var close := false
+		for q: Vector2i in stairs:
+			if absi(q.x - c.x) + absi(q.y - c.y) < 3:
+				close = true
+		if close:
+			continue
+		var e := c + LevelLayout.DIRS[(dir + 2) % 4]
+		if not _in(e) or stairs.has(e):
+			continue
+		var rm := _add_room(id, S, Rect2i(c, Vector2i.ONE), &"stairwell")
+		_put(c.x, c.y, S, LevelLayout.Kind.FLOOR, id, rm.id)
+		if not _place_stair(c.x, c.y, S, dir, side):
+			_put(c.x, c.y, S, LevelLayout.Kind.EMPTY, -1, 0)
+			L.rooms.pop_back()
+			continue
+		stairs[c] = true
+		entries.append(e)
+		if stairs.size() >= 6:
+			break
+	if entries.is_empty():
+		return
+	# Passages: a tree joining every stair (shortest routes that don't wind),
+	# then a few more links so there are loops.
+	var tree: Array[Vector2i] = [entries[0]]
+	var rest: Array[Vector2i] = entries.slice(1)
+	var links: Array = []
+	while not rest.is_empty():
+		var best := -1
+		var best_from := Vector2i.ZERO
+		var best_d := 1 << 30
+		for i in rest.size():
+			for t in tree:
+				var dd := absi(rest[i].x - t.x) + absi(rest[i].y - t.y)
+				if dd < best_d:
+					best_d = dd
+					best = i
+					best_from = t
+		links.append([best_from, rest[best]])
+		tree.append(rest[best])
+		rest.remove_at(best)
+	for i in profile.tunnel_loops:
+		if entries.size() < 3:
+			break
+		var a := entries[rng.randi_range(0, entries.size() - 1)]
+		var b := entries[rng.randi_range(0, entries.size() - 1)]
+		if a != b:
+			links.append([a, b])
+	for e in entries:
+		_put(e.x, e.y, S, LevelLayout.Kind.FLOOR, id)
+	for lk in links:
+		for c in _tunnel_path(lk[0], lk[1], stairs, id):
+			_put(c.x, c.y, S, LevelLayout.Kind.FLOOR, id)
+	# Doors from the passages into the stair rooms.
+	for c: Vector2i in stairs:
+		var dir := L.stair_dir(c.x, c.y, S)
+		var e := c + LevelLayout.DIRS[(dir + 2) % 4]
+		_door(e.x, e.y, S, _dir_between(e, c))
+	# Plant rooms and sumps off the passages.
+	var passage: Array[Vector2i] = []
+	for z in L.size.y:
+		for x in L.size.x:
+			if L.zone_at(x, z, S) == id and L.room_at(x, z, S) == 0:
+				passage.append(Vector2i(x, z))
+	_shuffle(passage)
+	var uses: Array[StringName] = [&"pumps", &"boiler", &"electrical", &"pumps", &"closet", &"workshop"]
+	var made := 0
+	for c in passage:
+		if made >= profile.tunnel_rooms:
+			break
+		for d in 4:
+			var n := c + LevelLayout.DIRS[d]
+			if not _in(n) or L.kind_at(n.x, n.y, S) != LevelLayout.Kind.EMPTY:
+				continue
+			var rm := _add_room(id, S, Rect2i(n, Vector2i.ONE), uses[made % uses.size()])
+			_put(n.x, n.y, S, LevelLayout.Kind.FLOOR, id, rm.id)
+			_door(c.x, c.y, S, d)
+			made += 1
+			break
+	for c in passage:
+		L.set_flag(c.x, c.y, S, LevelLayout.NARROW)
+
+
+## Where a building could have a flight down to the tunnels: under its
+## stairwell (switching back from the flight up), or along a wall of a hall.
+## [column, climb dir, strip side] or [].
+func _tunnel_stair_spot(zn: LevelLayout.Zone, b: Dictionary) -> Array:
+	if _stairwells.has(zn.id):
+		var c: Vector2i = _stairwells[zn.id]
+		if L.has_flag(c.x, c.y, 0, LevelLayout.STAIR):
+			var up_dir := L.stair_dir(c.x, c.y, 0)
+			var up_side := L.stair_side(c.x, c.y, 0)
+			return [c, (up_dir + 2) % 4, (up_side + 2) % 4]
+		return []
+	if not zn.type in [&"hall", &"foundry", &"warehouse"]:
+		return []
+	var options: Array = []
+	for c: Vector2i in zn.cols:
+		if L.kind_at(c.x, c.y, 0) != LevelLayout.Kind.FLOOR or L.zone_at(c.x, c.y, 0) != zn.id \
+				or L.flags_at(c.x, c.y, 0) & (LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.DOCK | LevelLayout.EXIT | (15 * LevelLayout.CHAMFER)):
+			continue
+		for side in 4:
+			if not L.has_wall(c.x, c.y, 0, side) or L.has_door(c.x, c.y, 0, side) or L.has_window(c.x, c.y, 0, side):
+				continue
+			for dir: int in [(side + 1) % 4, (side + 3) % 4]:
+				# Nothing opens onto the far end the flight climbs toward.
+				if L.has_door(c.x, c.y, 0, dir):
+					continue
+				options.append([c, dir, side])
+	if options.is_empty():
+		return []
+	return options[rng.randi_range(0, options.size() - 1)]
+
+
+## Cheapest route between two cells of the tunnel storey: straight runs
+## preferred (each turn costs extra), existing passages cheap, stair rooms
+## and other rooms avoided.
+func _tunnel_path(a: Vector2i, b: Vector2i, stairs: Dictionary, zone_id: int) -> Array[Vector2i]:
+	const TURN := 2.5
+	var best := {}  # Vector3i(x, z, dir) -> cost
+	var prev := {}
+	var open: Array = [[0.0, Vector3i(a.x, a.y, 4)]]
+	var goal := Vector3i(-1, -1, -1)
+	while not open.is_empty():
+		# (small grid: a linear scan for the cheapest is fine)
+		var bi := 0
+		for i in open.size():
+			if open[i][0] < open[bi][0]:
+				bi = i
+		var cur: Array = open.pop_at(bi)
+		var cost: float = cur[0]
+		var st: Vector3i = cur[1]
+		if best.has(st) and best[st] < cost:
+			continue
+		if Vector2i(st.x, st.y) == b:
+			goal = st
+			break
+		for d in 4:
+			var n := Vector2i(st.x, st.y) + LevelLayout.DIRS[d]
+			if not _in(n) or stairs.has(n):
+				continue
+			var k := L.kind_at(n.x, n.y, -1)
+			if k != LevelLayout.Kind.EMPTY and not (L.zone_at(n.x, n.y, -1) == zone_id and L.room_at(n.x, n.y, -1) == 0):
+				continue
+			var step := 0.6 if k != LevelLayout.Kind.EMPTY else 1.0
+			if st.z != 4 and st.z != d:
+				step += TURN
+			var ns := Vector3i(n.x, n.y, d)
+			var nc := cost + step
+			if not best.has(ns) or nc < best[ns]:
+				best[ns] = nc
+				prev[ns] = st
+				open.append([nc, ns])
+	var out: Array[Vector2i] = []
+	if goal.x < 0:
+		return out
+	var c := goal
+	while true:
+		out.append(Vector2i(c.x, c.y))
+		if not prev.has(c):
+			break
+		c = prev[c]
+	return out
+
+
 func _make_doors() -> void:
 	for zn in L.zones:
 		if zn.type in [&"connector", &"yard"]:
@@ -1217,6 +1408,10 @@ func _make_windows() -> void:
 						chance = 0.15
 					if L.kind_at(x, z, s) == LevelLayout.Kind.CATWALK or L.kind_at(n.x, n.y, s) == LevelLayout.Kind.CATWALK:
 						chance *= 0.5
+					# Upper-floor rooms beside a hall's open volume overlook it.
+					if s >= 1 and ((a.type in ROOM_TYPES and L.kind_at(n.x, n.y, s) == LevelLayout.Kind.VOID) \
+							or (b.type in ROOM_TYPES and L.kind_at(x, z, s) == LevelLayout.Kind.VOID)):
+						chance = 0.75
 					if chance > 0.0 and rng.randf() < chance:
 						L.set_flag(x, z, s, LevelLayout.WINDOW << d)
 						L.set_flag(n.x, n.y, s, LevelLayout.WINDOW << ((d + 2) % 4))
@@ -1539,6 +1734,51 @@ func _make_levels() -> void:
 					L.set_extra(x, z, s, LevelLayout.PODIUM)
 
 
+## Drop-downs where they make the biggest shortcuts: a corner of an upper
+## floor gone, over a heap of its rubble in the room below.
+func _make_drops() -> void:
+	if profile.drops <= 0:
+		return
+	var floor_ok := func(x: int, z: int, s: int) -> bool:
+		if L.kind_at(x, z, s) != LevelLayout.Kind.FLOOR or L.distance[L.idx(x, z, s)] < 0:
+			return false
+		var f := L.flags_at(x, z, s)
+		if f & (LevelLayout.NARROW | LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.DOCK | LevelLayout.EXIT \
+				| (15 * LevelLayout.CHAMFER) | (15 * LevelLayout.PARTIAL)):
+			return false
+		if L.extra_at(x, z, s) & (LevelLayout.PODIUM | LevelLayout.PIT | LevelLayout.DROP):
+			return false
+		var zn := L.zone_of(x, z, s)
+		if zn == null or zn.type in [&"connector", &"yard", &"tunnel"]:
+			return false
+		var rm := L.room_of(x, z, s)
+		return not (rm and rm.use in [&"stairwell", &"stash", &"hallway", &"washroom"])
+	var options: Array = []
+	for s in range(1, L.storeys):
+		for z in L.size.y:
+			for x in L.size.x:
+				if not floor_ok.call(x, z, s) or not floor_ok.call(x, z, s - 1):
+					continue
+				var steps: Dictionary = _bfs(Vector3i(x, z, s))
+				var walk: int = steps.get(Vector3i(x, z, s - 1), 999)
+				if walk >= 5:
+					options.append([walk + rng.randf() * 4.0, Vector3i(x, z, s)])
+	options.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	var placed: Array[Vector3i] = []
+	for o in options:
+		if placed.size() >= profile.drops:
+			break
+		var c: Vector3i = o[1]
+		var close := false
+		for q in placed:
+			if absi(q.x - c.x) + absi(q.y - c.y) < 4:
+				close = true
+		if close:
+			continue
+		L.set_extra(c.x, c.y, c.z, LevelLayout.DROP | (rng.randi_range(0, 3) << 11))
+		placed.append(c)
+
+
 ## A little ammo left in each stash.
 func _stock_stashes() -> void:
 	for rm in L.rooms:
@@ -1556,7 +1796,7 @@ func _stock_stashes() -> void:
 
 func _reachable_floor_cells() -> Array[Vector3i]:
 	var out: Array[Vector3i] = []
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if L.kind_at(x, z, s) == LevelLayout.Kind.FLOOR and L.distance[L.idx(x, z, s)] >= 0:

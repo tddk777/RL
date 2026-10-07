@@ -50,7 +50,7 @@ func _run() -> void:
 	# One view per kind of space: [key, position, look direction, pitch]
 	var views: Array = []
 	var seen := {}
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if L.kind_at(x, z, s) != LevelLayout.Kind.FLOOR or L.distance[L.idx(x, z, s)] < 2:
@@ -121,6 +121,12 @@ func _run() -> void:
 						var sp := level.builder.edge_span(L.cell_origin(x, z, s), d)
 						var at := sp.origin + sp.u * ((g.x + g.y) * 0.5)
 						views.append([key, at - v * 3.2, v, -6.0 if key == "breach" else -18.0])
+				if L.has_drop(x, z, s) and not odd.has("drop"):
+					odd["drop"] = true
+					var hr := level.builder.drop_rect(x, z, s)
+					var hc := L.cell_origin(x, z, s) + Vector3(hr.get_center().x, 0, hr.get_center().y)
+					var away := (L.cell_center(x, z, s) - hc).normalized()
+					views.append(["drop", hc + away * 3.0, -away, -38.0])
 				var rm := L.room_of(x, z, s)
 				if rm and rm.use == &"stash" and not odd.has("stash"):
 					odd["stash"] = true

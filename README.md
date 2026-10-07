@@ -12,13 +12,18 @@ grow deeper level by level.
 
 ## Current build
 
-- **Level 1, The Works**: an abandoned industrial complex about 200 m across,
-  generated fresh every run (and every retry) and built while the level
-  loads. It grows like a real site: buildings of irregular shape (wings,
-  notches, setbacks, the odd corner cut at 45 degrees) added one against
-  another or linked by covered walkways with ribbon windows, bridges between
-  upper floors, a walled courtyard or two, open ground, and beyond the fence
-  embankments and rolling scrubland hills under a hazy skyline. Overcast daylight falls in through tall arched hall
+- **Level 1, The Works**: an abandoned industrial complex packed into about
+  130 m, four storeys high with maintenance tunnels under it, generated
+  fresh every run (and every retry) and built while the level loads. It
+  grows like a real site: buildings of irregular shape (wings, notches,
+  setbacks, the odd corner cut at 45 degrees) built against one another,
+  bridges between upper floors, a walled courtyard, offices overlooking the
+  hall floors, and beyond the fence embankments and rolling scrubland hills
+  under a hazy skyline. Stairs go down from stairwells and halls into the
+  tunnels: pipe-lined passages with pump rooms, boiler rooms and stores off
+  them. Every wall is in use (shelving, cabinets, benches, notice boards,
+  fuse boxes, valves, posters), pipes and cables run the length of the
+  passages, and signs name the rooms and sectors and point the way out. Overcast daylight falls in through tall arched hall
   windows, office windows and roof holes. Three districts blend into each
   other: the factory floor (halls with
   conveyor lines, presses, lathes, generators, assembly robots, catwalks and
@@ -34,7 +39,8 @@ grow deeper level by level.
   first. Holes broken through walls and crawl vents (some half hidden behind
   a dragged locker) make shortcuts and odd connections, and a couple of
   hideouts can only be reached by crawling. Floors rise and fall: machine
-  plinths and platforms with steps, sunken pits.
+  plinths and platforms with steps, sunken pits, and here and there a floor
+  broken through to the storey below, a quick way down but not back up.
 - **Dark where nothing lights it**, with a flashlight on T. A few things are not quite right. The seed is shown in the pause menu.
 - **You start with an M1911 and one spare magazine.** The AK-47, M16A2, MP5,
   M40, Makarov PM, TT-33, PPSh-41 and SKS and their ammunition lie around the

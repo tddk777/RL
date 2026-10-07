@@ -86,7 +86,7 @@ func _run() -> void:
 	var stairs := 0
 	var walkable := 0
 	var bad: Array = []
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
@@ -127,7 +127,7 @@ func _run() -> void:
 	var start := NavigationServer3D.map_get_closest_point(map, L.spawn_position)
 	var doors := 0
 	var blocked: Array = []
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if L.distance[L.idx(x, z, s)] < 0:
@@ -174,7 +174,7 @@ func _run() -> void:
 
 	# Teleport around, including upper storeys: always lands on a floor.
 	var stops: Array[Vector3] = []
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		var found := 0
 		for z in L.size.y:
 			for x in L.size.x:
@@ -204,7 +204,7 @@ func _run() -> void:
 	var space := player.get_world_3d().direct_space_state
 	var holes: Array = []
 	var probes := 0
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if L.distance[L.idx(x, z, s)] < 0:
@@ -233,9 +233,10 @@ func _run() -> void:
 				var feat := level.builder.level_feature(x, z, s)
 				if not feat.is_empty() and feat["kind"] == &"pit":
 					hole = feat["rect"]  # its floor is lower: walked below
+				var drop := level.builder.drop_rect(x, z, s).grow(0.3) if L.has_drop(x, z, s) else Rect2()
 				var o := L.cell_origin(x, z, s)
 				for p in pts:
-					if hole.has_point(p):
+					if hole.has_point(p) or drop.has_point(p):
 						continue
 					probes += 1
 					var from := o + Vector3(p.x, 1.2, p.y)
@@ -257,7 +258,7 @@ func _run() -> void:
 	var flights := 0
 	var climbed := 0
 	var descended := 0
-	for s in L.storeys:
+	for s: int in L.all_storeys():
 		for z in L.size.y:
 			for x in L.size.x:
 				if flights >= 5 or not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
@@ -278,6 +279,27 @@ func _run() -> void:
 				else:
 					print("INFO  stuck going down the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
 	check(flights > 0 and climbed == flights and descended == flights, "player walks up and down flights (%d of %d up, %d down)" % [climbed, flights, descended])
+
+	# Drop-downs: through the hole onto the heap in the room below.
+	var drops := 0
+	var dropped := 0
+	for s in range(1, L.storeys):
+		for z in L.size.y:
+			for x in L.size.x:
+				if not L.has_drop(x, z, s):
+					continue
+				drops += 1
+				var hr := level.builder.drop_rect(x, z, s)
+				var top := L.cell_origin(x, z, s) + Vector3(hr.get_center().x, 0.3, hr.get_center().y)
+				player.global_position = top
+				player.velocity = Vector3.ZERO
+				await wait(2.0)
+				if player.global_position.y < top.y - 3.0 and player.global_position.y > top.y - L.storey_height - 0.5 and player.is_on_floor():
+					dropped += 1
+				else:
+					print("INFO  drop at %s: ended at %s" % [Vector3i(x, z, s), player.global_position])
+	print("INFO  %d drop-downs" % drops)
+	check(drops > 0 and dropped == drops, "drop-downs land on the storey below (%d of %d)" % [dropped, drops])
 
 	# Platforms and pits: up the steps onto a platform, up out of a pit.
 	var feats := {&"podium": 0, &"pit": 0}

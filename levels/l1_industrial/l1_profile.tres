@@ -73,7 +73,7 @@ roof_hole_chance = 0.12
 script = ExtResource("3_lhbt5")
 type = &"processing"
 weight = 0.8
-extra_storeys = Vector2i(0, 2)
+extra_storeys = Vector2i(1, 3)
 wall_material = &"painted_steel"
 upper_wall_material = &"painted_steel_green"
 ground_door_width = 2.4
@@ -99,7 +99,7 @@ collapse_chance = 0.05
 script = ExtResource("3_lhbt5")
 type = &"office"
 family = &"interior"
-extra_storeys = Vector2i(1, 2)
+extra_storeys = Vector2i(1, 3)
 floor_material = &"floor_tile"
 upper_floor_material = &"wood_planks"
 wall_material = &"plaster"
@@ -129,7 +129,7 @@ script = ExtResource("3_lhbt5")
 type = &"maintenance"
 family = &"interior"
 weight = 0.9
-extra_storeys = Vector2i(0, 2)
+extra_storeys = Vector2i(1, 3)
 upper_wall_material = &"plaster_green"
 door_width = 1.4
 door_height = 2.2
@@ -183,7 +183,7 @@ script = ExtResource("3_lhbt5")
 type = &"storage"
 family = &"storage"
 weight = 0.9
-extra_storeys = Vector2i(0, 2)
+extra_storeys = Vector2i(1, 2)
 wall_material = &"painted_steel_blue"
 upper_wall_material = &"concrete_wall"
 ground_door_width = 2.4
@@ -345,6 +345,32 @@ adjustment_saturation = 0.78
 
 [sub_resource type="Resource" id="Resource_mpg1g"]
 script = ExtResource("3_lhbt5")
+type = &"tunnel"
+extra_storeys = Vector2i(0, 0)
+floor_material = &"concrete_dark"
+upper_floor_material = &"concrete_dark"
+upper_wall_material = &"concrete_wall"
+door_width = 1.4
+door_height = 2.2
+ground_door_width = 1.4
+ground_door_height = 2.2
+narrow = true
+passage_width = 2.6
+light_chance = 0.7
+flicker_chance = 0.35
+light_energy = 1.1
+props = {
+"barrel_rust": 2.0,
+"crate_small": 1.0,
+"electrical_cabinet": 1.0,
+"rubble": 1.0
+}
+prop_density = 0.2
+pipe_chance = 1.0
+leak_chance = 0.35
+
+[sub_resource type="Resource" id="Resource_rre1a"]
+script = ExtResource("3_lhbt5")
 type = &"yard"
 family = &"storage"
 extra_storeys = Vector2i(0, 0)
@@ -362,9 +388,21 @@ prop_density = 0.25
 
 [resource]
 script = ExtResource("15_opjl5")
-coverage = 0.5
+grid_size = Vector2i(16, 16)
+storeys = 4
+chunk_cells = 4
+basement = 1
+coverage = 0.78
+max_buildings = 14
+touch_chance = 0.85
+max_gap = 1
+abut_chance = 0.65
+yards = 1
+breaches = 10
+vents = 8
 corridors = Array[ExtResource("3_lhbt5")]([SubResource("Resource_mkti5"), SubResource("Resource_nscfd"), SubResource("Resource_c7bbo")])
-yard = SubResource("Resource_mpg1g")
+yard = SubResource("Resource_rre1a")
+tunnel = SubResource("Resource_mpg1g")
 buildings = Array[ExtResource("3_lhbt5")]([SubResource("Resource_ql367"), SubResource("Resource_fulf8"), SubResource("Resource_pvw6s"), SubResource("Resource_hgwn1"), SubResource("Resource_xkesp"), SubResource("Resource_jqkad"), SubResource("Resource_k4utc"), SubResource("Resource_vee1d")])
 weapon_pickups = PackedStringArray("mp5", "ak47", "m16", "m40", "makarov", "tokarev", "ppsh41", "sks")
 environment = SubResource("Environment_gddo6")
