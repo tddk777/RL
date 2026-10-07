@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ai/npc.gd" id="1_npc"]
-[ext_resource type="Script" path="res://characters/humanoid.gd" id="2_body"]
+[ext_resource type="Script" path="res://characters/mannequin.gd" id="2_body"]
 [ext_resource type="Script" path="res://core/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://ai/perception.gd" id="4_perception"]
 [ext_resource type="Script" path="res://ai/ai_brain.gd" id="5_brain"]

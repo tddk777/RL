@@ -22,6 +22,11 @@ extends Node3D
 @export var bolt_lift_degrees := 0.0
 ## Where the magazine goes when removed (offset from its rest position).
 @export var magazine_drop := Vector3(0, -0.22, 0.02)
+## Imported models: the moving parts can sit deeper in the tree (inside an
+## instanced .glb, scaled). Travel and drop are still given in this node's
+## space, in metres.
+@export var magazine_path: NodePath
+@export var bolt_path: NodePath
 
 var muzzle: Node3D
 var eject: Node3D
@@ -36,6 +41,8 @@ var _bolt_rest: Transform3D
 var _mag_rest: Transform3D
 var _bolt_tween: Tween
 var _mag_tween: Tween
+var _bolt_step := Vector3.ZERO  # bolt_travel in the bolt's parent space
+var _mag_step := Vector3.ZERO  # magazine_drop in the magazine's parent space
 
 
 func _ready() -> void:
@@ -43,13 +50,25 @@ func _ready() -> void:
 	eject = get_node_or_null(^"Eject")
 	grip_r = get_node_or_null(^"Grip_R")
 	grip_l = get_node_or_null(^"Grip_L")
-	magazine = get_node_or_null(^"Magazine")
-	bolt = get_node_or_null(^"Bolt")
+	magazine = get_node_or_null(magazine_path) if not magazine_path.is_empty() else get_node_or_null(^"Magazine")
+	bolt = get_node_or_null(bolt_path) if not bolt_path.is_empty() else get_node_or_null(^"Bolt")
 	_ads = get_node_or_null(^"ADS")
 	if bolt:
 		_bolt_rest = bolt.transform
+		_bolt_step = _to_parent_space(bolt, bolt_travel)
 	if magazine:
 		_mag_rest = magazine.transform
+		_mag_step = _to_parent_space(magazine, magazine_drop)
+
+
+## A vector in this node's space expressed in `n`'s parent space.
+func _to_parent_space(n: Node3D, v: Vector3) -> Vector3:
+	var to_parent := Transform3D.IDENTITY
+	var cur: Node = n.get_parent()
+	while cur != self and cur is Node3D:
+		to_parent = (cur as Node3D).transform * to_parent
+		cur = cur.get_parent()
+	return to_parent.basis.inverse() * v
 
 
 func mount(slot: StringName) -> Node3D:
@@ -81,7 +100,7 @@ func cycle_bolt(duration: float = 0.06) -> void:
 		_bolt_tween.kill()
 	bolt.transform = _bolt_rest
 	_bolt_tween = create_tween()
-	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin + bolt_travel, duration * 0.4)
+	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin + _bolt_step, duration * 0.4)
 	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin, duration * 0.6)
 
 
@@ -96,7 +115,7 @@ func manual_cycle(duration: float) -> void:
 	_bolt_tween = create_tween().set_trans(Tween.TRANS_SINE)
 	if bolt_lift_degrees != 0.0:
 		_bolt_tween.tween_property(bolt, "basis", lifted, duration * 0.15)
-	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin + bolt_travel, duration * 0.25)
+	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin + _bolt_step, duration * 0.25)
 	_bolt_tween.tween_interval(duration * 0.1)
 	_bolt_tween.tween_property(bolt, "position", _bolt_rest.origin, duration * 0.25)
 	if bolt_lift_degrees != 0.0:
@@ -109,7 +128,7 @@ func magazine_out(duration: float = 0.35) -> void:
 	if _mag_tween:
 		_mag_tween.kill()
 	_mag_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	_mag_tween.tween_property(magazine, "position", _mag_rest.origin + magazine_drop, duration)
+	_mag_tween.tween_property(magazine, "position", _mag_rest.origin + _mag_step, duration)
 	_mag_tween.tween_callback(magazine.hide)
 
 
@@ -119,7 +138,7 @@ func magazine_in(duration: float = 0.35) -> void:
 	if _mag_tween:
 		_mag_tween.kill()
 	magazine.show()
-	magazine.position = _mag_rest.origin + magazine_drop
+	magazine.position = _mag_rest.origin + _mag_step
 	_mag_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_mag_tween.tween_property(magazine, "position", _mag_rest.origin, duration)
 

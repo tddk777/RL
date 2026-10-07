@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AmmoData" format=3]
+
+[ext_resource type="Script" path="res://core/data/ammo_data.gd" id="1_6mc1g"]
+
+[resource]
+script = ExtResource("1_6mc1g")
+caliber = &"9x18"
+damage = 26.0
+id = &"9x18_pm"
+display_name = "9x18mm Makarov"
+description = "Soviet pistol round, a little weaker than 9x19."
+weight_kg = 0.01

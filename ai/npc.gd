@@ -2,13 +2,13 @@ class_name NPC
 extends CharacterBody3D
 ## An AI-controlled human. Numbers come from `data` (EnemyData); behaviour
 ## comes from the AIState nodes under Brain; the look and hitboxes come from
-## the Body node (Humanoid or any scene with the same API).
+## the Body node (an NPCBody: Mannequin, Humanoid or another rigged model).
 
 @export var data: EnemyData
 ## World positions to walk between (set by the EnemySpawn that created us).
 var patrol_points: Array[Vector3] = []
 
-@onready var body: Humanoid = $Body
+@onready var body: NPCBody = $Body
 @onready var health: HealthComponent = $HealthComponent
 @onready var perception: Perception = $Perception
 @onready var brain: AIBrain = $Brain

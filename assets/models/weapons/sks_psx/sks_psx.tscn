@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_0s3ui"]
+[ext_resource type="PackedScene" path="res://assets/third_party/soviet_psx_weapons/sks.glb" id="2_wj3ki"]
+
+[node name="Sks" type="Node3D" unique_id=584846436]
+script = ExtResource("1_0s3ui")
+bolt_travel = Vector3(0, 0, 0.07)
+bolt_path = NodePath("Model/charger")
+
+[node name="Model" type="Node3D" parent="." unique_id=580601659 instance=ExtResource("2_wj3ki")]
+transform = Transform3D(0.26009837, 0, 0, 0, 0.26009837, 0, 0, 0, 0.26009837, 0, -0.080120124, -0.27628502)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=954270725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.73566115)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=1901248269]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.022, 0.01, -0.17718415)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=225198475]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.021064725, -0.245)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=1140345216]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07802107, -0.03500001)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1187626265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -0.36514536)
+gizmo_extents = 0.02

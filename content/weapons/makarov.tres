@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/charge.wav" id="1_yr1dp"]
+[ext_resource type="Resource" path="res://content/ammo/9x18_pm.tres" id="2_q688d"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_80f6r"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_distant.wav" id="4_skpa3"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/dry_fire.wav" id="5_dnhr3"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/fire_select.wav" id="6_ovpdn"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_in.wav" id="7_62ile"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_out.wav" id="8_ypbys"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/makarov_psx/makarov_psx.tscn" id="9_0nsgo"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_5bdwj"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_1.wav" id="11_mku5i"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_2.wav" id="12_120s8"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_3.wav" id="13_cjj70"]
+
+[resource]
+script = ExtResource("10_5bdwj")
+model_scene = ExtResource("9_0nsgo")
+caliber = &"9x18"
+default_ammo = ExtResource("2_q688d")
+magazine_size = 8
+fire_modes = Array[int]([0])
+rounds_per_minute = 450.0
+muzzle_velocity = 315.0
+spread_hip = 2.8
+spread_ads = 0.35
+spread_moving = 1.2
+recoil_vertical = 1.9
+recoil_horizontal = 0.7
+recoil_recovery = 0.7
+kick_rotation = 9.0
+ads_time = 0.18
+ads_fov = 62.0
+hip_offset = Vector3(0.12, -0.15, -0.36)
+ads_eye_distance = 0.42
+sway = 0.9
+length = 0.4
+reload_time = 1.7
+reload_empty_time = 2.1
+cycle_time = 0.45
+equip_time = 0.35
+shot_sounds = Array[AudioStream]([ExtResource("11_mku5i"), ExtResource("12_120s8"), ExtResource("13_cjj70")])
+distant_shot_sound = ExtResource("4_skpa3")
+dry_fire_sound = ExtResource("5_dnhr3")
+mag_out_sound = ExtResource("8_ypbys")
+mag_in_sound = ExtResource("7_62ile")
+charge_sound = ExtResource("1_yr1dp")
+fire_select_sound = ExtResource("6_ovpdn")
+loudness = 100.0
+muzzle_flash_scale = 0.6
+casing_scale = 0.8
+id = &"makarov"
+display_name = "Makarov PM"
+description = "Soviet service pistol. Eight rounds of 9x18, blowback, simple and soft-shooting."
+weight_kg = 0.73

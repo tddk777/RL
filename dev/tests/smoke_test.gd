@@ -144,7 +144,7 @@ func _run() -> void:
 		await wait(0.25)
 		t += 0.25
 	check(UI.get_node("Fade").color.a <= 0.01 and UI.get_node("TitleCard").modulate.a <= 0.01, "fade and title card clear (%.1fs)" % t)
-	check(Registry.all(&"weapons").size() == 5 and Registry.levels().size() == 1, "registry found content")
+	check(Registry.all(&"weapons").size() >= 9 and Registry.levels().size() == 1, "registry found content")
 	var player := Game.player
 	check(player.weapons.size() == 1 and player.current_weapon.data.id == &"m1911", "player starts with the M1911")
 	await shot("02_spawn_view.png")
@@ -240,6 +240,27 @@ func _run() -> void:
 	Input.action_release(&"aim")
 	await wait(0.5)
 	check(not UI.get_node("Scope").visible, "scope overlay hides after aiming")
+
+	# --- Soviet guns (imported models) ---
+	for id: StringName in [&"makarov", &"tokarev", &"ppsh41", &"sks"]:
+		var w := player.add_weapon(Registry.weapon(id))
+		player.ammo_reserve[String(w.data.caliber)] = player.count_ammo(w.data.caliber) + 60
+		player.equip(player.weapons.size() - 1)
+		await wait(1.0)
+		var before := w.loaded_rounds()
+		await hold(&"fire", 0.05)
+		await wait(0.4)
+		var after := w.loaded_rounds()
+		check(after < before and (after == before - 1 or w.data.id == &"ppsh41"), "%s fires (%d -> %d)" % [w.data.display_name, before, after])
+		await shot("05_%s_hip.png" % id)
+		Input.action_press(&"aim")
+		await wait(0.7)
+		await shot("05_%s_ads.png" % id)
+		Input.action_release(&"aim")
+		await wait(0.3)
+		w.reload()
+		await wait(w.data.reload_time + (w.data.insert_time * w.data.magazine_size if w.data.feed == WeaponData.Feed.INTERNAL else 0.0) + 0.5)
+		check(w.loaded_rounds() > after, "%s reloads (%d -> %d)" % [w.data.display_name, after, w.loaded_rounds()])
 	player.equip(1)
 	await wait(1.0)
 

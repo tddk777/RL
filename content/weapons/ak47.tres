@@ -8,7 +8,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/fire_select.wav" id="6_by61m"]
 [ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_in.wav" id="7_426t1"]
 [ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_out.wav" id="8_jkrso"]
-[ext_resource type="PackedScene" path="res://assets/models/weapons/ak47/ak47.tscn" id="9_bqudd"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/ak47_psx/ak47_psx.tscn" id="9_kjc0e"]
 [ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_kc7yc"]
 [ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_1.wav" id="11_gksdl"]
 [ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_2.wav" id="12_4jyr8"]
@@ -16,7 +16,7 @@
 
 [resource]
 script = ExtResource("10_kc7yc")
-model_scene = ExtResource("9_bqudd")
+model_scene = ExtResource("9_kjc0e")
 caliber = &"7.62x39"
 default_ammo = ExtResource("2_elbwx")
 spread_hip = 2.6

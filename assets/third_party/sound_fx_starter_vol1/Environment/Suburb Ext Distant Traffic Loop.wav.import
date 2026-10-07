@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://xf0scqwls07q"
+path="res://.godot/imported/Suburb Ext Distant Traffic Loop.wav-a4e2e312a5c2f6f2346c56d584f08f4f.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Environment/Suburb Ext Distant Traffic Loop.wav"
+dest_files=["res://.godot/imported/Suburb Ext Distant Traffic Loop.wav-a4e2e312a5c2f6f2346c56d584f08f4f.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

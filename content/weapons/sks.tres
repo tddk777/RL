@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/charge.wav" id="1_jjpbf"]
+[ext_resource type="Resource" path="res://content/ammo/762x39_ps.tres" id="2_q14d3"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_h4br2"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_distant.wav" id="4_yictl"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/dry_fire.wav" id="5_6hhfk"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/fire_select.wav" id="6_4xhn8"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_in.wav" id="7_6jcjn"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/mag_out.wav" id="8_layy7"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/sks_psx/sks_psx.tscn" id="9_tyboe"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_exb12"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_1.wav" id="11_yf1rk"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_2.wav" id="12_3c3i4"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/ak47/shot_3.wav" id="13_hvfyc"]
+
+[resource]
+script = ExtResource("10_exb12")
+model_scene = ExtResource("9_tyboe")
+caliber = &"7.62x39"
+default_ammo = ExtResource("2_q14d3")
+feed = 1
+magazine_size = 10
+fire_modes = Array[int]([0])
+rounds_per_minute = 400.0
+muzzle_velocity = 735.0
+spread_hip = 2.4
+spread_ads = 0.09
+spread_moving = 1.6
+recoil_vertical = 1.6
+recoil_horizontal = 0.5
+recoil_recovery = 0.55
+kick_back = 0.05
+kick_rotation = 4.5
+ads_time = 0.28
+hip_offset = Vector3(0.155, -0.175, -0.31)
+ads_eye_distance = 0.17
+sway = 1.1
+length = 1.02
+reload_time = 2.5
+reload_empty_time = 3.2
+cycle_time = 0.9
+insert_time = 0.32
+shot_sounds = Array[AudioStream]([ExtResource("11_yf1rk"), ExtResource("12_3c3i4"), ExtResource("13_hvfyc")])
+distant_shot_sound = ExtResource("4_yictl")
+dry_fire_sound = ExtResource("5_6hhfk")
+mag_out_sound = ExtResource("8_layy7")
+mag_in_sound = ExtResource("7_6jcjn")
+charge_sound = ExtResource("1_jjpbf")
+fire_select_sound = ExtResource("6_4xhn8")
+loudness = 130.0
+id = &"sks"
+display_name = "SKS"
+description = "Semi-automatic carbine. Ten rounds of 7.62x39 in a fixed magazine, loaded through the top."
+weight_kg = 3.85

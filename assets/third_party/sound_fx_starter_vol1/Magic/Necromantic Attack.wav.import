@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://pfg7a3qqcrpw"
+path="res://.godot/imported/Necromantic Attack.wav-4fb573aac01180108cf3126cc8c81698.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Magic/Necromantic Attack.wav"
+dest_files=["res://.godot/imported/Necromantic Attack.wav-4fb573aac01180108cf3126cc8c81698.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

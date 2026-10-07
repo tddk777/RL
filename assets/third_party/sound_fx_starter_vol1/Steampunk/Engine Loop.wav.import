@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://ds10xmsw6rkus"
+path="res://.godot/imported/Engine Loop.wav-80e318d073c94b5c7a7c1d952dd143e4.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Steampunk/Engine Loop.wav"
+dest_files=["res://.godot/imported/Engine Loop.wav-80e318d073c94b5c7a7c1d952dd143e4.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

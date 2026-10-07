@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dvwjxr5ba5okr"
+path="res://.godot/imported/Weapon Whoosh.wav-a82f8923d61de79beaf48eb4e2b64726.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Medieval/Weapon Whoosh.wav"
+dest_files=["res://.godot/imported/Weapon Whoosh.wav-a82f8923d61de79beaf48eb4e2b64726.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

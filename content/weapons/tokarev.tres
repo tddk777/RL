@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/charge.wav" id="1_wclv1"]
+[ext_resource type="Resource" path="res://content/ammo/762x25_p.tres" id="2_velrp"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_ecw4r"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_distant.wav" id="4_p22dy"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/dry_fire.wav" id="5_mf0q6"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/fire_select.wav" id="6_stlq2"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_in.wav" id="7_t3iqn"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/mag_out.wav" id="8_0y548"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/tokarev_psx/tokarev_psx.tscn" id="9_gvr6h"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_1m661"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_1.wav" id="11_3ki3p"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_2.wav" id="12_2t82u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/m1911/shot_3.wav" id="13_egwrd"]
+
+[resource]
+script = ExtResource("10_1m661")
+model_scene = ExtResource("9_gvr6h")
+caliber = &"7.62x25"
+default_ammo = ExtResource("2_velrp")
+magazine_size = 8
+fire_modes = Array[int]([0])
+rounds_per_minute = 450.0
+muzzle_velocity = 420.0
+spread_hip = 2.8
+spread_ads = 0.35
+spread_moving = 1.2
+recoil_vertical = 2.2
+recoil_horizontal = 0.8
+recoil_recovery = 0.7
+kick_rotation = 9.0
+ads_time = 0.18
+ads_fov = 62.0
+hip_offset = Vector3(0.12, -0.15, -0.36)
+ads_eye_distance = 0.42
+sway = 0.9
+length = 0.42
+reload_time = 1.7
+reload_empty_time = 2.1
+cycle_time = 0.45
+equip_time = 0.35
+shot_sounds = Array[AudioStream]([ExtResource("11_3ki3p"), ExtResource("12_2t82u"), ExtResource("13_egwrd")])
+distant_shot_sound = ExtResource("4_p22dy")
+dry_fire_sound = ExtResource("5_mf0q6")
+mag_out_sound = ExtResource("8_0y548")
+mag_in_sound = ExtResource("7_t3iqn")
+charge_sound = ExtResource("1_wclv1")
+fire_select_sound = ExtResource("6_stlq2")
+loudness = 112.0
+muzzle_flash_scale = 0.6
+casing_scale = 0.8
+id = &"tokarev"
+display_name = "TT-33"
+description = "Tokarev pistol. Eight rounds of hot 7.62x25 that punch through cover; no safety to speak of."
+weight_kg = 0.85

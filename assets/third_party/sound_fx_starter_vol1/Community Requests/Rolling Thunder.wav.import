@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bypiguxqtl2jy"
+path="res://.godot/imported/Rolling Thunder.wav-8d30d967687aef6684beb31c91052d3b.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Community Requests/Rolling Thunder.wav"
+dest_files=["res://.godot/imported/Rolling Thunder.wav-8d30d967687aef6684beb31c91052d3b.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

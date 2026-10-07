@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/charge.wav" id="1_4svn4"]
+[ext_resource type="Resource" path="res://content/ammo/762x25_p.tres" id="2_81kjw"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_ug63v"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_distant.wav" id="4_o0r0u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/dry_fire.wav" id="5_mxyco"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/fire_select.wav" id="6_7h8hg"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/mag_in.wav" id="7_ggb55"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/mag_out.wav" id="8_uonom"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/ppsh41_psx/ppsh41_psx.tscn" id="9_78u6j"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_l6b33"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_1.wav" id="11_dr83j"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_2.wav" id="12_4q6cb"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/mp5/shot_3.wav" id="13_3y0rp"]
+
+[resource]
+script = ExtResource("10_l6b33")
+model_scene = ExtResource("9_78u6j")
+caliber = &"7.62x25"
+default_ammo = ExtResource("2_81kjw")
+magazine_size = 35
+fire_modes = Array[int]([2, 0])
+rounds_per_minute = 1000.0
+muzzle_velocity = 488.0
+spread_hip = 2.2
+spread_ads = 0.18
+spread_moving = 1.0
+recoil_vertical = 1.0
+recoil_horizontal = 0.55
+recoil_recovery = 0.7
+kick_back = 0.03
+kick_rotation = 2.6
+ads_time = 0.2
+ads_fov = 58.0
+hip_offset = Vector3(0.15, -0.165, -0.27)
+ads_eye_distance = 0.17
+sway = 0.8
+length = 0.84
+reload_time = 2.2
+reload_empty_time = 2.8
+cycle_time = 0.7
+shot_sounds = Array[AudioStream]([ExtResource("11_dr83j"), ExtResource("12_4q6cb"), ExtResource("13_3y0rp")])
+distant_shot_sound = ExtResource("4_o0r0u")
+dry_fire_sound = ExtResource("5_mxyco")
+mag_out_sound = ExtResource("8_uonom")
+mag_in_sound = ExtResource("7_ggb55")
+charge_sound = ExtResource("1_4svn4")
+fire_select_sound = ExtResource("6_7h8hg")
+muzzle_flash_scale = 0.7
+casing_scale = 0.75
+id = &"ppsh41"
+display_name = "PPSh-41"
+description = "Wartime submachine gun. 35-round box of 7.62x25, about a thousand rounds a minute."
+weight_kg = 3.6

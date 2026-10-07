@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://b6bxlo85bgeta"
+path="res://.godot/imported/Acid Attack.wav-f62fc11aa5e4a7af293963fa5a8da4c9.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Magic/Acid Attack.wav"
+dest_files=["res://.godot/imported/Acid Attack.wav-f62fc11aa5e4a7af293963fa5a8da4c9.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

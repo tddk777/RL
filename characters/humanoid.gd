@@ -1,12 +1,8 @@
 class_name Humanoid
-extends Node3D
+extends NPCBody
 ## Procedural human body: builds its meshes, a simple joint rig, IK arms and
 ## per-zone hitboxes at runtime, and animates walking, aiming and death.
-##
-## Any body scene used by an NPC must offer the same small API:
-##   setup(health), hold_weapon(weapon), set_motion(speed, run),
-##   set_aim(target_global, aiming), die(direction)
-## so a rigged, imported character can replace this one later.
+## The fallback body (no imported assets); `Mannequin` is the rigged one.
 
 @export var jacket: Material = preload("res://assets/materials/fabric_dark.tres")
 @export var trousers: Material = preload("res://assets/materials/fabric_canvas.tres")
@@ -23,7 +19,6 @@ var hips: Node3D
 var spine: Node3D
 var head: Node3D
 var weapon_mount: Node3D
-var eye: Node3D
 
 var _thigh := {}
 var _knee := {}

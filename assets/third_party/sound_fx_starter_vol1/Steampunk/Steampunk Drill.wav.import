@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://q77jknpiney6"
+path="res://.godot/imported/Steampunk Drill.wav-8020df6e9463d45b69a1d507a1785120.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Steampunk/Steampunk Drill.wav"
+dest_files=["res://.godot/imported/Steampunk Drill.wav-8020df6e9463d45b69a1d507a1785120.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://c3ic0gqwiswpt"
+path="res://.godot/imported/Rain Urban Loop.wav-de6de2660e833cf1aa10a45e58021408.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Environment/Rain Urban Loop.wav"
+dest_files=["res://.godot/imported/Rain Urban Loop.wav-de6de2660e833cf1aa10a45e58021408.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

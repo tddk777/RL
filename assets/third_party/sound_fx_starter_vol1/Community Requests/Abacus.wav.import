@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://d2lmqk3ntj2tp"
+path="res://.godot/imported/Abacus.wav-8b4becea9d886392698cb7e0e7cd236f.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Community Requests/Abacus.wav"
+dest_files=["res://.godot/imported/Abacus.wav-8b4becea9d886392698cb7e0e7cd236f.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

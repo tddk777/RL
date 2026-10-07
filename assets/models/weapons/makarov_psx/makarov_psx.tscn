@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_kyd7a"]
+[ext_resource type="PackedScene" path="res://assets/third_party/soviet_psx_weapons/makarov.glb" id="2_c4m07"]
+
+[node name="Makarov" type="Node3D" unique_id=1864340258]
+script = ExtResource("1_kyd7a")
+bolt_travel = Vector3(0, 0, 0.022)
+magazine_drop = Vector3(0, -0.16, 0)
+magazine_path = NodePath("Model/mag")
+bolt_path = NodePath("Model/slide")
+
+[node name="Model" type="Node3D" parent="." unique_id=16863747 instance=ExtResource("2_c4m07")]
+transform = Transform3D(0.03604551, 0, 0, 0, 0.03604551, 0, 0, 0, 0.03604551, 0, -0.049738597, -0.07946994)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=64960305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1608055)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=2010033576]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013, 0.008, -0.04824165)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=1317726059]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01045918, -0.012)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=1262022224]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.066, 0.01)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=130765362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.024, -0.076, 0.0019999994)
+gizmo_extents = 0.02

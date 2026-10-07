@@ -1,16 +1,16 @@
 class_name Corpse
 extends Node3D
-## A dead body (procedural Humanoid) lying where it fell, with a collision box
+## A dead body (the rigged Mannequin) lying where it fell, with a collision box
 ## so bullets and feet hit it.
 
 enum Pose { FALLEN, SPREAD, KNEELING }
 
 @export var pose: Pose = Pose.FALLEN
-var body: Humanoid
+var body: NPCBody
 
 
 func _ready() -> void:
-	body = Humanoid.new()
+	body = Mannequin.new()
 	add_child(body)
 	body.pose_dead(pose, hash(global_position))
 	var col := StaticBody3D.new()

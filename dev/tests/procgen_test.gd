@@ -330,7 +330,7 @@ func _run() -> void:
 		pickups += 1
 		if p["kind"] == &"weapon":
 			weapons += 1
-	check(weapons == 4 and pickups >= 14, "pickups placed (%d, %d weapons)" % [pickups, weapons])
+	check(weapons == level.profile.weapon_pickups.size() and pickups >= 14, "pickups placed (%d, %d weapons)" % [pickups, weapons])
 	var rec: Dictionary = L.pickups[0]
 	var pk := Pickup.create(rec)
 	level.add_child(pk)

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dkytpql5k5e7t"
+path="res://.godot/imported/Inventory.wav-50813e11dcf8db42f1233c0be399dfc1.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/UI & Menus/Inventory.wav"
+dest_files=["res://.godot/imported/Inventory.wav-50813e11dcf8db42f1233c0be399dfc1.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

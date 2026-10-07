@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bn0tj66k8t1cv"
+path="res://.godot/imported/Log Off.wav-b94a5e22618f3678c69f960fb1bc0299.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Jingles & Stingers/Log Off.wav"
+dest_files=["res://.godot/imported/Log Off.wav-b94a5e22618f3678c69f960fb1bc0299.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

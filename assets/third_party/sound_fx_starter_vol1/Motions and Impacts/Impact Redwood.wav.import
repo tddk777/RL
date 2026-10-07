@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cx7g5rx8dwo4k"
+path="res://.godot/imported/Impact Redwood.wav-f073c2edab2082882ed2e48554a60e9d.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Motions and Impacts/Impact Redwood.wav"
+dest_files=["res://.godot/imported/Impact Redwood.wav-f073c2edab2082882ed2e48554a60e9d.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

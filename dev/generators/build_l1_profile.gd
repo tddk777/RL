@@ -30,7 +30,7 @@ func _initialize() -> void:
 	p.enemy_count = 8
 	p.exits_min = 2
 	p.exits_max = 3
-	p.ammo_pickups = 12
+	p.ammo_pickups = 14
 	p.corpses = 4
 	p.symbols = 3
 	p.odd_corpses = 2

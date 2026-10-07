@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dknoqysh7kc41"
+path="res://.godot/imported/Power Up.wav-9e0a4aff80ffd0b2fbdf6657e235680f.sample"
+
+[deps]
+
+source_file="res://assets/third_party/sound_fx_starter_vol1/Medieval/Power Up.wav"
+dest_files=["res://.godot/imported/Power Up.wav-9e0a4aff80ffd0b2fbdf6657e235680f.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2
