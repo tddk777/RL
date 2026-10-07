@@ -60,6 +60,26 @@ func _initialize() -> void:
 				ok = false
 			if e.kind == &"locked" and (e.lever as Dictionary).is_empty():
 				ok = false
+		# Odd ways through: breaches and vents, each on both sides of its wall,
+		# and stash rooms reachable only by crawling.
+		var gaps := {"breach": 0, "vent": 0}
+		for s in L.storeys:
+			for z in L.size.y:
+				for x in L.size.x:
+					for d in 4:
+						var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+						for kind: String in gaps:
+							var flag := LevelLayout.BREACH if kind == "breach" else LevelLayout.VENT
+							if L.extra_at(x, z, s) & (flag << d):
+								if d == 1 or d == 2:
+									gaps[kind] += 1
+								if not (L.extra_at(n.x, n.y, s) & (flag << ((d + 2) % 4))):
+									print("  one-sided %s at %s/%d" % [kind, Vector3i(x, z, s), d])
+									ok = false
+		var stashes := L.rooms.filter(func(r: LevelLayout.Room) -> bool: return r.use == &"stash").size()
+		print("  breaches %d, vents %d, stashes %d" % [gaps["breach"], gaps["vent"], stashes])
+		if gaps["breach"] < 5 or gaps["vent"] < 4:
+			ok = false
 		var reached_upper := 0
 		for s in range(1, L.storeys):
 			reached_upper += per_storey[s]
@@ -67,7 +87,7 @@ func _initialize() -> void:
 			ok = false
 		# Determinism
 		var again := LayoutGenerator.generate(profile, seed)
-		if again.kind != L.kind or again.flags != L.flags:
+		if again.kind != L.kind or again.flags != L.flags or again.extra != L.extra:
 			print("  not deterministic!")
 			ok = false
 		if not ok:

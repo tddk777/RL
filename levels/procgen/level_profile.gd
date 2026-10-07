@@ -29,6 +29,12 @@ extends Resource
 @export_range(0.0, 1.0) var partial_chance: float = 0.35
 ## District centres; each gets one family (factory, interior, storage).
 @export var districts: int = 3
+## Odd ways through: holes broken in walls (anyone fits), crawl vents (the
+## crouching player only), and small dead-end rooms sealed so a vent is the
+## only way in.
+@export var breaches: int = 14
+@export var vents: int = 12
+@export var stashes: int = 2
 
 @export_group("Spaces")
 ## Walkway styles, one per family (see ZoneStyle.family): covered passages

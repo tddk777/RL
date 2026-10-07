@@ -796,7 +796,110 @@ func _wall(d: ChunkData, x: int, z: int, s: int, o: Vector3, dir: int, mat: Stri
 	elif kind == 2 and s == 0 and L.has_flag(x, z, s, LevelLayout.DOCK) and not L.is_enclosed(n.x, n.y, s):
 		openings.append([1.2, C - 1.2, 0.0, 3.8])
 		_shutter(d, x, z, s, o, dir)
+	if L.has_gap(x, z, s, dir):
+		openings.append_array(gap_openings(x, z, s, dir))
+		_gap_dressing(d, x, z, s, sp, dir, mat)
 	wall_run(d.geo, sp, a_lo, a_hi, y_lo, top, openings, bands)
+
+
+# --- Breaches and vents ---------------------------------------------------------------------
+
+const VENT_W := 1.0
+const VENT_H := 1.25  # the crouching player fits, nobody standing does
+
+## Random numbers shared by both sides of an edge.
+func edge_rng(x: int, z: int, s: int, dir: int, purpose: int) -> RandomNumberGenerator:
+	if dir == 0 or dir == 3:
+		var n := Vector2i(x, z) + LevelLayout.DIRS[dir]
+		return rng(n.x, n.y, s, purpose * 4 + (dir + 2) % 4)
+	return rng(x, z, s, purpose * 4 + dir)
+
+
+func _narrow_either(x: int, z: int, s: int, dir: int) -> bool:
+	var n := Vector2i(x, z) + LevelLayout.DIRS[dir]
+	return L.has_flag(x, z, s, LevelLayout.NARROW) or L.has_flag(n.x, n.y, s, LevelLayout.NARROW)
+
+
+## The main opening of a breach or vent: Vector3(start, end, height) along the wall.
+func gap_span(x: int, z: int, s: int, dir: int) -> Vector3:
+	var r := edge_rng(x, z, s, dir, 31)
+	var narrow := _narrow_either(x, z, s, dir)
+	if L.has_vent(x, z, s, dir):
+		var c := C * 0.5 if narrow else r.randf_range(1.8, C - 1.8)
+		return Vector3(c - VENT_W * 0.5, c + VENT_W * 0.5, VENT_H)
+	var w := r.randf_range(1.3, 1.9)
+	if narrow:
+		var pw := 99.0
+		for c: Vector2i in [Vector2i(x, z), Vector2i(x, z) + LevelLayout.DIRS[dir]]:
+			if L.has_flag(c.x, c.y, s, LevelLayout.NARROW):
+				pw = minf(pw, L.style_at(c.x, c.y, s).passage_width)
+		w = minf(w, pw - 0.4)
+	var mid := C * 0.5 if narrow else r.randf_range(2.3, C - 2.3)
+	return Vector3(mid - w * 0.5, mid + w * 0.5, r.randf_range(2.05, 2.6))
+
+
+## Openings for a breach (a ragged hole: the main opening plus bites out of
+## its top and sides) or a vent.
+func gap_openings(x: int, z: int, s: int, dir: int) -> Array:
+	var g := gap_span(x, z, s, dir)
+	var out: Array = [[g.x, g.y, 0.0, g.z]]
+	if L.has_vent(x, z, s, dir):
+		return out
+	var r := edge_rng(x, z, s, dir, 32)
+	var w := g.y - g.x
+	for i in r.randi_range(2, 3):
+		var a := g.x + r.randf_range(0.0, w - 0.3)
+		out.append([a, minf(a + r.randf_range(0.25, 0.6), g.y), g.z - 0.01, g.z + r.randf_range(0.15, 0.55)])
+	for e in 2:
+		if r.randf() < 0.7:
+			var y0 := r.randf_range(0.2, 1.2)
+			var bite := r.randf_range(0.15, 0.4)
+			if e == 0:
+				out.append([maxf(g.x - bite, 0.4), g.x + 0.01, y0, y0 + r.randf_range(0.3, 0.9)])
+			else:
+				out.append([g.y - 0.01, minf(g.y + bite, C - 0.4), y0, y0 + r.randf_range(0.3, 0.9)])
+	return out
+
+
+## This cell's side of a breach (rubble, rebar) or vent (a duct housing
+## standing out from the wall, its grille knocked off).
+func _gap_dressing(d: ChunkData, x: int, z: int, s: int, sp: Span, dir: int, mat: StringName) -> void:
+	var g := gap_span(x, z, s, dir)
+	var r := rng(x, z, s, 33 + dir)
+	var geo := d.geo
+	var mid := (g.x + g.y) * 0.5
+	if L.has_vent(x, z, s, dir):
+		if L.has_flag(x, z, s, LevelLayout.NARROW):
+			return  # the crawl tunnel through the fill is the duct here
+		var out := 0.55
+		var off := T * 0.5 + out * 0.5
+		sbox(geo, sp, g.x - 0.08, g.y + 0.08, VENT_H, VENT_H + 0.08, out, off, &"painted_steel", &"metal")
+		for e: float in [g.x - 0.08, g.y]:
+			sbox(geo, sp, e, e + 0.08, 0.0, VENT_H, out, off, &"painted_steel", &"metal")
+		sbox(geo, sp, g.x - 0.12, g.y + 0.12, VENT_H + 0.08, VENT_H + 0.14, out + 0.04, off + 0.02, &"rusted_metal")  # lip
+		var p := sp.origin + sp.u * mid + sp.m * (T * 0.5 + out + 0.6)
+		if r.randf() < 0.6:
+			geo.box(p + Vector3.UP * 0.02, Vector3(VENT_W, 0.03, 1.1), &"steel_grate", &"", false,
+				Basis(Vector3.UP, r.randf_range(-0.6, 0.6)) * Basis(Vector3.RIGHT, 0.05))
+		else:
+			var hinge := sp.origin + sp.u * g.x + sp.m * (T * 0.5 + out + 0.03) + Vector3.UP * VENT_H
+			geo.box(hinge + sp.u * (VENT_W * 0.5) + Vector3.DOWN * (VENT_H * 0.5) + sp.m * 0.25,
+				Vector3(0.02, VENT_H, VENT_W) if absf(sp.u.z) > 0.5 else Vector3(VENT_W, VENT_H, 0.02), &"steel_grate", &"", false,
+				Basis(sp.u, -0.45))
+		return
+	# Breach: broken masonry heaped at the foot, rebar poking out of the edge.
+	for i in r.randi_range(4, 8):
+		var p := sp.origin + sp.u * r.randf_range(g.x - 0.3, g.y + 0.3) + sp.m * r.randf_range(T * 0.5 + 0.1, 1.3)
+		var size := Vector3(r.randf_range(0.12, 0.45), r.randf_range(0.08, 0.22), r.randf_range(0.1, 0.35))
+		geo.box(p + Vector3.UP * size.y * 0.35, size, mat if r.randf() < 0.6 else &"concrete_dark", &"", false,
+			Basis.from_euler(Vector3(r.randf_range(-0.5, 0.5), r.randf() * TAU, r.randf_range(-0.5, 0.5))))
+	for i in r.randi_range(2, 5):
+		var a := r.randf_range(g.x + 0.1, g.y - 0.1)
+		var p := sp.origin + sp.u * a + Vector3.UP * (g.z + 0.05) + sp.m * r.randf_range(-0.1, 0.1)
+		geo.cylinder(p, p + Vector3.DOWN * r.randf_range(0.2, 0.6) + sp.m * r.randf_range(-0.3, 0.3) + sp.u * r.randf_range(-0.2, 0.2),
+			0.012, &"rusted_metal", 4)
+	d.decals.append(["crack", Transform3D(Basis(sp.m.cross(Vector3.UP), sp.m, sp.m.cross(Vector3.UP).cross(sp.m)).orthonormalized(),
+		sp.origin + sp.u * mid + sp.m * (T * 0.5) + Vector3.UP * (g.z * 0.6)), Vector3(g.y - g.x + 1.6, 0.4, g.z + 1.2)])
 
 
 ## Door opening along the wall (centred, pushed clear of a chamfered end).
@@ -995,7 +1098,7 @@ func _tall_window(d: ChunkData, x: int, z: int, s: int, sp: Span, a_lo: float, a
 	# A band of wall at each floor line between storeys of the window, which
 	# the catwalk or floor inside rests against.
 	var y0 := sill if s == sb else 0.0
-	var y1 := head if s == se else top - 0.4
+	var y1 := head if s == se else top - 0.45
 	var r := RandomNumberGenerator.new()
 	r.seed = hash([L.seed, key, s, 11])
 	var arch := Callable()
@@ -1296,7 +1399,44 @@ func _narrow(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, ma
 	var top := H - 0.3 if slab_over(x, z, s) and not L.has_flag(x, z, s + 1, LevelLayout.STAIR_ABOVE) else H
 	var y0 := -FOUNDATION if s == 0 else 0.0
 	var e := T * 0.5
-	for r in narrow_solids(x, z, s, st):
+	var solids := narrow_solids(x, z, s, st)
+	# Crawl tunnels through the fill to a vent: fill each side and above.
+	var tunnels: Array[Array] = []  # [rect, y0, y1]
+	for dir in 4:
+		if not L.has_vent(x, z, s, dir):
+			continue
+		var arm := narrow_arm(st, dir)
+		var t0 := C * 0.5 - VENT_W * 0.5
+		var t1 := C * 0.5 + VENT_W * 0.5
+		if dir % 2 == 0:
+			solids.append(Rect2(arm.position.x, arm.position.y, t0 - arm.position.x, arm.size.y))
+			solids.append(Rect2(t1, arm.position.y, arm.end.x - t1, arm.size.y))
+			tunnels.append([Rect2(t0, arm.position.y, VENT_W, arm.size.y), dir])
+		else:
+			solids.append(Rect2(arm.position.x, arm.position.y, arm.size.x, t0 - arm.position.y))
+			solids.append(Rect2(arm.position.x, t1, arm.size.x, arm.end.y - t1))
+			tunnels.append([Rect2(arm.position.x, t0, arm.size.x, VENT_W), dir])
+	for tn in tunnels:
+		var r: Rect2 = tn[0]
+		if r.position.x < e and edge_top(x, z, s, 3) > -INF:
+			r = Rect2(e, r.position.y, r.end.x - e, r.size.y)
+		if r.end.x > C - e and edge_top(x, z, s, 1) > -INF:
+			r.size.x = C - e - r.position.x
+		if r.position.y < e and edge_top(x, z, s, 0) > -INF:
+			r = Rect2(r.position.x, e, r.size.x, r.end.y - e)
+		if r.end.y > C - e and edge_top(x, z, s, 2) > -INF:
+			r.size.y = C - e - r.position.y
+		d.geo.box(o + Vector3(r.get_center().x, (VENT_H + top) * 0.5, r.get_center().y), Vector3(r.size.x, top - VENT_H, r.size.y), mat,
+			surface_of(mat), true)
+		# Galvanised lining a hair inside the bore.
+		var along_x: bool = (tn[1] as int) % 2 == 1
+		var lin := Vector3(r.size.x, 0.02, r.size.y)
+		d.geo.box(o + Vector3(r.get_center().x, VENT_H - 0.02, r.get_center().y), lin, &"painted_steel")
+		for side: float in [-1.0, 1.0]:
+			var c := r.get_center() + (Vector2(0, side * (VENT_W * 0.5 - 0.02)) if along_x else Vector2(side * (VENT_W * 0.5 - 0.02), 0))
+			d.geo.box(o + Vector3(c.x, VENT_H * 0.5, c.y), Vector3(r.size.x, VENT_H - 0.05, 0.02) if along_x else Vector3(0.02, VENT_H - 0.05, r.size.y),
+				&"painted_steel")
+	for r in solids:
 		var x0 := r.position.x
 		var z0 := r.position.y
 		var x1 := r.end.x
@@ -1317,12 +1457,29 @@ func _narrow(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, ma
 
 ## Edges a cramped passage runs to: its open edges, and windows in its outer
 ## walls (a short dead end with daylight).
-func narrow_edges(x: int, z: int, s: int) -> int:
+func narrow_edges(x: int, z: int, s: int, crawl: bool = false) -> int:
 	var m := L.open_edges(x, z, s)
 	for dir in 4:
 		if L.has_window(x, z, s, dir) and wall_kind(x, z, s, dir) == 2:
 			m |= 1 << dir
+		if crawl and L.has_vent(x, z, s, dir):
+			m |= 1 << dir
 	return m
+
+
+## Cell-local rect of the arm of a cramped passage toward `dir`.
+func narrow_arm(st: ZoneStyle, dir: int) -> Rect2:
+	var w := st.passage_width
+	var h0 := C * 0.5 - w * 0.5
+	var h1 := C * 0.5 + w * 0.5
+	match dir:
+		0:
+			return Rect2(h0, 0, w, h0)
+		1:
+			return Rect2(h1, h0, C - h1, w)
+		2:
+			return Rect2(h0, h1, w, C - h1)
+	return Rect2(0, h0, h0, w)
 
 
 ## Cell-local rects of the solid fill around a cramped passage.
@@ -1330,7 +1487,7 @@ func narrow_solids(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 	var w := st.passage_width
 	var h0 := C * 0.5 - w * 0.5
 	var h1 := C * 0.5 + w * 0.5
-	var open := narrow_edges(x, z, s)
+	var open := narrow_edges(x, z, s, true)
 	var out: Array[Rect2] = [Rect2(0, 0, h0, h0), Rect2(h1, 0, C - h1, h0), Rect2(0, h1, h0, C - h1), Rect2(h1, h1, C - h1, C - h1)]
 	if not open & 1:
 		out.append(Rect2(h0, 0, w, h0))
@@ -1717,6 +1874,7 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 
 func _wall_free(x: int, z: int, s: int, dir: int) -> bool:
 	return L.has_wall(x, z, s, dir) and not L.has_door(x, z, s, dir) and not L.has_window(x, z, s, dir) \
+		and not L.has_gap(x, z, s, dir) \
 		and not (L.stair_sides(x, z, s) & (1 << dir)) and not L.has_flag(x, z, s, LevelLayout.NARROW) \
 		and L.chamfer_at(x, z, s, dir, false) < 0 and L.chamfer_at(x, z, s, dir, true) < 0 \
 		and L.zone_of(x, z, s).type != &"yard"

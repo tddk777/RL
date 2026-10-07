@@ -62,6 +62,7 @@ func dress(d: ChunkBuilder.ChunkData, x: int, z: int, s: int, o: Vector3, st: Zo
 		_catwalk_clutter(k)
 		return
 	_decay(k)
+	_gap_cover(k)
 	if zn.type == &"yard":
 		_yard(k)
 		return
@@ -117,6 +118,19 @@ func _blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 			if L.has_door(x, z, s, dir):
 				span = cb.door_span(x, z, s, dir) + Vector2(-0.6, 0.6)
 			var depth := 2.2  # the approach; cells are big enough to walk round a centred piece
+			match dir:
+				0:
+					out.append(Rect2(span.x, 0, span.y - span.x, depth))
+				1:
+					out.append(Rect2(C - depth, span.x, depth, span.y - span.x))
+				2:
+					out.append(Rect2(span.x, C - depth, span.y - span.x, depth))
+				3:
+					out.append(Rect2(0, span.x, depth, span.y - span.x))
+		if L.has_gap(x, z, s, dir):
+			var g := cb.gap_span(x, z, s, dir)
+			var span := Vector2(g.x - 0.6, g.y + 0.6)
+			var depth := 2.4
 			match dir:
 				0:
 					out.append(Rect2(span.x, 0, span.y - span.x, depth))
@@ -241,7 +255,7 @@ func _zone_index(k: Cell) -> Dictionary:
 
 func _wall_free(k: Cell, dir: int) -> bool:
 	return L.has_wall(k.x, k.z, k.s, dir) and not L.has_door(k.x, k.z, k.s, dir) and not L.has_window(k.x, k.z, k.s, dir) \
-		and not (L.stair_sides(k.x, k.z, k.s) & (1 << dir)) \
+		and not (L.stair_sides(k.x, k.z, k.s) & (1 << dir)) and not L.has_gap(k.x, k.z, k.s, dir) \
 		and not (L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK) and L.is_outside(k.x, k.z, k.s, dir)) \
 		and L.chamfer_at(k.x, k.z, k.s, dir, false) < 0 and L.chamfer_at(k.x, k.z, k.s, dir, true) < 0
 
@@ -317,6 +331,9 @@ func _walls(k: Cell) -> void:
 		if L.has_door(k.x, k.z, k.s, dir):
 			var span := cb.door_span(k.x, k.z, k.s, dir)
 			segs.assign([Vector2(segs[0].x, span.x - 0.1), Vector2(span.y + 0.1, segs[0].y)])
+		elif L.has_gap(k.x, k.z, k.s, dir):
+			var g := cb.gap_span(k.x, k.z, k.s, dir)
+			segs.assign([Vector2(segs[0].x, g.x - 0.5), Vector2(g.y + 0.5, segs[0].y)])
 		if L.stair_sides(k.x, k.z, k.s) & (1 << dir):
 			continue
 		for sg in segs:
@@ -1279,11 +1296,61 @@ func _room(k: Cell) -> void:
 			_pumps(k)
 		&"lab":
 			_lab(k)
+		&"stash":
+			_stash(k)
 		_:
 			_wall_props(k, 0.5)
 
 
 ## Generic wall-side props from the style (or the given ids) in the corners of the cell.
+## Now and then a hole or vent was half hidden: a locker or shelf dragged
+## across the end of it, enough to squeeze past.
+func _gap_cover(k: Cell) -> void:
+	for dir in 4:
+		if not L.has_gap(k.x, k.z, k.s, dir) or L.has_flag(k.x, k.z, k.s, LevelLayout.NARROW):
+			continue
+		var r := cb.rng(k.x, k.z, k.s, 120 + dir)
+		if r.randf() > 0.35:
+			continue
+		var g := cb.gap_span(k.x, k.z, k.s, dir)
+		var sp := cb.edge_span(k.o, dir)
+		var vent := L.has_vent(k.x, k.z, k.s, dir)
+		var id := "locker" if vent or r.randf() < 0.5 else "shelf"
+		var half := 0.25 if id == "locker" else 1.05
+		var side := 1.0 if r.randf() < 0.5 else -1.0
+		var a := (g.y + half - 0.35) if side > 0.0 else (g.x - half + 0.35)
+		if a - half < 0.3 or a + half > C - 0.3:
+			continue
+		var out := 0.15 + (0.95 if vent else 0.45)
+		var p := sp.origin + sp.u * a + sp.m * out
+		cb.kit(k.d, id, p, _face_from_wall(dir) + side * r.randf_range(0.25, 0.45))
+
+
+## Someone holed up here, getting in through the vent: a bedroll, a low wall
+## of sandbags facing the way in, tins, candle stubs, scrawled notes.
+func _stash(k: Cell) -> void:
+	var r := k.r
+	var p := k.c + Vector3(r.randf_range(-1.0, 1.0), 0, r.randf_range(-1.0, 1.0))
+	if _free(k, Rect2(p.x - k.o.x - 1.2, p.z - k.o.z - 1.2, 2.4, 2.4)):
+		cb.kit(k.d, "bedroll", p, r.randf() * TAU)
+		cb.kit(k.d, "crate_small", p + Vector3(1.1, 0, 0.3), r.randf() * TAU)
+		for i in r.randi_range(3, 7):
+			var q := p + Vector3(r.randf_range(-1.4, 1.4), 0, r.randf_range(-1.4, 1.4))
+			cyl(k, q, q + UP * r.randf_range(0.08, 0.12), 0.035, &"prop_rust", 8)  # tins
+		for i in r.randi_range(2, 4):
+			var q := p + Vector3(r.randf_range(-0.8, 0.8), 0, r.randf_range(-0.8, 0.8))
+			cyl(k, q, q + UP * r.randf_range(0.03, 0.09), 0.018, &"paper", 6)  # candle stubs
+		box(k, p + Vector3(-0.6, 0.004, 0.5), Vector3(0.7, 0.008, 0.7), &"soot", false, Basis(UP, r.randf() * TAU))
+	for dir in 4:
+		if L.has_vent(k.x, k.z, k.s, dir):
+			var q := _wall_at(k, dir, 0.0, 2.6)
+			if _free(k, _rect(k, q, LevelLayout.dir_vector((dir + 1) % 4), 1.6, 0.4)):
+				cb.kit(k.d, "sandbags", q, _face_from_wall(dir))
+	for i in 3:
+		decal(k, "papers", k.o + Vector3(r.randf_range(1, C - 1), 0, r.randf_range(1, C - 1)), Vector3(1.2, 0.4, 1.2), r.randf() * TAU)
+	_wall_props(k, 0.4, ["crate_wood", "barrel_rust", "filing_cabinet"])
+
+
 func _wall_props(k: Cell, density: float, ids: Array = []) -> void:
 	var r := cb.rng(k.x, k.z, k.s, 9)
 	var table: Dictionary = k.st.props
@@ -1681,8 +1748,8 @@ func _parts(k: Cell) -> void:
 	var A := Vector3(1, 0, 0) if along_x else Vector3(0, 0, 1)
 	var B := _across(A)
 	for row: float in [-2.0, 2.0]:
-		for i in 3:
-			var p := k.c + B * row + A * (-2.2 + i * 2.2)
+		for i in 2:  # two per row: an aisle down the middle crosses the rows
+			var p := k.c + B * row + A * (-2.3 + i * 4.6)
 			if not _free(k, _rect(k, p, A, 2.2, 0.7)):
 				continue
 			cb.kit(k.d, "shelf", p, atan2(B.x, B.z) if along_x else atan2(A.x, A.z) + PI * 0.5)

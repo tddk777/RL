@@ -80,9 +80,14 @@ func _run(p: LevelProfile, level_seed: int) -> LevelLayout:
 	_choose_spawn()
 	_connect_all()
 	_compute_distances()
+	_make_breaches_and_vents()
+	_compute_distances()
+	_make_stashes()
+	_compute_distances()
 	_place_exits()
 	_place_enemies()
 	_place_pickups()
+	_stock_stashes()
 	_place_anomalies()
 	return L
 
@@ -1386,11 +1391,140 @@ func _connect_all() -> void:
 
 
 func _compute_distances() -> void:
+	L.distance.fill(-1)
+	L.max_distance = 0
 	var reached := _bfs(L.spawn_cell)
 	for c: Vector3i in reached:
 		var dist: int = reached[c]
 		L.distance[L.idx(c.x, c.y, c.z)] = dist
 		L.max_distance = maxi(L.max_distance, dist)
+
+
+# --- 6b. Breaches, vents, stashes ---------------------------------------------------------
+
+## A wall between two floor cells that a hole or vent could go through.
+func _gap_ok(x: int, z: int, s: int, d: int) -> bool:
+	var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+	if L.kind_at(x, z, s) != LevelLayout.Kind.FLOOR or L.kind_at(n.x, n.y, s) != LevelLayout.Kind.FLOOR:
+		return false
+	if not L.has_wall(x, z, s, d) or L.has_door(x, z, s, d) or L.has_gap(x, z, s, d):
+		return false
+	for c: Array in [[x, z, d], [n.x, n.y, (d + 2) % 4]]:
+		var zn := L.zone_of(c[0], c[1], s)
+		if zn == null or zn.type in [&"connector", &"yard", &"loading_dock"]:
+			return false
+		if L.has_window(c[0], c[1], s, c[2]) or L.has_partial(c[0], c[1], s, c[2]) \
+				or L.stair_sides(c[0], c[1], s) & (1 << c[2]) or L.has_flag(c[0], c[1], s, LevelLayout.DOCK) \
+				or L.chamfer_at(c[0], c[1], s, c[2], false) >= 0 or L.chamfer_at(c[0], c[1], s, c[2], true) >= 0:
+			return false
+	return true
+
+
+func _set_gap(x: int, z: int, s: int, d: int, flag: int) -> void:
+	var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+	L.set_extra(x, z, s, flag << d)
+	L.set_extra(n.x, n.y, s, flag << ((d + 2) % 4))
+
+
+## Holes and vents where they make the biggest shortcuts: a wall between two
+## places far apart by the doors.
+func _make_breaches_and_vents() -> void:
+	var cands: Array = []
+	for s in L.storeys:
+		for z in L.size.y:
+			for x in L.size.x:
+				var da := L.distance[L.idx(x, z, s)]
+				if da < 0:
+					continue
+				for d in [1, 2]:
+					var n := Vector2i(x, z) + LevelLayout.DIRS[d]
+					if not L.inside(n.x, n.y, s) or not _gap_ok(x, z, s, d):
+						continue
+					var db := L.distance[L.idx(n.x, n.y, s)]
+					if db < 0:
+						continue
+					cands.append([x, z, s, d, absi(da - db) + rng.randf()])
+	_shuffle(cands)
+	cands.sort_custom(func(a: Array, b: Array) -> bool: return a[4] > b[4])
+	var used := {}
+	var breaches := 0
+	var vents := 0
+	for c: Array in cands:
+		if c[4] < 3.0 or (breaches >= profile.breaches and vents >= profile.vents):
+			break
+		var cell := Vector3i(c[0], c[1], c[2])
+		var near := false
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				if used.has(cell + Vector3i(dx, dz, 0)):
+					near = true
+		if near:
+			continue
+		var breach := breaches < profile.breaches and (vents >= profile.vents or rng.randf() < 0.55)
+		_set_gap(c[0], c[1], c[2], c[3], LevelLayout.BREACH if breach else LevelLayout.VENT)
+		if breach:
+			breaches += 1
+		else:
+			vents += 1
+		used[cell] = true
+
+
+## Small dead-end rooms whose only door becomes a crawl vent: somebody's
+## hideout, out of the way.
+func _make_stashes() -> void:
+	var rooms := L.rooms.duplicate()
+	_shuffle(rooms)
+	var made := 0
+	for rm: LevelLayout.Room in rooms:
+		if made >= profile.stashes:
+			break
+		if rm.use in [&"hallway", &"stairwell", &"washroom"]:
+			continue
+		var cells: Array[Vector2i] = []
+		for x in range(rm.rect.position.x - 1, rm.rect.end.x + 2):
+			for z in range(rm.rect.position.y - 1, rm.rect.end.y + 2):
+				if L.room_at(x, z, rm.storey) == rm.id:
+					cells.append(Vector2i(x, z))
+		if cells.is_empty() or cells.size() > 2:
+			continue
+		var doors: Array = []
+		var ok := true
+		for c in cells:
+			if L.distance[L.idx(c.x, c.y, rm.storey)] < 0 or L.has_flag(c.x, c.y, rm.storey, LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.EXIT):
+				ok = false
+			for d in 4:
+				if L.has_door(c.x, c.y, rm.storey, d) or L.has_gap(c.x, c.y, rm.storey, d):
+					doors.append([c, d])
+		if not ok or doors.size() != 1:
+			continue
+		var c: Vector2i = doors[0][0]
+		var d: int = doors[0][1]
+		var n := c + LevelLayout.DIRS[d]
+		if L.has_gap(c.x, c.y, rm.storey, d) or L.kind_at(n.x, n.y, rm.storey) != LevelLayout.Kind.FLOOR:
+			continue
+		var before := _bfs(L.spawn_cell).size()
+		L.set_flag(c.x, c.y, rm.storey, LevelLayout.DOOR << d, false)
+		L.set_flag(n.x, n.y, rm.storey, LevelLayout.DOOR << ((d + 2) % 4), false)
+		if _bfs(L.spawn_cell).size() != before - cells.size():
+			L.set_flag(c.x, c.y, rm.storey, LevelLayout.DOOR << d)
+			L.set_flag(n.x, n.y, rm.storey, LevelLayout.DOOR << ((d + 2) % 4))
+			continue
+		_set_gap(c.x, c.y, rm.storey, d, LevelLayout.VENT)
+		rm.use = &"stash"
+		made += 1
+
+
+## A little ammo left in each stash.
+func _stock_stashes() -> void:
+	for rm in L.rooms:
+		if rm.use != &"stash":
+			continue
+		var cell := Vector3i(rm.rect.position.x, rm.rect.position.y, rm.storey)
+		for i in rng.randi_range(1, 2):
+			var cal: String = profile.ammo_table.keys()[rng.randi_range(0, profile.ammo_table.size() - 1)]
+			var entry: Array = profile.ammo_table[cal]
+			L.pickups.append({"kind": &"ammo", "id": StringName(cal), "amount": rng.randi_range(entry[1], entry[2]),
+				"position": _scatter(cell), "yaw": rng.randf() * TAU, "taken": false})
 
 
 # --- 7. Exits, enemies, pickups, anomalies ----------------------------------------------------
@@ -1417,6 +1551,7 @@ func _free_walls(c: Vector3i) -> Array[int]:
 	var strips := L.stair_sides(c.x, c.y, c.z)
 	for d in 4:
 		if L.has_wall(c.x, c.y, c.z, d) and not L.has_door(c.x, c.y, c.z, d) and not L.has_window(c.x, c.y, c.z, d) \
+				and not L.has_gap(c.x, c.y, c.z, d) \
 				and not (strips & (1 << d)) and not L.has_flag(c.x, c.y, c.z, LevelLayout.DOCK) \
 				and L.chamfer_at(c.x, c.y, c.z, d, false) < 0 and L.chamfer_at(c.x, c.y, c.z, d, true) < 0:
 			out.append(d)

@@ -24,6 +24,10 @@ const WINDOW := 65536    # << dir: window in the wall on that edge
 const CHAMFER := 1 << 20 # << corner: the building's outer corner is cut at 45 degrees
 const PARTIAL := 1 << 24 # << dir: a stub of wall on an open edge inside a room
 
+## Per-cell `extra` flags (the main flags word is full).
+const VENT := 1     # << dir: crawl vent through the wall on that edge (crouching player only)
+const BREACH := 16  # << dir: a hole broken through the wall on that edge
+
 ## Corners of a cell: 0 = N-W, 1 = N-E, 2 = S-E, 3 = S-W. CORNER_DIRS[c] are
 ## the two sides that meet there.
 const CORNER_DIRS: Array = [[0, 3], [0, 1], [2, 1], [2, 3]]
@@ -87,6 +91,7 @@ var zone := PackedInt32Array()
 ## Room id per cell (index into `rooms` + 1; 0 = open zone space).
 var room := PackedInt32Array()
 var flags := PackedInt32Array()
+var extra := PackedInt32Array()
 ## Stair info: low nibble = the flight starting here (dir | side << 2),
 ## high nibble = the flight arriving from below (dir | side << 2).
 var stair := PackedByteArray()
@@ -123,6 +128,7 @@ func setup(p: LevelProfile, level_seed: int) -> void:
 	zone.fill(-1)
 	room.resize(n)
 	flags.resize(n)
+	extra.resize(n)
 	stair.resize(n)
 	distance.resize(n)
 	distance.fill(-1)
@@ -274,6 +280,28 @@ func chamfer_at(x: int, z: int, s: int, dir: int, at_end: bool) -> int:
 	return -1
 
 
+func extra_at(x: int, z: int, s: int) -> int:
+	return extra[idx(x, z, s)] if inside(x, z, s) else 0
+
+
+func set_extra(x: int, z: int, s: int, flag: int, on := true) -> void:
+	var i := idx(x, z, s)
+	extra[i] = (extra[i] | flag) if on else (extra[i] & ~flag)
+
+
+func has_vent(x: int, z: int, s: int, dir: int) -> bool:
+	return extra_at(x, z, s) & (VENT << dir) != 0
+
+
+func has_breach(x: int, z: int, s: int, dir: int) -> bool:
+	return extra_at(x, z, s) & (BREACH << dir) != 0
+
+
+## A way through the wall on this edge other than a door (breach or vent).
+func has_gap(x: int, z: int, s: int, dir: int) -> bool:
+	return extra_at(x, z, s) & ((VENT | BREACH) << dir) != 0
+
+
 func has_partial(x: int, z: int, s: int, dir: int) -> bool:
 	return has_flag(x, z, s, PARTIAL << dir)
 
@@ -285,7 +313,7 @@ func open_edges(x: int, z: int, s: int) -> int:
 	var m := 0
 	for d in 4:
 		var n := Vector2i(x, z) + DIRS[d]
-		if has_door(x, z, s, d) and is_enclosed(n.x, n.y, s):
+		if (has_door(x, z, s, d) or has_breach(x, z, s, d)) and is_enclosed(n.x, n.y, s):
 			m |= 1 << d
 		elif is_walkable(n.x, n.y, s) and not has_wall(x, z, s, d):
 			m |= 1 << d
@@ -321,8 +349,9 @@ func wall_point(x: int, z: int, s: int, dir: int, h: float, along: float = 0.0) 
 
 # --- Graph ------------------------------------------------------------------------
 
-## Walkable cells reachable in one step from (x, z, s).
-func links(x: int, z: int, s: int) -> Array[Vector3i]:
+## Walkable cells reachable in one step from (x, z, s). Breaches count; vents
+## only with `crawl` (people and navigation can't fit through them).
+func links(x: int, z: int, s: int, crawl: bool = false) -> Array[Vector3i]:
 	var out: Array[Vector3i] = []
 	if not is_walkable(x, z, s):
 		return out
@@ -333,7 +362,7 @@ func links(x: int, z: int, s: int) -> Array[Vector3i]:
 			continue
 		var j := idx(n.x, n.y, s)
 		var open := false
-		if has_door(x, z, s, d):
+		if has_door(x, z, s, d) or has_breach(x, z, s, d) or (crawl and has_vent(x, z, s, d)):
 			open = true
 		elif zone[i] == zone[j] and room[i] == room[j]:
 			if kind[i] == Kind.CATWALK or kind[j] == Kind.CATWALK:
