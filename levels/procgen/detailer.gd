@@ -39,28 +39,32 @@ const POSTERS := 6
 
 ## Floor pieces against the wall, by room use or zone type: id -> weight.
 const FLOOR_KITS := {
-	&"parts": {"shelf": 5.0, "cabinet": 1.0, "crates": 1.0, "boxes": 1.5},
-	&"cages": {"shelf": 3.0, "crates": 2.0, "drums": 1.0, "boxes": 1.0},
-	&"archive": {"shelf": 3.0, "cabinet": 4.0, "boxes": 1.5},
-	&"workshop": {"bench": 4.0, "shelf": 2.0, "cabinet": 1.0, "gas": 1.0, "drums": 0.5},
-	&"closet": {"shelf": 3.0, "mop": 2.0, "boxes": 2.0},
+	&"parts": {"shelf": 3.0, "rack": 2.5, "cabinet": 1.0, "crates": 1.0, "boxes": 1.5, "hand_truck": 0.4},
+	&"cages": {"shelf": 2.0, "rack": 1.5, "crates": 2.0, "drums": 1.0, "boxes": 1.0},
+	&"archive": {"shelf": 3.0, "rack": 1.0, "cabinet": 4.0, "boxes": 1.5},
+	&"workshop": {"bench": 4.0, "shelf": 1.0, "rack": 1.0, "tool_chest": 2.0, "tool_cart": 1.0, "cabinet": 0.5,
+		"gas": 1.0, "drums": 0.5, "generator": 0.5, "ladder": 0.5},
+	&"closet": {"shelf": 2.0, "rack": 1.5, "mop": 2.0, "boxes": 2.0, "ladder": 1.0, "wet_sign": 1.0},
 	&"lockers": {"lockers": 5.0, "bench_seat": 2.0},
-	&"boiler": {"manifold": 3.0, "drums": 1.0, "gas": 1.0, "electrical": 1.0},
-	&"pumps": {"manifold": 3.0, "drums": 1.5, "electrical": 1.0},
+	&"boiler": {"manifold": 3.0, "drums": 1.0, "gas": 1.0, "electrical": 1.0, "utility": 0.6},
+	&"pumps": {"manifold": 3.0, "drums": 1.5, "electrical": 1.0, "utility": 0.6, "generator": 0.5},
 	&"vats": {"manifold": 2.0, "drums": 2.0, "shelf": 1.0},
-	&"electrical": {"electrical": 5.0, "cabinet": 1.0},
+	&"electrical": {"electrical": 3.0, "utility": 3.0, "cabinet": 1.0},
 	&"lab": {"bench": 3.0, "cabinet": 2.0, "shelf": 1.0},
-	&"offices": {"cabinet": 3.0, "desk": 2.0, "shelf": 1.0, "bin": 1.0},
+	&"offices": {"cabinet": 3.0, "desk": 1.2, "desk_metal": 1.0, "shelf": 1.0, "bin": 1.0},
 	&"cubicles": {"cabinet": 3.0, "bin": 1.0, "shelf": 1.0},
 	&"meeting": {"cabinet": 1.0, "bin": 1.0, "cooler": 1.0},
 	&"washroom": {"bin": 1.0},
 	&"stash": {"crates": 1.0, "boxes": 1.0},
-	&"hall": {"bench": 2.0, "cabinet": 1.0, "drums": 2.0, "gas": 1.0, "shelf": 1.5, "pallet": 1.5, "electrical": 1.0},
-	&"foundry": {"drums": 2.0, "pallet": 2.0, "gas": 1.0, "bench": 1.0},
-	&"warehouse": {"pallet": 3.0, "crates": 2.0, "drums": 1.0},
-	&"loading_dock": {"pallet": 3.0, "crates": 2.0, "drums": 1.0},
-	&"processing": {"manifold": 2.0, "drums": 2.0, "electrical": 1.0, "bench": 1.0},
-	&"corridor": {"bench_seat": 1.0, "bin": 1.0, "vending": 0.6, "cooler": 0.6, "electrical": 0.8},
+	&"hall": {"bench": 2.0, "cabinet": 1.0, "drums": 2.0, "gas": 1.0, "shelf": 1.0, "rack": 0.8, "pallet": 1.5,
+		"electrical": 1.0, "tool_chest": 0.6, "storage_cart": 0.8, "generator": 0.5, "ladder": 0.4},
+	&"foundry": {"drums": 2.0, "pallet": 2.0, "gas": 1.0, "bench": 1.0, "storage_cart": 0.6},
+	&"warehouse": {"pallet": 3.0, "crates": 2.0, "drums": 1.0, "rack": 1.0, "storage_cart": 1.0, "hand_truck": 0.8,
+		"bins": 0.4, "tyres": 0.4},
+	&"loading_dock": {"pallet": 3.0, "crates": 2.0, "drums": 1.0, "hand_truck": 1.0, "storage_cart": 0.8, "bins": 0.6,
+		"tyres": 0.6},
+	&"processing": {"manifold": 2.0, "drums": 2.0, "electrical": 1.0, "bench": 1.0, "utility": 0.8},
+	&"corridor": {"bench_seat": 1.0, "bin": 1.0, "vending": 0.6, "cooler": 0.6, "electrical": 0.8, "wet_sign": 0.3},
 }
 ## Fraction of each free wall run the floor pieces fill.
 const FILL := {
@@ -71,27 +75,29 @@ const FILL := {
 }
 ## Things hung on the wall, by room use or zone type.
 const HUNG_KITS := {
-	&"parts": {"shelf_wall": 1.0, "fuse": 1.0, "notice": 0.5},
+	&"parts": {"shelf_wall": 1.0, "fuse": 1.0, "notice": 0.5, "power_box": 0.5},
 	&"cages": {"fuse": 1.0, "hazard": 0.5, "notice": 0.5},
 	&"archive": {"notice": 1.0, "clock": 0.5, "poster": 0.5},
-	&"workshop": {"pegboard": 3.0, "fuse": 1.0, "poster": 1.0, "first_aid": 0.5, "shelf_wall": 1.0},
+	&"workshop": {"pegboard": 3.0, "fuse": 1.0, "poster": 1.0, "first_aid": 0.5, "shelf_wall": 1.0, "power_box": 0.5},
 	&"closet": {"shelf_wall": 2.0, "hooks": 1.0},
 	&"lockers": {"hooks": 2.0, "notice": 1.0, "poster": 1.0, "mirror": 1.0},
-	&"boiler": {"valve": 3.0, "gauges": 2.0, "fuse": 1.0, "hazard": 0.5},
-	&"pumps": {"valve": 3.0, "gauges": 2.0, "fuse": 1.0},
+	&"boiler": {"valve": 3.0, "gauges": 2.0, "fuse": 1.0, "hazard": 0.5, "power_box": 0.6},
+	&"pumps": {"valve": 3.0, "gauges": 2.0, "fuse": 1.0, "power_box": 0.6},
 	&"vats": {"valve": 2.0, "gauges": 2.0, "hazard": 0.5},
-	&"electrical": {"fuse": 4.0, "hazard": 1.0},
+	&"electrical": {"fuse": 3.0, "power_box": 2.0, "hazard": 1.0},
 	&"lab": {"whiteboard": 1.0, "shelf_wall": 2.0, "first_aid": 1.0, "clock": 0.5},
-	&"offices": {"notice": 1.0, "whiteboard": 1.0, "clock": 1.0, "poster": 0.5, "shelf_wall": 1.0},
+	&"offices": {"notice": 1.0, "whiteboard": 1.0, "clock": 1.0, "poster": 0.5, "shelf_wall": 1.0, "fire_alarm": 0.3},
 	&"cubicles": {"notice": 1.0, "clock": 1.0, "poster": 1.0, "whiteboard": 0.5},
 	&"meeting": {"whiteboard": 2.0, "clock": 1.0, "notice": 0.5},
 	&"washroom": {"mirror": 2.0},
-	&"hall": {"fuse": 2.0, "poster": 1.0, "first_aid": 0.5, "pegboard": 0.5, "hazard": 0.5},
+	&"hall": {"fuse": 2.0, "poster": 1.0, "first_aid": 0.5, "pegboard": 0.5, "hazard": 0.5, "power_box": 0.8,
+		"fire_alarm": 0.4},
 	&"foundry": {"fuse": 1.0, "hazard": 1.0, "valve": 1.0},
-	&"warehouse": {"fuse": 1.0, "poster": 0.5},
-	&"loading_dock": {"fuse": 1.0, "poster": 0.5},
+	&"warehouse": {"fuse": 1.0, "poster": 0.5, "power_box": 0.5, "camera": 0.3, "fire_alarm": 0.3},
+	&"loading_dock": {"fuse": 1.0, "poster": 0.5, "camera": 0.4, "fire_alarm": 0.3},
 	&"processing": {"valve": 2.0, "gauges": 2.0, "fuse": 1.0, "hazard": 0.5},
-	&"corridor": {"notice": 1.0, "poster": 1.0, "first_aid": 0.5, "phone": 0.5, "fuse": 1.0, "clock": 0.3},
+	&"corridor": {"notice": 1.0, "poster": 1.0, "first_aid": 0.5, "phone": 0.5, "fuse": 1.0, "clock": 0.3,
+		"fire_alarm": 0.6, "camera": 0.3},
 }
 ## Floor pieces: [width along the wall, depth].
 const FLOOR_SIZES := {
@@ -99,6 +105,10 @@ const FLOOR_SIZES := {
 	"bench": [2.0, 0.8], "crates": [1.1, 1.0], "drums": [1.3, 0.65], "desk": [1.4, 1.2], "bench_seat": [1.6, 0.4],
 	"bin": [0.45, 0.45], "vending": [0.9, 0.8], "cooler": [0.4, 0.4], "manifold": [1.4, 0.45], "gas": [1.1, 0.35],
 	"pallet": [1.25, 1.05], "mop": [0.7, 0.5], "boxes": [0.9, 0.6],
+	# Scanned models (ModelProps)
+	"rack": [1.15, 0.62], "tool_chest": [0.75, 0.45], "tool_cart": [1.35, 0.8], "storage_cart": [1.7, 1.15],
+	"generator": [0.9, 0.6], "hand_truck": [0.65, 0.75], "ladder": [0.72, 0.7], "bins": [1.9, 0.6],
+	"utility": [0.95, 0.45], "desk_metal": [2.05, 1.6], "tyres": [0.7, 0.7], "wet_sign": [0.4, 0.45],
 }
 ## Hung things: [width, bottom, top, depth].
 const HUNG_SIZES := {
@@ -108,10 +118,17 @@ const HUNG_SIZES := {
 	"gauges": [0.9, 1.2, 1.9, 0.12], "hooks": [1.2, 1.5, 1.95, 0.12], "shelf_wall": [1.3, 1.55, 1.95, 0.32],
 	"mirror": [0.7, 1.15, 1.85, 0.02], "phone": [0.3, 1.3, 1.6, 0.1], "radiator": [1.1, 0.15, 0.75, 0.12],
 	"extinguisher": [0.32, 0.85, 1.95, 0.2], "hose": [0.75, 0.8, 1.6, 0.22],
+	# Scanned models (ModelProps)
+	"fire_alarm": [0.14, 1.35, 1.5, 0.03], "power_box": [0.5, 1.25, 1.76, 0.4], "camera": [0.2, 2.3, 2.6, 0.55],
 }
 ## On the walls of cramped passages.
 const PASSAGE_KIT := {"notice": 1.0, "poster": 1.0, "fuse": 1.5, "first_aid": 0.4, "phone": 0.4, "extinguisher": 0.8,
-	"hose": 0.4, "hazard": 0.3}
+	"hose": 0.4, "hazard": 0.3, "fire_alarm": 0.4, "power_box": 0.5, "camera": 0.15}
+## Kit ids above that are scanned models, so need ModelProps to have them.
+const MODEL_PIECES := {"rack": "rack_wide", "tool_chest": "tool_chest", "tool_cart": "tool_cart",
+	"storage_cart": "storage_cart", "generator": "generator", "hand_truck": "hand_truck", "ladder": "ladder",
+	"bins": "bins", "utility": "utility_box", "desk_metal": "office_desk", "tyres": "tyre", "wet_sign": "wet_floor_sign",
+	"fire_alarm": "fire_alarm", "power_box": "power_box", "camera": "camera"}
 
 var sp: SetPieces
 var cb: ChunkBuilder
@@ -406,6 +423,8 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 
 func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: String, a: float, w: float, depth: float,
 		r: RandomNumberGenerator) -> bool:
+	if MODEL_PIECES.has(id) and not cb.models.has(MODEL_PIECES[id]):
+		return false
 	var A := span.u
 	var N := span.m
 	var base := _span_point(span, a, FACE, 0.0)
@@ -413,7 +432,48 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 	if not sp._room_for(k, c, A, w, depth):
 		return false
 	var yaw := SetPieces._face_from_wall(dir)
+	# A scanned model with its back to the wall (they face +Z, kit props -Z).
+	var against := func(model: String, turn: float = 0.0) -> void:
+		var sz := cb.models.size(model)
+		cb.kit(k.d, model, base + N * ((sz.x if absf(turn) > 1.0 else sz.z) * 0.5 + 0.03), yaw + PI + turn)
 	match id:
+		"rack":
+			var model: String = ["rack_wide", "rack_narrow", "rack_worn"][r.randi_range(0, 2)]
+			against.call(model)
+			# What was left on the bottom shelf.
+			if r.randf() < 0.5:
+				cb.kit(k.d, "cardboard_box", base + N * 0.3 + A * r.randf_range(-0.2, 0.2) + UP * 0.12, yaw + r.randf_range(-0.3, 0.3))
+		"tool_chest":
+			against.call("tool_chest")
+			if r.randf() < 0.4:
+				cb.kit(k.d, "toolbox", base + N * 0.24 + A * r.randf_range(-0.1, 0.1) + UP * cb.models.size("tool_chest").y,
+					yaw + PI + r.randf_range(-0.4, 0.4))
+		"tool_cart", "storage_cart", "generator", "bins":
+			against.call(id)
+		"hand_truck":
+			against.call("hand_truck", r.randf_range(-0.3, 0.3))
+		"utility":
+			against.call("utility_box" if w < 0.9 or r.randf() < 0.5 else "utility_box_wide")
+		"desk_metal":
+			against.call("office_desk")
+			sp._chair(k, base + N * (cb.models.size("office_desk").z + 0.4) + A * r.randf_range(-0.4, 0.4),
+				yaw + PI + r.randf_range(-0.6, 0.6), r)
+		"ladder":
+			# Leant against the wall.
+			var lean := 0.24
+			var foot := base + N * (cb.models.size("ladder").y * sin(lean) + 0.12)
+			cb.kit(k.d, "ladder", foot, yaw + PI, {}, Basis(Vector3.RIGHT, -lean))
+		"tyres":
+			var flat := Basis(Vector3.RIGHT, PI * 0.5)
+			var rad := cb.models.size("tyre").y * 0.5
+			var thick := cb.models.size("tyre").z
+			for i in r.randi_range(1, 4):
+				var turn := r.randf() * TAU
+				var at := c + A * r.randf_range(-0.04, 0.04) + UP * (thick * 0.5 + i * thick)
+				cb.kit(k.d, "tyre", at - Basis(UP, turn) * Vector3(0, 0, rad), turn, {}, flat)
+			sp.solid(k, c + UP * 0.35, SetPieces._sz(A, 0.6, 0.7, 0.6), &"wood")
+		"wet_sign":
+			cb.kit(k.d, "wet_floor_sign", c, yaw + r.randf_range(-0.8, 0.8))
 		"shelf":
 			cb.kit(k.d, "shelf", base + N * 0.36, yaw)
 		"cabinet":
@@ -433,7 +493,7 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 				cb.kit(k.d, "crate_small", c + UP * 0.8, r.randf() * TAU)
 		"drums":
 			for e: float in [-0.32, 0.32]:
-				cb.kit(k.d, ["barrel_rust", "barrel_blue", "barrel_orange"][r.randi_range(0, 2)], c + A * e, r.randf() * TAU)
+				cb.kit(k.d, sp.drum(r), c + A * e, r.randf() * TAU)
 		"desk":
 			cb.kit(k.d, "desk", base + N * 0.38, yaw)
 			sp._chair(k, base + N * 1.0 + A * r.randf_range(-0.3, 0.3), yaw + PI + r.randf_range(-0.6, 0.6), r)
@@ -477,6 +537,17 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 			sp.solid(k, c + UP * 0.7, SetPieces._sz(A, w, 1.4, depth), &"metal")
 		"pallet":
 			cb.kit(k.d, "pallet", c, yaw)
+			if cb.models.has("cement_bag") and r.randf() < 0.4:
+				# Cement, two bags to a layer.
+				var bag := cb.models.size("cement_bag")
+				for layer in r.randi_range(1, 4):
+					for e: float in [-1.0, 1.0]:
+						if r.randf() < 0.12:
+							continue
+						var q := c + A * (e * bag.x * 0.52) + UP * (0.15 + layer * bag.y)
+						cb.kit(k.d, "cement_bag", q, yaw + r.randf_range(-0.08, 0.08))
+				sp.solid(k, c + UP * 0.45, SetPieces._sz(A, 1.2, 0.9, 1.0), &"wood")
+				return true
 			for i in r.randi_range(2, 5):
 				var q := c + A * r.randf_range(-0.35, 0.35) + N * r.randf_range(-0.25, 0.25) + UP * (0.15 + 0.11 + (i / 3) * 0.22)
 				sp.box(k, q, SetPieces._sz(A, 0.55, 0.22, 0.38), &"fabric_canvas", false, Basis(UP, r.randf_range(-0.3, 0.3)))
@@ -487,6 +558,13 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 			sp.box(k, c + N * 0.1 + A * 0.25 + UP * 0.3, SetPieces._sz(A, 0.1, 0.6, 0.25), &"painted_steel_blue")
 		"boxes":
 			var h := 0.0
+			if cb.models.has("cardboard_box") and r.randf() < 0.5:
+				var bs := cb.models.size("cardboard_box")
+				for i in r.randi_range(1, 4):
+					cb.kit(k.d, "cardboard_box", c + A * r.randf_range(-0.15, 0.15) + UP * h, yaw + r.randf_range(-0.3, 0.3) + PI * 0.5 * (i % 2))
+					h += bs.y
+				sp.solid(k, c + UP * h * 0.5, SetPieces._sz(A, w * 0.6, h, depth * 0.8), &"wood")
+				return true
 			for i in r.randi_range(1, 3):
 				var s := Vector3(r.randf_range(0.4, 0.6), r.randf_range(0.25, 0.4), r.randf_range(0.35, 0.5))
 				sp.box(k, c + A * r.randf_range(-0.12, 0.12) + UP * (h + s.y * 0.5), s, &"prop_wood", false, Basis(UP, r.randf_range(-0.25, 0.25)))
@@ -496,6 +574,8 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 
 
 func _hung_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: String, a: float, r: RandomNumberGenerator) -> bool:
+	if MODEL_PIECES.has(id) and not cb.models.has(MODEL_PIECES[id]):
+		return false
 	var hs: Array = HUNG_SIZES[id]
 	var w: float = hs[0]
 	var y0: float = hs[1]
@@ -503,9 +583,14 @@ func _hung_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Strin
 	var depth: float = maxf(hs[3], 0.02)
 	var A := span.u
 	var N := span.m
+	if id == "camera" and y1 > minf(cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s), H) - 0.15:
+		return false
 	var center := _span_point(span, a, FACE + NUDGE + depth * 0.5, (y0 + y1) * 0.5)
 	if not _hung_free(k, center, SetPieces._sz(A, w, y1 - y0, depth)):
 		return false
+	if MODEL_PIECES.has(id):
+		cb.kit(k.d, MODEL_PIECES[id], _span_point(span, a, FACE + NUDGE, y0), atan2(N.x, N.z))
+		return true
 	var at := func(along: float, out: float, y: float) -> Vector3:
 		return _span_point(span, a + along, FACE + NUDGE + out, y)
 	var hb := func(along: float, out0: float, out1: float, ya: float, yb: float, wide: float, mat: StringName) -> void:

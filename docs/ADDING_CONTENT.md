@@ -106,6 +106,20 @@ stands against the walls, what hangs on them and how full they get; add a
 key for a new room use. Sign textures (room plates, sector names, hazard
 labels, posters) come from `dev/asset_gen/signs.py`.
 
+Realistic props are scanned models (`levels/procgen/model_props.gd`). To add
+one: put its Poly Haven id in `MODELS` in `dev/asset_gen/fetch_polyhaven.py`
+and run it (CC0 only; it refuses anything but image and glTF files from
+dl.polyhaven.org and checks each file's MD5), then give it an entry in
+`ModelProps.MODELS`: an id, the model, its `origin` (`base` for things that
+stand, `back` for things on walls), `solid` for a box collider round it,
+`surface`, and `far` (culled beyond). Place it like a kit prop,
+`cb.kit(k.d, "<id>", position, yaw)`; models face +Z, kit props -Z, so
+turn them by PI where code uses `SetPieces._face_from_wall()`. In the
+Detailer, a new floor piece needs a `FLOOR_SIZES` entry and a
+`MODEL_PIECES` entry so it is skipped when the model isn't there. Other
+CC0 models work the same way if their scale is in metres (`scale` fixes it
+when it isn't).
+
 What fills a space is code in `levels/procgen/set_pieces.gd`: `dress()`
 dispatches on zone type (tall spaces) or room use (rooms; uses are chosen in
 `LayoutGenerator._room_use`). A new set piece is a function there; zone-wide

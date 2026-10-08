@@ -157,11 +157,18 @@ Key contracts:
   paths across the level with `path_search_max_polygons = 0` (the default
   4096 gives up on long paths); wait for a map iteration before querying a
   newly added region.
+- **Scanned props** (`levels/procgen/model_props.gd`): Poly Haven models
+  (CC0) baked once into one mesh each with a kit-style origin, placed through
+  `ChunkBuilder.kit()` by id like kit props (box collider round the bounds if
+  `solid`), drawn as one MultiMesh per model per chunk. They face +Z (kit
+  props -Z). The Detailer and set pieces skip them when they aren't fetched.
 - **World surfaces**: level materials use `assets/shaders/world_surface.gdshader`
   (world-space triplanar, no UVs needed): noise-driven texture offsets hide
   tiling, and grime, water and rust runs, damp, dust and ceiling stains are
   generated from world position. Materials tune it per surface
-  (`dev/generators/build_materials.gd`).
+  (`dev/generators/build_materials.gd`); most use Poly Haven scans
+  (`ph/<name>`, scale = 1 / the scan's real size in metres). Normal Z is
+  rebuilt from X and Y, so normal maps can be VRAM-compressed (RGTC).
 - **Surfaces**: tag a collider with metadata `surface` (`concrete`, `metal`,
   `wood`, `flesh`, ...); `SurfaceData` drives impact sound/particles/decals,
   footsteps and casing sounds.
@@ -187,8 +194,12 @@ Key contracts:
 Most art and audio is generated in-repo. Third-party packs live in
 `assets/third_party/` and `addons/`, each credited in `CREDITS.md` (keep it
 current when adding one): the UAL mannequin and animations, the Soviet PSX
-guns, the Sound FX Starter Pack, `lens_effects`, Terrain3D. Review any addon
-code before enabling it; pure data (glb, png, wav) is safe to drop in.
+guns, the Sound FX Starter Pack, `lens_effects`, Terrain3D, and the Poly
+Haven textures and models (`assets/third_party/polyhaven/`, fetched by
+`python3 -I dev/asset_gen/fetch_polyhaven.py`; authors per asset in its
+`SOURCES.md`). Review any addon code before enabling it; pure data (glb,
+gltf, png, jpg, wav) is safe to drop in. Downloads are image/model/sound
+data only, from known sources, checksummed; never executables or archives.
 Regenerate the generated ones with:
 
 ```
@@ -201,7 +212,8 @@ godot --headless --path . --script res://dev/generators/build_content.gd   # ove
 godot --headless --path . --script res://dev/generators/build_l1_profile.gd  # overwrites the L1 profile
 python3 dev/asset_gen/decals.py             # wall symbols, puddles, papers, cracks, oil, moss, peeling plaster
 python3 dev/asset_gen/noise.py              # tileable noise for the world surface shader
-python3 dev/asset_gen/terrain_textures.py   # landscape textures (packed albedo+height, normal+roughness)
+python3 dev/asset_gen/terrain_textures.py   # Terrain3D landscape textures (packed albedo+height, normal+roughness)
+python3 -I dev/asset_gen/fetch_polyhaven.py # Poly Haven scans and models (network; skips what's there)
 godot --headless --path . --script res://dev/generators/build_psx_weapons.gd  # PSX gun scenes, markers, stats
 ```
 

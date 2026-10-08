@@ -58,6 +58,8 @@ class ChunkData:
 	var geo: GeoBuilder
 	## [kit id, Transform3D, options Dictionary] for props that stay nodes
 	var props: Array = []
+	## Scanned model id -> Array of Transform3D (see ModelProps)
+	var models: Dictionary = {}
 	## Dictionaries: type, position, rotation, color, energy, range, angle, shadow, flicker, pulse, buzz, prop
 	var lights: Array = []
 	## [texture name, Transform3D, size Vector3]
@@ -76,6 +78,8 @@ var C: float
 var H: float
 var N: int
 var pieces: SetPieces
+## Scanned props (placed through kit() by id like kit props).
+var models: ModelProps
 ## Debugging: chunks list their visible solids (GeoBuilder.solids).
 var record_solids: bool = false
 var _ibeam: Dictionary  # material -> [verts, normals], unit height
@@ -94,6 +98,7 @@ func _init(layout: LevelLayout) -> void:
 	N = layout.profile.chunk_cells
 	_ibeam = _make_ibeam()
 	_load_kit()
+	models = ModelProps.new()
 	_exit_distances()
 	pieces = SetPieces.new(self)
 
@@ -2086,10 +2091,23 @@ static func box_aabb(center: Vector3, size: Vector3, basis: Basis) -> AABB:
 
 
 ## Places a kit prop: merged into the chunk mesh with a box collider (or a
-## node for lamps). Returns the node index for node props, else -1.
+## node for lamps), or a scanned model (ModelProps) with a box collider round
+## its bounds if it is solid. Returns the node index for node props, else -1.
 func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary = {}, tilt: Basis = Basis.IDENTITY) -> int:
 	var xform := Transform3D(Basis(Vector3.UP, yaw) * tilt, pos)
 	var collide: bool = options.get("collide", true)
+	if ModelProps.MODELS.has(id) and not models.has(id):
+		return -1  # not fetched
+	if models.has(id):
+		var b: AABB = models.bounds[id]
+		if collide and models.solid(id):
+			d.geo.box(xform * b.get_center(), b.size, &"", models.surface(id), false, xform.basis)
+		d.taken.append(box_aabb(xform * b.get_center(), b.size, xform.basis))
+		if d.geo.visuals:
+			if not d.models.has(id):
+				d.models[id] = []
+			(d.models[id] as Array).append(xform)
+		return -1
 	if FOOTPRINTS.has(id) and collide:
 		var fp: Array = FOOTPRINTS[id]
 		var size: Vector3 = fp[0]

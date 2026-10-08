@@ -431,6 +431,21 @@ func _instantiate(d: ChunkBuilder.ChunkData) -> void:
 		cs.shape = shape
 		body.add_child(cs)
 		root.add_child(body)
+	for id: String in d.models:
+		var xforms: Array = d.models[id]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = builder.models.meshes[id]
+		mm.instance_count = xforms.size()
+		for i in xforms.size():
+			mm.set_instance_transform(i, xforms[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = id
+		mmi.multimesh = mm
+		# Measured to the middle of the whole chunk's instances: allow for its size.
+		mmi.visibility_range_end = builder.models.far(id) + mm.get_aabb().size.length() * 0.5
+		mmi.visibility_range_end_margin = 4.0
+		root.add_child(mmi)
 	var prop_nodes: Array = []
 	for p in d.props:
 		var inst := _scene(p[0]).instantiate() as Node3D

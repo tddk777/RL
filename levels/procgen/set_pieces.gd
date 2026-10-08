@@ -755,9 +755,22 @@ func _workbench(k: Cell, p: Vector3, A: Vector3, facing: Vector3) -> void:
 		for f: float in [-1.0, 1.0]:
 			box(k, p + A * (e * 0.92) + facing * (f * 0.34) + UP * 0.44, Vector3(0.06, 0.88, 0.06), &"painted_steel")
 	box(k, p + UP * 0.25, _sz(A, 1.9, 0.03, 0.7), &"painted_steel")
-	box(k, p + A * 0.7 + facing * 0.3 + UP * 1.0, _sz(A, 0.2, 0.15, 0.15), &"painted_steel_blue")  # vise
 	box(k, p - facing * 0.38 + UP * 1.5, _sz(A, 1.9, 1.1, 0.03), &"prop_wood")  # pegboard
-	for i in r.randi_range(1, 4):
+	var turn := atan2(facing.x, facing.z)  # scanned models face +Z
+	if cb.models.has("vice"):
+		cb.kit(k.d, "vice", p + A * 0.7 + facing * 0.3 + UP * 0.93, turn, {"collide": false})
+	else:
+		box(k, p + A * 0.7 + facing * 0.3 + UP * 1.0, _sz(A, 0.2, 0.15, 0.15), &"painted_steel_blue")  # vise
+	if cb.models.has("drill_press") and r.randf() < 0.3:
+		cb.kit(k.d, "drill_press", p - A * 0.6 + UP * 0.93, turn + r.randf_range(-0.3, 0.3), {"collide": false})
+	if cb.models.has("toolbox") and r.randf() < 0.4:
+		cb.kit(k.d, "toolbox", p + A * r.randf_range(-0.2, 0.3) + facing * 0.05 + UP * 0.93, turn + r.randf_range(-0.5, 0.5),
+			{"collide": false})
+	if cb.models.has("stool") and r.randf() < 0.5:
+		var q := p + facing * 0.75 + A * r.randf_range(-0.6, 0.6)
+		if _room_for(k, q, A, 0.4, 0.4):
+			cb.kit(k.d, "stool", q, r.randf() * TAU, {"collide": false})
+	for i in r.randi_range(0, 2):
 		var q := p + A * r.randf_range(-0.8, 0.8) + facing * r.randf_range(-0.2, 0.2) + UP * 0.97
 		box(k, q, Vector3(r.randf_range(0.08, 0.3), r.randf_range(0.04, 0.12), r.randf_range(0.06, 0.2)), &"gun_metal", false, Basis(Vector3.UP, r.randf() * TAU))
 	solid(k, p + UP * 0.47, _sz(A, 2.0, 0.94, 0.8), &"wood")
@@ -1180,10 +1193,10 @@ func _clutter(k: Cell) -> void:
 	if k.zn.type in ChunkBuilder.TALL:
 		count += 1
 	var wall_items := ["gas_cylinders", "panel", "tool_chest", "ladder", "sacks", "extinguisher", "junction", "drums"]
-	var floor_items := ["spool", "pipes", "fan", "dolly", "chain", "buckets", "worklight"]
+	var floor_items := ["spool", "pipes", "fan", "dolly", "chain", "buckets", "worklight", "tyre", "cardboard", "toolbox"]
 	if fam == &"interior":
 		wall_items = ["panel", "extinguisher", "junction", "ladder", "sacks", "tool_chest"]
-		floor_items = ["buckets", "dolly", "fan", "spool"]
+		floor_items = ["buckets", "dolly", "fan", "spool", "wet_sign", "cardboard"]
 	for i in count:
 		if r.randf() < 0.6:
 			_clutter_wall(k, r, wall_items[r.randi_range(0, wall_items.size() - 1)])
@@ -1255,11 +1268,20 @@ func _clutter_wall(k: Cell, r: RandomNumberGenerator, item: String) -> void:
 		"tool_chest":
 			if not _room_for(k, base + N * 0.3, A, 0.8, 0.6):
 				return
+			if cb.models.has("tool_chest"):
+				cb.kit(k.d, "tool_chest", base + N * (cb.models.size("tool_chest").z * 0.5 + 0.03), _face_from_wall(dir) + PI)
+				return
 			box(k, base + N * 0.3 + UP * 0.5, _sz(A, 0.75, 1.0, 0.5), &"painted_steel_red", true)
 			for i in 5:
 				box(k, base + N * 0.56 + UP * (0.15 + i * 0.17), _sz(A, 0.68, 0.14, 0.02), &"painted_steel_red")
 				box(k, base + N * 0.58 + UP * (0.15 + i * 0.17), _sz(A, 0.3, 0.02, 0.02), &"gun_metal")
 		"ladder":
+			if cb.models.has("ladder") and r.randf() < 0.5:
+				var lean := 0.24
+				var at := base + N * (cb.models.size("ladder").y * sin(lean) + 0.12)
+				if _room_for(k, at - N * 0.25, A, 0.8, 0.7):
+					cb.kit(k.d, "ladder", at, _face_from_wall(dir) + PI, {}, Basis(Vector3.RIGHT, -lean))
+				return
 			var h := r.randf_range(2.6, 3.4)
 			var lean := 0.28
 			var foot := base + N * (h * sin(lean))
@@ -1289,7 +1311,7 @@ func _clutter_wall(k: Cell, r: RandomNumberGenerator, item: String) -> void:
 		"drums":
 			for q in _cluster(r, base + N * 0.55, r.randi_range(2, 4)):
 				if _room_for(k, q, A, 0.6, 0.6):
-					cb.kit(k.d, ["barrel_rust", "barrel_blue", "barrel_orange"][r.randi_range(0, 2)], q, r.randf() * TAU)
+					cb.kit(k.d, drum(r), q, r.randf() * TAU)
 
 
 func _clutter_floor(k: Cell, r: RandomNumberGenerator, item: String) -> void:
@@ -1339,6 +1361,9 @@ func _clutter_floor(k: Cell, r: RandomNumberGenerator, item: String) -> void:
 			if not _room_for(k, p, A, 0.8, 0.6):
 				return
 			var yaw := r.randf() * TAU
+			if cb.models.has("hand_truck"):
+				cb.kit(k.d, "hand_truck", p, yaw)
+				return
 			var b := Basis(UP, yaw) * Basis(Vector3.RIGHT, -0.35)
 			for e: float in [-0.2, 0.2]:
 				k.d.geo.cylinder(p + Basis(UP, yaw) * Vector3(e, 0.18, 0), p + b * Vector3(e, 1.3, 0) + Vector3.UP * 0.18, 0.02, &"painted_steel_red", 6)
@@ -1379,6 +1404,36 @@ func _clutter_floor(k: Cell, r: RandomNumberGenerator, item: String) -> void:
 			var face := Vector3(cos(r.randf() * TAU), -0.3, sin(r.randf() * TAU)).normalized()
 			k.d.geo.box(head, Vector3(0.3, 0.22, 0.12), &"painted_steel_yellow", &"", false, Basis.looking_at(face, UP))
 			k.d.geo.box(head + face * 0.065, Vector3(0.24, 0.16, 0.01), &"lamp_dead", &"", false, Basis.looking_at(face, UP))
+		"tyre":
+			if not cb.models.has("tyre") or not _room_for(k, p, A, 0.8, 0.8):
+				return
+			var sz := cb.models.size("tyre")
+			var turn := r.randf() * TAU
+			if r.randf() < 0.6:
+				# Lying flat, maybe another on top.
+				for i in r.randi_range(1, 2):
+					var t := turn + i * 0.4
+					cb.kit(k.d, "tyre", p + UP * (sz.z * 0.5 + i * sz.z) - Basis(UP, t) * Vector3(0, 0, sz.y * 0.5) + Vector3(i * 0.05, 0, 0), t, {},
+						Basis(Vector3.RIGHT, PI * 0.5))
+			else:
+				cb.kit(k.d, "tyre", p, turn)
+		"cardboard":
+			if not cb.models.has("cardboard_box") or not _room_for(k, p, A, 1.2, 1.2):
+				return
+			for i in r.randi_range(1, 3):
+				var q := p + Vector3(r.randf_range(-0.4, 0.4), 0, r.randf_range(-0.4, 0.4))
+				if r.randf() < 0.3:
+					# Knocked on its side.
+					cb.kit(k.d, "cardboard_box", q + UP * cb.models.size("cardboard_box").z * 0.5, r.randf() * TAU, {},
+						Basis(Vector3.RIGHT, PI * 0.5))
+				else:
+					cb.kit(k.d, "cardboard_box", q, r.randf() * TAU)
+		"toolbox":
+			if cb.models.has("toolbox") and _room_for(k, p, A, 0.5, 0.5):
+				cb.kit(k.d, "toolbox", p, r.randf() * TAU)
+		"wet_sign":
+			if cb.models.has("wet_floor_sign") and _room_for(k, p, A, 0.5, 0.5):
+				cb.kit(k.d, "wet_floor_sign", p, r.randf() * TAU)
 
 
 # --- Yards and open ground ----------------------------------------------------------------
@@ -1400,9 +1455,15 @@ func _yard(k: Cell) -> void:
 	elif roll < 0.45:
 		for q in _cluster(r, p, r.randi_range(2, 4)):
 			if _free(k, Rect2(q.x - k.o.x - 0.4, q.z - k.o.z - 0.4, 0.8, 0.8)):
-				cb.kit(k.d, ["barrel_rust", "barrel_blue", "barrel_rust"][r.randi_range(0, 2)], q, r.randf() * TAU)
+				cb.kit(k.d, drum(r), q, r.randf() * TAU)
 	elif roll < 0.55 and _free(k, Rect2(p.x - k.o.x - 1.2, p.z - k.o.z - 1.2, 2.4, 2.4)):
 		cb.kit(k.d, "rubble", p, r.randf() * TAU)
+	elif roll < 0.68 and cb.models.has("road_barrier") and _free(k, Rect2(p.x - k.o.x - 2.6, p.z - k.o.z - 1.0, 5.2, 2.0)):
+		# A line of road barriers someone dragged across.
+		var turn := (PI * 0.5) * r.randi_range(0, 1)
+		var along := Basis(UP, turn) * Vector3(1, 0, 0)
+		for i in r.randi_range(2, 3):
+			cb.kit(k.d, "road_barrier", p + along * ((i - 1) * 1.6), turn + r.randf_range(-0.12, 0.12))
 
 
 ## Ground between the buildings, seen through windows and over yard walls:
@@ -1435,7 +1496,7 @@ func outside(d: ChunkBuilder.ChunkData, x: int, z: int, o: Vector3) -> void:
 			_wreck(d, c, r.randf() * TAU, r, false)
 		elif roll < 0.15:
 			for q in _cluster(r, c, r.randi_range(2, 5)):
-				cb.kit(d, ["barrel_rust", "barrel_blue", "barrel_orange"][r.randi_range(0, 2)], q, r.randf() * TAU, {"collide": false})
+				cb.kit(d, drum(r), q, r.randf() * TAU, {"collide": false})
 		elif roll < 0.22:
 			cb.kit(d, "pallet", c, r.randf() * TAU, {"collide": false})
 			cb.kit(d, "crate_wood", c + Vector3(0, 0.15, 0), r.randf() * TAU, {"collide": false})
@@ -1443,6 +1504,13 @@ func outside(d: ChunkBuilder.ChunkData, x: int, z: int, o: Vector3) -> void:
 			cb.kit(d, "rubble", c, r.randf() * TAU, {"collide": false})
 		elif roll < 0.31:
 			cb.kit(d, "shipping_container", c, (PI * 0.5) * r.randi_range(0, 1) + r.randf_range(-0.1, 0.1), {"collide": false})
+		elif roll < 0.37 and cb.models.has("road_barrier"):
+			for i in r.randi_range(1, 3):
+				cb.kit(d, "road_barrier", c + Vector3(i * 1.6, 0, r.randf_range(-0.2, 0.2)), r.randf_range(-0.2, 0.2), {"collide": false})
+		elif roll < 0.42 and cb.models.has("tyre"):
+			for i in r.randi_range(1, 3):
+				cb.kit(d, "tyre", c + Vector3(r.randf_range(-1, 1), 0.08, r.randf_range(-1, 1)), r.randf() * TAU, {"collide": false},
+					Basis(Vector3.RIGHT, PI * 0.5))
 	# Chain-link fence and poles round the edge of the site.
 	for dir in 4:
 		var n := Vector2i(x, z) + LevelLayout.DIRS[dir]
@@ -1458,6 +1526,13 @@ func outside(d: ChunkBuilder.ChunkData, x: int, z: int, o: Vector3) -> void:
 			var p := sp.origin + sp.u * (C * 0.5) - sp.m * 3.0
 			g.cylinder(p, p + UP * 9.0, 0.14, &"wood_planks", 8)
 			g.box(p + UP * 8.4, Vector3(1.8, 0.12, 0.12) if absf(sp.u.x) > 0.5 else Vector3(0.12, 0.12, 1.8), &"wood_planks")
+
+
+## A drum of any kind, generated or scanned.
+func drum(r: RandomNumberGenerator) -> String:
+	const IDS := ["barrel_rust", "barrel_blue", "barrel_orange", "barrel_red", "barrel_plastic", "barrel_steel"]
+	var id: String = IDS[r.randi_range(0, IDS.size() - 1)]
+	return id if not ModelProps.MODELS.has(id) or cb.models.has(id) else "barrel_rust"
 
 
 ## Up to n spots round p on a 0.7 m grid (barrels side by side, never inside
@@ -1703,6 +1778,9 @@ func _weighted(r: RandomNumberGenerator, table: Dictionary) -> String:
 func _chair(k: Cell, p: Vector3, yaw: float, r: RandomNumberGenerator) -> void:
 	var b := Basis(Vector3.UP, yaw)
 	var fallen := r.randf() < 0.25
+	if not fallen and cb.models.has("school_chair") and r.randf() < 0.35:
+		cb.kit(k.d, "school_chair", p, yaw + PI, {"collide": false})  # it faces +Z, this chair -Z
+		return
 	if fallen:
 		b = b * Basis(Vector3.RIGHT, PI * 0.5)
 		p += UP * 0.25

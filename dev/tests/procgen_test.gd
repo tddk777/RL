@@ -71,6 +71,18 @@ func _run() -> void:
 	var decals := level.find_children("*", "Decal", true, false).size()
 	var bodies := level.find_children("*", "StaticBody3D", true, false).size()
 	print("INFO  nodes: %d mesh instances, %d lights, %d decals, %d static bodies" % [meshes, lights, decals, bodies])
+	# Scanned props (ModelProps): drawn as MultiMeshes named after the model.
+	var kinds := {}
+	var placed := 0
+	for mmi in level.find_children("*", "MultiMeshInstance3D", true, false):
+		var n := (mmi as MultiMeshInstance3D).multimesh.instance_count
+		kinds[String(mmi.name).get_slice("@", 0)] = kinds.get(String(mmi.name).get_slice("@", 0), 0) + n
+		placed += n
+	print("INFO  scanned props: %s" % [kinds])
+	check(level.builder.models.meshes.size() == ModelProps.MODELS.size(), "every scanned model loads (%d of %d)" % [
+		level.builder.models.meshes.size(), ModelProps.MODELS.size()])
+	check(kinds.size() >= 12 and placed >= 100, "scanned props placed (%d of %d kinds, %d in all)" % [kinds.size(),
+		ModelProps.MODELS.size(), placed])
 	var player := Game.player
 	check(player.weapons.size() == 1 and player.current_weapon.data.id == &"m1911", "player starts with only the M1911")
 	check(player.current_weapon.loaded_rounds() == 8 and player.count_ammo(&".45ACP") == 7, "M1911 has 7+1 loaded and one spare magazine")

@@ -53,14 +53,16 @@ TEX_RES = "2k"
 TEX_MAPS = {"Diffuse": "albedo", "nor_gl": "normal", "Rough": "roughness", "Displacement": "height"}
 NEEDS_HEIGHT: set[str] = set()  # nothing uses height maps yet
 
-# Models, fetched as glTF at MODEL_RES (with their textures).
+# Models, fetched as glTF at MODEL_RES (with their textures)
+# (levels/procgen/model_props.gd says how each is used). Left out on purpose:
+# things that read as loot (ammo_box, medical_box, russian_food_cans_01) until
+# loot is designed.
 MODELS = [
     "Barrel_01", "Barrel_02", "barrel_03", "cardboard_box_01", "metal_tool_chest", "metal_toolbox",
     "steel_frame_shelves_01", "steel_frame_shelves_02", "worn_metal_rack", "metal_office_desk", "SchoolChair_01",
     "WetFloorSign_01", "fire_alarm", "power_box_01", "utility_box_01", "utility_box_02", "hand_truck", "tool_cart",
-    "industrial_storage_cart", "cement_bag", "russian_food_cans_01", "metal_trash_can", "old_tyre", "concrete_road_barrier",
-    "ladder_sectioned_01", "bench_vice_01", "portable_generator", "drill_press_01", "medical_box", "ammo_box",
-    "industrial_wall_lamp", "caged_hanging_light", "mounted_fluorescent_lights", "metal_stool_01", "security_camera_01",
+    "industrial_storage_cart", "cement_bag", "metal_trash_can", "old_tyre", "concrete_road_barrier",
+    "ladder_sectioned_01", "bench_vice_01", "portable_generator", "drill_press_01", "metal_stool_01", "security_camera_01",
 ]
 MODEL_RES = "1k"
 
@@ -133,7 +135,10 @@ def fetch_model(asset: str) -> dict:
     for rel, f in g.get("include", {}).items():
         if ".." in rel or rel.startswith("/"):
             raise SystemExit(f"refusing path {rel}")
-        fetch_file(f["url"], f["md5"], base / rel)
+        # Colour and AO/roughness/metal maps re-encoded (same size and name);
+        # normals as they come.
+        shrink = 0 if "_nor_" in rel or not rel.endswith(".jpg") else 4096
+        fetch_file(f["url"], f["md5"], base / rel, shrink)
     return info(asset)
 
 
