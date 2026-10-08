@@ -736,6 +736,10 @@ func _flight_profile(m: int, going: float, rise: float, below: float) -> PackedV
 	for q in prof:
 		if clean.is_empty() or clean[clean.size() - 1].distance_to(q) > 0.001:
 			clean.append(q)
+	# A closed outline without the start repeated at the end (triangulation
+	# fails on that).
+	if clean.size() > 2 and clean[0].distance_to(clean[clean.size() - 1]) < 0.001:
+		clean.resize(clean.size() - 1)
 	return clean
 
 

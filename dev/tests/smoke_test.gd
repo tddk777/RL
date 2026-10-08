@@ -269,7 +269,8 @@ func _run() -> void:
 
 	# --- Rival: ballistics damage ---
 	var npc := Registry.enemy(level.profile.enemy_id).scene.instantiate() as NPC
-	npc.data = Registry.enemy(level.profile.enemy_id)
+	npc.data = Registry.enemy(level.profile.enemy_id).duplicate() as EnemyData
+	npc.data.weapon_pool = []  # the default rifle: this tests the fight, not the draw
 	npc.patrol_points.append(b)
 	npc.patrol_points.append(b + fwd * 2.0)
 	level.add_child(npc)
@@ -306,10 +307,11 @@ func _run() -> void:
 	check(npc.brain.current_name == &"combat", "NPC spots the player and enters combat (%.1fs)" % t)
 	# It gets to cover first, then shoots back.
 	t = 0.0
-	while t < 10.0 and player.health.current >= player_hp and npc.weapon.loaded_rounds() >= npc.weapon.data.magazine_size:
+	var rounds0 := npc.weapon.loaded_rounds()
+	while t < 10.0 and player.health.current >= player_hp and npc.weapon.loaded_rounds() >= rounds0:
 		await wait(0.25)
 		t += 0.25
-	check(player.health.current < player_hp or npc.weapon.loaded_rounds() < npc.weapon.data.magazine_size,
+	check(player.health.current < player_hp or npc.weapon.loaded_rounds() < rounds0,
 		"NPC returns fire (%.1f s; player hp %.0f, npc rounds %d)" % [t, player.health.current, npc.weapon.loaded_rounds()])
 	await shot("06_under_fire.png")
 	for i in 3:
