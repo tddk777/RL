@@ -98,6 +98,10 @@ func _dress(k: Cell) -> void:
 		return
 	if room and room.use == &"stairwell":
 		return
+	if L.has_split(x, z, s):
+		# Two small rooms: their walls are dressed by the Detailer.
+		_clutter(k)
+		return
 	if L.kind_at(x, z, s + 1) == LevelLayout.Kind.HOLE:
 		# The floor above came down here.
 		cb.kit(d, "rubble", k.c + Vector3(k.r.randf_range(-1, 1), 0, k.r.randf_range(-1, 1)), k.r.randf() * TAU)
@@ -192,6 +196,8 @@ func base_blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 					out.append(Rect2(p - Vector2(0.35, 0.35), Vector2(0.7, 0.7)))
 	if L.has_drop(x, z, s):
 		out.append(cb.drop_rect(x, z, s).grow(0.45))
+	if L.has_split(x, z, s):
+		out.append_array(split_blocked(x, z, s))
 	if L.has_drop(x, z, s + 1):
 		out.append(cb.drop_rect(x, z, s + 1).grow(0.25))
 	for corner in 4:
@@ -215,6 +221,30 @@ func base_blocked(x: int, z: int, s: int, st: ZoneStyle) -> Array[Rect2]:
 		if a["cell"] == Vector3i(x, z, s):
 			out.append(cb.strip(a["dir"], 1.5 if a["kind"] == &"symbol" else 3.6))
 	return out
+
+
+## Cell-local rects a split cell keeps clear: the partition (and a little
+## either side) and the way through its doorway.
+func split_blocked(x: int, z: int, s: int) -> Array[Rect2]:
+	var side := L.split_side(x, z, s)
+	var door := L.split_door(x, z, s)
+	var back := LevelLayout.SPLIT_BACK
+	var half := LevelLayout.SPLIT_T * 0.5 + 0.02  # things may stand against it
+	return [span_rect(side, 0.0, C, back - half, back + half),
+		span_rect(side, door.x - 0.3, door.y + 0.3, back - 1.1, back + 1.1)]
+
+
+## Cell-local rect from coordinates along the edge span of `side` (a) and in
+## from its edge line (depth).
+func span_rect(side: int, a0: float, a1: float, d0: float, d1: float) -> Rect2:
+	match side:
+		0:
+			return Rect2(a0, d0, a1 - a0, d1 - d0)
+		1:
+			return Rect2(C - d1, a0, d1 - d0, a1 - a0)
+		2:
+			return Rect2(a0, C - d1, a1 - a0, d1 - d0)
+	return Rect2(d0, a0, d1 - d0, a1 - a0)
 
 
 func _free(k: Cell, r: Rect2) -> bool:
@@ -1116,9 +1146,14 @@ func _rack_load(k: Cell, q: Vector3, A: Vector3, length: float, depth: float, ro
 		var mat := &"fabric_canvas" if r.randf() < 0.5 else &"prop_wood"
 		box(k, q + UP * (0.14 + h * 0.5), _sz(A, minf(length, 1.15) * r.randf_range(0.8, 1.0), h, minf(depth, 0.95) * r.randf_range(0.8, 1.0)), mat)
 	elif roll < 0.9:
+		# Drums two by two, or in a single row where the load is shallow
+		# (loads from both faces meet in the middle of the rack).
+		var rows: Array[float] = [0.0]
+		if depth >= 1.1:
+			rows = [-0.28, 0.28]
 		for e: float in [-1.0, 1.0]:
-			for f: float in [-1.0, 1.0]:
-				var b := q + A * (e * 0.28) + B * (f * 0.28) + UP * 0.14
+			for f in rows:
+				var b := q + A * (e * 0.28) + B * f + UP * 0.143
 				cyl(k, b, b + UP * 0.85, 0.27, &"prop_steel_blue" if r.randf() < 0.5 else &"prop_rust", 10)
 	else:
 		# Spilled: boxes half off the edge
@@ -1231,6 +1266,8 @@ func _clutter_wall(k: Cell, r: RandomNumberGenerator, item: String) -> void:
 	var A := LevelLayout.dir_vector((dir + 1) % 4)
 	var t := r.randf_range(-2.8, 2.8)
 	var base := _wall_at(k, dir, t, 0.0)
+	if L.has_split(k.x, k.z, k.s) and not _free(k, _rect(k, base + N * 0.3, A, 0.9, 0.5)):
+		return  # against the partition
 	match item:
 		"gas_cylinders":
 			var n := r.randi_range(2, 5)

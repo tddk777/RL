@@ -6,6 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var profile: LevelProfile = load("res://levels/l1_industrial/l1_profile.tres")
 	var failures := 0
+	var all_splits := 0
 	for seed in [1, 2, 3, 42, 1337, 98765]:
 		var t0 := Time.get_ticks_msec()
 		var L := LayoutGenerator.generate(profile, seed)
@@ -50,6 +51,23 @@ func _initialize() -> void:
 			print("  tunnels: %d reachable cells, %d stairs up" % [tunnel, tunnel_stairs])
 			if tunnel < 8 or tunnel_stairs < 2:
 				ok = false
+		# Split rooms: one-cell rooms, the back room's side a plain wall, and
+		# nothing else in the cell's extra flags.
+		var splits := 0
+		for s: int in L.all_storeys():
+			for z in L.size.y:
+				for x in L.size.x:
+					if not L.has_split(x, z, s):
+						continue
+					splits += 1
+					var room := L.room_of(x, z, s)
+					var side := L.split_side(x, z, s)
+					if room == null or room.rect.get_area() != 1 or L.has_door(x, z, s, side) or not L.has_wall(x, z, s, side) \
+							or L.extra_at(x, z, s) & ~(LevelLayout.SPLIT | (3 << 14) | (1 << 16)) != 0:
+						print("  bad split at %s" % Vector3i(x, z, s))
+						ok = false
+		print("  split rooms: %d" % splits)
+		all_splits += splits
 		# Every flight lands on walkable floor in its own column, and every
 		# hole has the flight under it.
 		for s: int in L.all_storeys():
@@ -111,5 +129,8 @@ func _initialize() -> void:
 			for s: int in L.all_storeys():
 				print("--- storey %d ---" % s)
 				print(L.ascii(s))
+	if profile.split_chance > 0.0 and all_splits == 0:
+		print("no split rooms in any seed")
+		failures += 1
 	print("FAILURES: %d" % failures)
 	quit(1 if failures else 0)

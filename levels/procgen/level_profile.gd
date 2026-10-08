@@ -50,6 +50,10 @@ extends Resource
 ## Drop-downs: a corner of an upper floor broken through onto the room below,
 ## put where it saves the longest walk round (one way: no climbing back).
 @export var drops: int = 3
+## Chance a one-cell office, archive, meeting, electrical, locker, parts or workshop
+## room is split: a partition walls off a small back room (closet, archive,
+## parts) along one side.
+@export_range(0.0, 1.0) var split_chance: float = 0.0
 
 @export_group("Spaces")
 ## Walkway styles, one per family (see ZoneStyle.family): covered passages

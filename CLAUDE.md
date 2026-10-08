@@ -118,7 +118,10 @@ Key contracts:
   sunken pits (`PODIUM`, `PIT`; `ChunkBuilder.level_feature()` places them
   clear of lanes), drop-downs (`DROP`: a corner of an upper floor broken
   through where it saves the longest walk; one way, not in `links()`),
-  exits, enemies, pickups, anomalies. `links()` counts
+  exits, enemies, pickups, anomalies, and last split rooms (`SPLIT`: a
+  thin partition with a doorway walls off a small back room along one
+  side of a one-cell room, e.g. an office's records room; only where no
+  door, window, hole or entity is in its way). `links()` counts
   breaches; vents only with `crawl`, so enemies and exits never depend on
   them. Everything that isn't a building cell (open ground, yards,
   walkways) is "outdoor" to a building, which builds that wall whole.

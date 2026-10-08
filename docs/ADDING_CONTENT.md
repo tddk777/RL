@@ -87,7 +87,7 @@ L4 labs, ...) are mostly data:
    how the site grows (`coverage`, `max_buildings`, `touch_chance` vs
    walkways up to `max_gap` cells, `abut_chance`, `yards`, `bridges`,
    `chamfer_chance`, `partial_chance`, `districts`, `breaches`, `vents`,
-   `stashes`, `podium_chance`, `pit_chance`, `drops`), tunnels under the
+   `stashes`, `podium_chance`, `pit_chance`, `drops`, `split_chance`), tunnels under the
    site (`basement`, `tunnel_rooms`, `tunnel_loops` and the `tunnel` style),
    one walkway style per family (`corridors`), the `yard` style and the
    building styles,
@@ -103,7 +103,8 @@ L4 labs, ...) are mostly data:
 What lines the walls, corners and doors is `levels/procgen/detailer.gd`:
 `FLOOR_KITS`, `HUNG_KITS` and `FILL` say, per room use or zone type, what
 stands against the walls, what hangs on them and how full they get; add a
-key for a new room use. Sign textures (room plates, sector names, hazard
+key for a new room use. `BACK_ROOMS` says what the back room of a split room
+is used for (`LayoutGenerator.SPLIT_USES` lists the uses that split). Sign textures (room plates, sector names, hazard
 labels, posters) come from `dev/asset_gen/signs.py`.
 
 Realistic props are scanned models (`levels/procgen/model_props.gd`). To add

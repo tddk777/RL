@@ -95,6 +95,7 @@ func _run(p: LevelProfile, level_seed: int) -> LevelLayout:
 	_place_pickups()
 	_stock_stashes()
 	_place_anomalies()
+	_make_splits()
 	return L
 
 
@@ -1732,6 +1733,80 @@ func _make_levels() -> void:
 					L.set_extra(x, z, s, LevelLayout.PIT)
 				elif roll < profile.pit_chance + profile.podium_chance * (1.0 if open_floor else 0.5):
 					L.set_extra(x, z, s, LevelLayout.PODIUM)
+
+
+## Room uses that may be split into a room and a small back room.
+const SPLIT_USES: Array[StringName] = [&"offices", &"archive", &"meeting", &"electrical", &"lockers", &"parts", &"workshop"]
+
+## One-cell rooms split by a partition: a small back room along a side with
+## no door, windows or holes in the walls it meets. Last, so nothing placed
+## earlier (entities, drops, platforms) lands in the partition's way.
+func _make_splits() -> void:
+	if profile.split_chance <= 0.0:
+		return
+	var busy := {}  # cells with an entity in them
+	var mark := func(p: Vector3) -> void:
+		busy[L.world_to_cell(p)] = true
+	for e in L.exits:
+		busy[e["cell"]] = true
+		if not (e["lever"] as Dictionary).is_empty():
+			mark.call(e["lever"]["position"])
+	for list: Array in [L.enemies, L.pickups, L.corpses, L.anomalies]:
+		for e: Dictionary in list:
+			if e.has("cell"):
+				busy[e["cell"]] = true
+			if e.has("position"):
+				mark.call(e["position"])
+			for q in e.get("patrol", []):
+				mark.call(q)
+	busy[L.spawn_cell] = true
+	var blocking := LevelLayout.NARROW | LevelLayout.STAIR | LevelLayout.STAIR_ABOVE | LevelLayout.ROOF_HOLE \
+		| LevelLayout.EXIT | LevelLayout.DOCK | (15 * LevelLayout.CHAMFER)
+	for room in L.rooms:
+		if room.use not in SPLIT_USES or room.rect.get_area() != 1 or not room.extra.is_empty() or room.storey < 0:
+			continue
+		var c := room.rect.position
+		var s := room.storey
+		var i := L.idx(c.x, c.y, s)
+		if L.kind[i] != LevelLayout.Kind.FLOOR or L.flags[i] & blocking or L.extra[i] != 0 or busy.has(Vector3i(c.x, c.y, s)):
+			continue
+		if L.has_flag(c.x, c.y, s + 1, LevelLayout.BRIDGE_X | LevelLayout.BRIDGE_Z) or L.has_drop(c.x, c.y, s + 1) \
+				or L.kind_at(c.x, c.y, s + 1) == LevelLayout.Kind.HOLE:
+			continue
+		if rng.randf() > profile.split_chance:
+			continue
+		var sides: Array[int] = []
+		for side in 4:
+			if _split_side_ok(c, s, side):
+				sides.append(side)
+		if sides.is_empty():
+			continue
+		var side := sides[rng.randi_range(0, sides.size() - 1)]
+		L.extra[i] |= LevelLayout.SPLIT | (side << 14) | ((1 if rng.randf() < 0.5 else 0) << 16)
+
+
+## The back room can go along `side`: a plain wall there, and the two walls
+## it meets have no window and a door narrow enough to stay in the front room.
+func _split_side_ok(c: Vector2i, s: int, side: int) -> bool:
+	if not L.has_wall(c.x, c.y, s, side) or L.has_door(c.x, c.y, s, side):
+		return false
+	for turn in [1, 3]:
+		var dir: int = (side + turn) % 4
+		if L.has_window(c.x, c.y, s, dir) or not L.has_wall(c.x, c.y, s, dir):
+			return false
+		var n := c + LevelLayout.DIRS[dir]
+		if L.inside(n.x, n.y, s) and L.has_window(n.x, n.y, s, (dir + 2) % 4):
+			return false
+		if L.has_door(c.x, c.y, s, dir):
+			# Doors are centred on the wall.
+			var w := 0.0
+			for cc: Vector2i in [c, n]:
+				var st := L.style_at(cc.x, cc.y, s)
+				if st:
+					w = maxf(w, st.ground_door_width if s == 0 else st.door_width)
+			if L.cell * 0.5 - w * 0.5 < LevelLayout.SPLIT_BACK + LevelLayout.SPLIT_T * 0.5 + 0.25:
+				return false
+	return true
 
 
 ## Drop-downs where they make the biggest shortcuts: a corner of an upper

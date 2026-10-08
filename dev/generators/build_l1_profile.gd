@@ -32,6 +32,7 @@ func _initialize() -> void:
 	p.bridges = 2
 	p.breaches = 10
 	p.vents = 8
+	p.split_chance = 0.8  # one-cell rooms with a small back room
 	p.chamfer_chance = 0.3
 	p.partial_chance = 0.35
 	p.districts = 3

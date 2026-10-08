@@ -155,6 +155,7 @@ func detail(k: SetPieces.Cell) -> void:
 		_passage_stripe(k)
 		return
 	_door_signs(k)
+	_split_sign(k)
 	_stairwell_number(k)
 	_corners(k)
 	_wall_runs(k)
@@ -249,6 +250,19 @@ func _door_signs(k: SetPieces.Cell) -> void:
 				wall_decal(k, tex, _span_point(span, a, FACE, 1.65), span.m, 0.48, 0.32)
 
 
+## The plate over a split cell's inner doorway, naming its back room.
+func _split_sign(k: SetPieces.Cell) -> void:
+	if not L.has_split(k.x, k.z, k.s):
+		return
+	var use: StringName = BACK_ROOMS.get(_kit_key(k), &"closet")
+	if use not in PLATES:
+		return
+	var psp := cb.split_span(k.o, L.split_side(k.x, k.z, k.s))
+	var door := L.split_door(k.x, k.z, k.s)
+	var y := minf(LevelLayout.SPLIT_DOOR_H + 0.32, cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s) - 0.2)
+	wall_decal(k, "room_" + String(use), _span_point(psp, (door.x + door.y) * 0.5, LevelLayout.SPLIT_T * 0.5, y), psp.m, 1.1, 0.28)
+
+
 ## A big stencilled storey number on a stairwell wall.
 func _stairwell_number(k: SetPieces.Cell) -> void:
 	if not k.room or k.room.use != &"stairwell" or Vector2i(k.x, k.z) != k.room.rect.position:
@@ -340,6 +354,12 @@ func _free_runs(k: SetPieces.Cell, dir: int) -> Array[Vector2]:
 	if L.inside(n.x, n.y, k.s) and L.has_gap(n.x, n.y, k.s, back):
 		var g := cb.gap_span(n.x, n.y, k.s, back)
 		cut.call(g.x - 0.6, g.y + 0.6)
+	# A partition meeting this wall.
+	if L.has_split(k.x, k.z, k.s):
+		var side := L.split_side(k.x, k.z, k.s)
+		if dir % 2 != side % 2:
+			var at := LevelLayout.SPLIT_BACK if side == 0 or side == 3 else C - LevelLayout.SPLIT_BACK
+			cut.call(at - LevelLayout.SPLIT_T * 0.5 - 0.12, at + LevelLayout.SPLIT_T * 0.5 + 0.12)
 	# Exits, levers and wall anomalies keep their stretch of wall.
 	for e in L.exits:
 		if e["cell"] == Vector3i(k.x, k.z, k.s) and e["dir"] == dir:
@@ -365,10 +385,8 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 	if k.room and k.room.use in [&"stairwell", &"hallway"]:
 		return
 	var key := _kit_key(k)
-	var floor_kit: Dictionary = FLOOR_KITS.get(key, {})
-	var hung_kit: Dictionary = HUNG_KITS.get(key, HUNG_KITS.get(k.zn.type, {}))
-	var fill: float = FILL.get(key, 0.3)
-	var posters := 0
+	var split := L.has_split(k.x, k.z, k.s)
+	var posters: Array[int] = [0]
 	for dir in 4:
 		if not L.has_wall(k.x, k.z, k.s, dir) or L.stair_sides(k.x, k.z, k.s) & (1 << dir) \
 				or (L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK) and L.is_outside(k.x, k.z, k.s, dir)):
@@ -378,47 +396,82 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 		var nb := Vector2i(k.x, k.z) + LevelLayout.DIRS[dir]
 		var window := L.has_window(k.x, k.z, k.s, dir) or (L.inside(nb.x, nb.y, k.s) and L.has_window(nb.x, nb.y, k.s, (dir + 2) % 4))
 		for run in _free_runs(k, dir):
-			# Floor pieces along the run, leaving gaps.
-			if not floor_kit.is_empty():
-				var a := run.x + r.randf_range(0.0, 0.6)
-				while a < run.y - 0.4:
-					if r.randf() > fill:
-						a += r.randf_range(0.6, 1.6)
-						continue
-					var id := sp._weighted(r, floor_kit)
-					if window and id in ["shelf", "lockers", "vending", "manifold", "electrical", "cabinet"]:
-						id = "bin" if r.randf() < 0.3 else "boxes"
-					var size: Array = FLOOR_SIZES[id]
-					var w: float = size[0]
-					if a + w > run.y:
-						a += 0.5
-						continue
-					if _floor_piece(k, span, dir, id, a + w * 0.5, w, size[1], r):
-						a += w + r.randf_range(0.05, 0.5)
-					else:
-						a += 0.5
-			# Under a window: a radiator in offices and passages.
-			if window and k.zn.district == 1 and run.y - run.x > 1.4:
-				_hung_piece(k, span, dir, "radiator", (run.x + run.y) * 0.5, r)
-			# Hung things in the gaps between the floor pieces.
-			if hung_kit.is_empty() or window:
+			var run_key := key
+			if split:
+				var mid := span.origin + span.u * ((run.x + run.y) * 0.5) + span.m * 1.0 - k.o
+				if L.in_back_room(k.x, k.z, k.s, Vector2(mid.x, mid.z)):
+					run_key = BACK_ROOMS.get(key, &"closet")
+			_fill_run(k, span, dir, run, run_key, window, r, posters)
+	if split:
+		# Both faces of the partition, either side of its doorway.
+		var side := L.split_side(k.x, k.z, k.s)
+		var psp := cb.split_span(k.o, side)
+		var door := L.split_door(k.x, k.z, k.s)
+		var runs: Array[Vector2] = [Vector2(FACE + 0.15, door.x - 0.35), Vector2(door.y + 0.35, C - FACE - 0.15)]
+		for face: float in [1.0, -1.0]:
+			# A span whose FACE offset lands on this face of the partition.
+			var m := psp.m * face
+			var fsp := ChunkBuilder.Span.new(psp.origin + m * (LevelLayout.SPLIT_T * 0.5 - FACE), psp.u, m, C)
+			var dir := side if face > 0.0 else (side + 2) % 4  # the wall whose inward normal is m
+			var r := cb.rng(k.x, k.z, k.s, 318 + int(face))
+			var run_key: StringName = key if face > 0.0 else BACK_ROOMS.get(key, &"closet")
+			for run in runs:
+				if run.y - run.x > 0.4:
+					_fill_run(k, fsp, dir, run, run_key, false, r, posters)
+
+
+## Back room of a split cell, by the room's use.
+const BACK_ROOMS := {&"offices": &"archive", &"archive": &"closet", &"meeting": &"closet", &"electrical": &"closet", &"lockers": &"closet",
+	&"parts": &"closet", &"workshop": &"parts"}
+
+
+## Floor pieces along one free run of wall, leaving gaps, then things hung in
+## the gaps between them.
+func _fill_run(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, run: Vector2, key: StringName, window: bool,
+		r: RandomNumberGenerator, posters: Array[int]) -> void:
+	var floor_kit: Dictionary = FLOOR_KITS.get(key, {})
+	var hung_kit: Dictionary = HUNG_KITS.get(key, HUNG_KITS.get(k.zn.type, {}))
+	var fill: float = FILL.get(key, 0.3)
+	if not floor_kit.is_empty():
+		var a := run.x + r.randf_range(0.0, 0.6)
+		while a < run.y - 0.4:
+			if r.randf() > fill:
+				a += r.randf_range(0.6, 1.6)
 				continue
-			var b := run.x + r.randf_range(0.1, 0.9)
-			while b < run.y - 0.3:
-				var id := sp._weighted(r, hung_kit)
-				if id == "poster" and posters >= 1:
-					b += 0.6
-					continue
-				var hs: Array = HUNG_SIZES[id]
-				var w: float = hs[0]
-				if b + w > run.y:
-					break
-				if _hung_piece(k, span, dir, id, b + w * 0.5, r):
-					if id == "poster":
-						posters += 1
-					b += w + r.randf_range(0.4, 1.6)
-				else:
-					b += 0.45
+			var id := sp._weighted(r, floor_kit)
+			if window and id in ["shelf", "lockers", "vending", "manifold", "electrical", "cabinet"]:
+				id = "bin" if r.randf() < 0.3 else "boxes"
+			var size: Array = FLOOR_SIZES[id]
+			var w: float = size[0]
+			if a + w > run.y:
+				a += 0.5
+				continue
+			if _floor_piece(k, span, dir, id, a + w * 0.5, w, size[1], r):
+				a += w + r.randf_range(0.05, 0.5)
+			else:
+				a += 0.5
+	# Under a window: a radiator in offices and passages.
+	if window and k.zn.district == 1 and run.y - run.x > 1.4:
+		_hung_piece(k, span, dir, "radiator", (run.x + run.y) * 0.5, r)
+	# Hung things in the gaps between the floor pieces.
+	if hung_kit.is_empty() or window:
+		return
+	var b := run.x + r.randf_range(0.1, 0.9)
+	while b < run.y - 0.3:
+		var id := sp._weighted(r, hung_kit)
+		if id == "poster" and posters[0] >= 1:
+			b += 0.6
+			continue
+		var hs: Array = HUNG_SIZES[id]
+		var w: float = hs[0]
+		if b + w > run.y:
+			break
+		if _hung_piece(k, span, dir, id, b + w * 0.5, r):
+			if id == "poster":
+				posters[0] += 1
+			b += w + r.randf_range(0.4, 1.6)
+		else:
+			b += 0.45
 
 
 func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: String, a: float, w: float, depth: float,

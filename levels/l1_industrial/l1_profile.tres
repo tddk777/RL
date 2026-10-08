@@ -401,6 +401,7 @@ abut_chance = 0.65
 yards = 1
 breaches = 10
 vents = 8
+split_chance = 0.8
 corridors = Array[ExtResource("3_lhbt5")]([SubResource("Resource_mkti5"), SubResource("Resource_nscfd"), SubResource("Resource_c7bbo")])
 yard = SubResource("Resource_rre1a")
 tunnel = SubResource("Resource_mpg1g")

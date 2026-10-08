@@ -121,6 +121,15 @@ func _run() -> void:
 						var sp := level.builder.edge_span(L.cell_origin(x, z, s), d)
 						var at := sp.origin + sp.u * ((g.x + g.y) * 0.5)
 						views.append([key, at - v * 3.2, v, -6.0 if key == "breach" else -18.0])
+				if L.has_split(x, z, s) and odd.get("split", 0) < 2:
+					# From the front room toward the partition's doorway, then inside the back room.
+					odd["split"] = odd.get("split", 0) + 1
+					var psp := level.builder.split_span(L.cell_origin(x, z, s), L.split_side(x, z, s))
+					var door := L.split_door(x, z, s)
+					var at := psp.origin + psp.u * ((door.x + door.y) * 0.5)
+					views.append(["split_front_%d" % odd["split"], at + psp.m * 4.2 + psp.u * (L.cell * 0.5 - (door.x + door.y) * 0.5) * 0.6,
+						(at - (at + psp.m * 4.2 + psp.u * (L.cell * 0.5 - (door.x + door.y) * 0.5) * 0.6)).normalized(), -8.0])
+					views.append(["split_back_%d" % odd["split"], at - psp.m * 0.9, (psp.u * (1.0 if door.x < L.cell * 0.5 else -1.0) - psp.m * 0.4).normalized(), -10.0])
 				if L.has_drop(x, z, s) and not odd.has("drop"):
 					odd["drop"] = true
 					var hr := level.builder.drop_rect(x, z, s)

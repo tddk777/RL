@@ -200,6 +200,7 @@ func _cell(d: ChunkData, x: int, z: int, s: int, full: bool) -> void:
 		_wall(d, x, z, s, o, dir, wall_mat, st, zn, full)
 	_pillars(d, x, z, s, wall_mat)
 	_partials(d, x, z, s, o, wall_mat)
+	_split(d, x, z, s, o, st, zn, room, wall_mat)
 	_chamfers(d, x, z, s, o, wall_mat, zn, full)
 	if flags & LevelLayout.NARROW and k == LevelLayout.Kind.FLOOR:
 		_narrow(d, x, z, s, o, st, wall_mat)
@@ -211,6 +212,8 @@ func _cell(d: ChunkData, x: int, z: int, s: int, full: bool) -> void:
 		pieces.dress(d, x, z, s, o, st, zn, room, flags, full)
 		if full and k == LevelLayout.Kind.FLOOR:
 			_lights(d, x, z, s, o, st, zn, room, flags)
+			if L.has_split(x, z, s):
+				_back_room_light(d, x, z, s, o, st)
 
 
 ## Direction the overcast daylight comes from (fixed per level seed).
@@ -1432,6 +1435,40 @@ func _partials(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: StringName
 		sbox(d.geo, sp, free_end - 0.2, free_end + 0.2, y0, top, 0.42, 0.0, &"concrete_dark", &"concrete")
 
 
+## The partition of a split cell, along the back room's side: SPLIT_BACK in
+## from that edge line, `m` toward the front room.
+func split_span(o: Vector3, side: int) -> Span:
+	var e := edge_span(o, side)
+	return Span.new(e.origin + e.m * LevelLayout.SPLIT_BACK, e.u, e.m, C)
+
+
+## A thin partition walling off a small back room (layout SPLIT), a doorway
+## near one end with a steel frame. Its ends sink into the walls it meets,
+## its foot into the floor and its head into the ceiling, so none of its
+## faces lies in another's plane.
+func _split(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn: LevelLayout.Zone,
+		room: LevelLayout.Room, mat: StringName) -> void:
+	if not L.has_split(x, z, s):
+		return
+	var sp := split_span(o, L.split_side(x, z, s))
+	var door := L.split_door(x, z, s)
+	var h := LevelLayout.SPLIT_DOOR_H
+	var pt := LevelLayout.SPLIT_T
+	var top := H - 0.25 if slab_over(x, z, s) else 3.0
+	var hc := ceiling_height(st, zn, room, x, z, s)
+	if hc < H - 0.01:
+		top = minf(top, hc + 0.05)
+	wall_run(d.geo, sp, T * 0.25, C - T * 0.25, -0.05, top, [[door.x, door.y, 0.0, h]], [[0.0, pt, mat]])
+	sbox(d.geo, sp, door.x - 0.05, door.x + 0.03, 0.0, h + 0.03, pt + 0.05, 0.0, &"rusted_metal")
+	sbox(d.geo, sp, door.y - 0.03, door.y + 0.05, 0.0, h + 0.03, pt + 0.05, 0.0, &"rusted_metal")
+	sbox(d.geo, sp, door.x - 0.07, door.y + 0.07, h - 0.03, h + 0.08, pt + 0.07, 0.0, &"rusted_metal")
+	# Skirting along both faces, stopping at the frame.
+	for side: float in [-1.0, 1.0]:
+		var off := side * (pt * 0.5 + 0.012)
+		sbox(d.geo, sp, T * 0.5 - 0.01, door.x - 0.06, 0.0, 0.11, 0.024, off, &"gun_metal")
+		sbox(d.geo, sp, door.y + 0.06, C - T * 0.5 + 0.01, 0.0, 0.11, 0.024, off, &"gun_metal")
+
+
 ## Corners of the cell cut at 45 degrees: a diagonal wall (with a window if
 ## the walls beside it have them) and posts where it meets the straight walls.
 func _chamfers(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: StringName, zn: LevelLayout.Zone,
@@ -2174,6 +2211,11 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 			var tiled := hc < H - 0.01 and s >= 0
 			var pos := o + Vector3(C * 0.5, hc - (0.07 if tiled else 1.0), C * 0.5)
 			var yaw := 0.0 if r.randf() < 0.5 else PI * 0.5
+			if L.has_split(x, z, s):
+				# Over the middle of the front room, along the partition.
+				var sp := split_span(o, L.split_side(x, z, s))
+				pos += sp.m * ((C - LevelLayout.SPLIT_BACK) * 0.5 - (C * 0.5 - LevelLayout.SPLIT_BACK))
+				yaw = PI * 0.5 if absf(sp.u.z) > 0.5 else 0.0
 			if narrow:
 				yaw = PI * 0.5 if L.open_edges(x, z, s) & 5 else 0.0
 			var prop := kit(d, "fluorescent", pos, yaw, {"dead": not working})
@@ -2195,6 +2237,27 @@ func _lights(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle, zn
 					"color": st.light_color, "energy": st.light_energy, "range": top + 4.0, "angle": 58.0,
 					"shadow": r.randf() < 0.5, "flicker": 0.85 if flicker else 0.0, "prop": prop, "emissive": "Bulb",
 					"fog": 1.4})
+
+
+## The back room of a split cell: a bulkhead lamp beside its doorway, when it
+## has one at all.
+func _back_room_light(d: ChunkData, x: int, z: int, s: int, o: Vector3, st: ZoneStyle) -> void:
+	var r := rng(x, z, s, 4)
+	if r.randf() > 0.6:
+		return
+	var working := r.randf() < st.light_working * 0.7
+	var sp := split_span(o, L.split_side(x, z, s))
+	var door := L.split_door(x, z, s)
+	var inward := -sp.m  # into the back room
+	var along := door.y + 0.7 if door.x < C * 0.5 else door.x - 0.7  # beside the doorway (its plate is over it)
+	var pos := sp.origin + sp.u * along - sp.m * (LevelLayout.SPLIT_T * 0.5 + Detailer.NUDGE) \
+		+ Vector3.UP * (LevelLayout.SPLIT_DOOR_H + 0.25)
+	var yaw := atan2(inward.x, inward.z)
+	var prop := kit(d, "cage_lamp", pos, yaw, {"dead": not working})
+	if working:
+		d.lights.append({"type": "omni", "position": pos + Basis(Vector3.UP, yaw) * Vector3(0, -0.1, 0.25),
+			"color": st.light_color, "energy": st.light_energy * 0.6, "range": 5.0, "shadow": false,
+			"flicker": 0.85 if r.randf() < st.flicker_chance else 0.0, "prop": prop, "emissive": "Bulb", "fog": 1.0})
 
 
 func _wall_free(x: int, z: int, s: int, dir: int) -> bool:

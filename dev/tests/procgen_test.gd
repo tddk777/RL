@@ -165,6 +165,26 @@ func _run() -> void:
 			print("INFO  door cut off: %s" % b)
 	check(blocked.size() <= doors / 100, "both sides of every door reachable (%d doors, %d cut off)" % [doors, blocked.size()])
 
+	# Split rooms: the back room is reachable through the partition's doorway.
+	var splits := 0
+	var shut: Array = []
+	for s: int in L.all_storeys():
+		for z in L.size.y:
+			for x in L.size.x:
+				if not L.has_split(x, z, s) or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				splits += 1
+				var psp := level.builder.split_span(L.cell_origin(x, z, s), L.split_side(x, z, s))
+				var door := L.split_door(x, z, s)
+				var want := psp.origin + psp.u * ((door.x + door.y) * 0.5) - psp.m * 1.0
+				var q := NavigationServer3D.map_get_closest_point(map, want + Vector3.UP * 0.3)
+				var path := nav_path(map, start, q)
+				if q.distance_to(want) > 0.8 or path.size() < 2 or path[path.size() - 1].distance_to(q) > 0.5:
+					shut.append(Vector3i(x, z, s))
+	if not shut.is_empty():
+		print("INFO  back rooms cut off: %s" % [shut])
+	check(shut.is_empty(), "back rooms of split rooms reachable (%d of %d)" % [splits - shut.size(), splits])
+
 	# Every exit is reachable by navigation from the spawn (to the clear lane in front of its door).
 	var exit_rec: Dictionary = L.exits[0]
 	var exit_cell: Vector3i = exit_rec["cell"]

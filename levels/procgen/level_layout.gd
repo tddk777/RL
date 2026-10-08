@@ -30,6 +30,14 @@ const BREACH := 16  # << dir: a hole broken through the wall on that edge
 const PODIUM := 256 # a raised platform stands in the cell (steps up to it)
 const PIT := 512    # a sunken pit is let into the floor (steps down into it)
 const DROP := 1024  # the floor has broken through in one corner (bits 11-12): a way down, not back up
+const SPLIT := 1 << 13  # a partition walls off a small back room along one side (bits 14-15), doorway at one end (bit 16)
+
+## Split cells: the partition's middle is SPLIT_BACK in from that side's edge
+## line; it is SPLIT_T thick with a SPLIT_DOOR wide doorway near one end.
+const SPLIT_BACK := 3.0
+const SPLIT_T := 0.14
+const SPLIT_DOOR := 1.2
+const SPLIT_DOOR_H := 2.1
 
 ## Corners of a cell: 0 = N-W, 1 = N-E, 2 = S-E, 3 = S-W. CORNER_DIRS[c] are
 ## the two sides that meet there.
@@ -320,6 +328,35 @@ func has_drop(x: int, z: int, s: int) -> bool:
 
 func drop_corner(x: int, z: int, s: int) -> int:
 	return (extra_at(x, z, s) >> 11) & 3
+
+
+func has_split(x: int, z: int, s: int) -> bool:
+	return inside(x, z, s) and extra_at(x, z, s) & SPLIT != 0
+
+
+## The side the back room is on.
+func split_side(x: int, z: int, s: int) -> int:
+	return (extra_at(x, z, s) >> 14) & 3
+
+
+## The doorway through the partition: start and end along the side's edge span.
+func split_door(x: int, z: int, s: int) -> Vector2:
+	var mid := 1.75 if (extra_at(x, z, s) >> 16) & 1 == 0 else cell - 1.75
+	return Vector2(mid - SPLIT_DOOR * 0.5, mid + SPLIT_DOOR * 0.5)
+
+
+## Which part of a split cell a cell-local point (x, z in 0..cell) is in.
+func in_back_room(x: int, z: int, s: int, local: Vector2) -> bool:
+	if not has_split(x, z, s):
+		return false
+	match split_side(x, z, s):
+		0:
+			return local.y < SPLIT_BACK
+		1:
+			return local.x > cell - SPLIT_BACK
+		2:
+			return local.y > cell - SPLIT_BACK
+	return local.x < SPLIT_BACK
 
 
 func has_partial(x: int, z: int, s: int, dir: int) -> bool:
