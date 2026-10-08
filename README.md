@@ -85,8 +85,11 @@ All local installs for this project go on the **E: drive** (see `CLAUDE.md`).
 | Action | Key |
 |---|---|
 | Move | W A S D |
-| Sprint / crouch / jump | Shift / Ctrl or C / Space |
+| Run / crouch (hold) / prone (toggle) | Shift / Ctrl or C / Z |
+| Jump, vault, climb up | Space (moving into waist- to chest-high cover or a ledge vaults or climbs it) |
+| Lean left / right | Q / E (hold) |
 | Fire / aim | Left / right mouse |
+| Hold breath | Shift while aiming |
 | Reload / fire mode | R / B |
 | Weapons | 1-5, in the order you picked them up |
 | Interact | F |
@@ -96,5 +99,6 @@ All local installs for this project go on the **E: drive** (see `CLAUDE.md`).
 
 - Architecture and conventions: `CLAUDE.md`
 - How to add weapons, attachments, enemies, levels: `docs/ADDING_CONTENT.md`
-- Tests: `godot --headless res://dev/tests/smoke_test.tscn` (end to end) and
+- Tests: `godot --headless res://dev/tests/smoke_test.tscn` (end to end),
+  `godot --headless res://dev/tests/movement_test.tscn` (running, stamina, vault, mantle, prone, lean) and
   `godot --headless res://dev/tests/procgen_test.tscn` (level generation, navigation, stairs, exits)

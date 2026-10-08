@@ -59,7 +59,8 @@ core/            Engine-agnostic building blocks
   health_component, hitbox, hit_info, interactable, surface, layers, ik,
   action_timeline, mesh_kit (procedural modelling, also used by generators)
 weapons/         Weapon (runtime firearm), WeaponModel (marker contract), MuzzleFlash
-player/          Player (FPS controller) + WeaponHolder (viewmodel, ADS, sway, IK arms)
+player/          Player (FPS controller: stand/crouch/prone, stamina, lean, vault and
+                 mantle, aim sway that shots follow) + WeaponHolder (viewmodel, ADS, IK arms)
 characters/      NPCBody (body contract), Mannequin (rigged UAL body: clips + arm IK +
                  bone hitboxes), Humanoid (procedural fallback), ArmRig (IK arm)
 ai/              NPC, Perception (sight + hearing), AIBrain + AIState scripts in states/
@@ -231,6 +232,7 @@ file as long as the contract above is kept.
 godot --headless --import                              # re-import, surfaces parse errors
 godot --headless res://dev/tests/smoke_test.tscn       # end-to-end test, prints PASS/FAIL, exit code
 godot --headless res://dev/tests/procgen_test.tscn     # generation, navigation, stairs, doors, exits, pickups
+godot --headless res://dev/tests/movement_test.tscn    # running, stamina, aim sway, vault, mantle, prone, lean
 godot --headless --script res://dev/tests/layout_test.gd   # layout invariants over several seeds
 godot --rendering-driver vulkan res://dev/tests/smoke_test.tscn -- <dir>   # also saves screenshots
 godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type, plus views from outside

@@ -12,12 +12,21 @@ extends Control
 
 var _player: Player
 var _hurt: float = 0.0
+## Thin, dim bar under the condition bar; fades out when rested.
+var _stamina_bar: ProgressBar
 
 
 func _ready() -> void:
 	Events.player_spawned.connect(_bind)
 	Events.settings_changed.connect(_apply_settings)
 	_prompt.text = ""
+	_stamina_bar = _health_bar.duplicate() as ProgressBar
+	_stamina_bar.name = "Stamina"
+	_stamina_bar.custom_minimum_size = Vector2(0, 2)
+	_stamina_bar.max_value = 1.0
+	_stamina_bar.step = 0.0
+	_stamina_bar.modulate = Color(0.75, 0.78, 0.8, 0.0)
+	_health_bar.get_parent().add_child(_stamina_bar)
 	_apply_settings()
 
 
@@ -37,6 +46,10 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_player):
 		low = clampf(1.0 - _player.health.ratio() / 0.35, 0.0, 1.0) * 0.55
 	(_vignette.material as ShaderMaterial).set_shader_parameter(&"intensity", maxf(_hurt, low))
+	if is_instance_valid(_player):
+		_stamina_bar.value = _player.stamina
+		var show := 0.0 if _player.stamina > 0.98 else (0.9 if _player.exhausted else 0.55)
+		_stamina_bar.modulate.a = move_toward(_stamina_bar.modulate.a, show, delta * 1.5)
 	if not is_instance_valid(_player) or _player.current_weapon == null:
 		_weapon_label.text = ""
 		_ammo_label.text = ""
