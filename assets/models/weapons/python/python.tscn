@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_dwum5"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/python/python_body.res" id="2_oo8tc"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/python/python_bolt.res" id="3_vntmd"]
+
+[node name="Python" type="Node3D" unique_id=1494859494]
+script = ExtResource("1_dwum5")
+bolt_travel = Vector3(-0.03, 0, 0)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=143921729]
+mesh = ExtResource("2_oo8tc")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=1121841616]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1112875470]
+mesh = ExtResource("3_vntmd")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1195188198]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.18)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=218287903]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.04)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=1342707528]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.024, 0.005)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=541127637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07, 0.015)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1352908294]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.022, -0.08, 0.008)
+gizmo_extents = 0.02

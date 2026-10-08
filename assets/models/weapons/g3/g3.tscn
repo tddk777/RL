@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_k3bpb"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/g3/g3_body.res" id="2_3mivs"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/g3/g3_magazine.res" id="3_mfdin"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/g3/g3_bolt.res" id="4_o6ixr"]
+
+[node name="G3" type="Node3D" unique_id=695129479]
+script = ExtResource("1_k3bpb")
+bolt_travel = Vector3(0, 0, 0.08)
+magazine_drop = Vector3(0, -0.22, -0.02)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=344210998]
+mesh = ExtResource("2_3mivs")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=380916630]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=1138077274]
+mesh = ExtResource("3_mfdin")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=1428144632]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1650271807]
+mesh = ExtResource("4_o6ixr")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1329256414]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.76)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=228325092]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.006, -0.18)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=102907255]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.02)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=55576951]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.03)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1233913469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -0.43)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=1276692962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.76)
+gizmo_extents = 0.02

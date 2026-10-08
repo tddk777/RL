@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AttachmentData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/fx/scope_overlay_pso1.png" id="1_hptfh"]
+[ext_resource type="PackedScene" path="res://assets/models/attachments/scope_pso1/scope_pso1.tscn" id="2_w1qxc"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_22mky"]
+
+[resource]
+script = ExtResource("3_22mky")
+mount_type = &"svd_rail"
+model_scene = ExtResource("2_w1qxc")
+ads_time_multiplier = 1.15
+ads_fov = 17.0
+ads_overlay = ExtResource("1_hptfh")
+id = &"scope_pso1"
+display_name = "PSO-1 4x scope"
+description = "Soviet side-mounted marksman scope with chevron reticle and rangefinder."
+weight_kg = 0.6

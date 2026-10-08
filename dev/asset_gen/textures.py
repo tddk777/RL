@@ -1644,6 +1644,49 @@ def fx_scope_overlay():
     return np.concatenate([col, alpha[..., None]], -1)
 
 
+def fx_scope_pso1():
+    """PSO-1 reticle: the aiming chevron, three smaller holdover chevrons
+    under it, a windage scale either side, the stadiametric rangefinder
+    curve lower left."""
+    w = 1024
+    ss = 2
+    W = w * ss
+    dx, dy = _grid_xy(W, W, W / 2, W / 2)
+    dx, dy = dx / ss, dy / ss
+    r = np.hypot(dx, dy)
+    R = 0.46 * w
+    outside = sstep(R - 1.0, R + 1.0, r)
+    vign = 0.8 * sstep(R - 80, R, r) ** 2
+    lw = 1.4
+
+    def chevron(cy, size):
+        # Inverted V with its apex at (0, cy): two strokes down-left and down-right.
+        u = dy - cy
+        d1 = np.abs(u - np.abs(dx) * 1.0) / np.sqrt(2.0)
+        inside = (u >= 0) & (u <= size) & (np.abs(dx) <= size)
+        return sstep(lw + 0.5, lw - 0.5, d1) * inside
+
+    marks = chevron(0.0, 26.0)
+    for k in range(1, 4):
+        marks = np.maximum(marks, chevron(k * 62.0, 15.0))
+    # Windage scale: ticks every 20 px either side, longer every 100.
+    scale = sstep(lw + 0.5, lw - 0.5, np.abs(dy)) * (np.abs(dx) > 70) * (np.abs(dx) < 300)
+    for k in range(4, 16):
+        h = 14.0 if k % 5 == 0 else 7.0
+        for sgn in (-1, 1):
+            scale = np.maximum(scale, sstep(lw + 0.5, lw - 0.5, np.abs(dx - sgn * k * 20)) * (dy < 0) * (dy > -h))
+    # Rangefinder: a horizontal base line and a curved upper line, lower left.
+    base = sstep(lw + 0.5, lw - 0.5, np.abs(dy - 210)) * (dx > -330) * (dx < -90)
+    t = np.clip((dx + 330) / 240.0, 0, 1)
+    curve_y = 210 - (10 + 60 * (1 - t) ** 1.6)
+    curve = sstep(lw + 0.5, lw - 0.5, np.abs(dy - curve_y)) * (dx > -330) * (dx < -90)
+    cross = np.maximum.reduce([marks, scale, base, curve])
+    alpha = np.clip(np.maximum.reduce([outside, vign, cross]), 0, 1)
+    alpha = alpha.reshape(w, ss, w, ss).mean(axis=(1, 3))
+    col = np.zeros((w, w, 3), F32)
+    return np.concatenate([col, alpha[..., None]], -1)
+
+
 def fx_light_cone():
     w = 128
     x = (np.arange(w, dtype=F32) + 0.5) / w
@@ -1668,6 +1711,7 @@ FX = {
     "blood_splatter": fx_blood_splatter,
     "dust_mote": fx_dust_mote,
     "scope_overlay": fx_scope_overlay,
+    "scope_overlay_pso1": fx_scope_pso1,
     "light_cone_falloff": fx_light_cone,
 }
 

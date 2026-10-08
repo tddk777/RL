@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AmmoData" format=3]
+
+[ext_resource type="Script" path="res://core/data/ammo_data.gd" id="1_o0rqo"]
+
+[resource]
+script = ExtResource("1_o0rqo")
+caliber = &"12ga"
+damage = 13.0
+pellets = 9
+pellet_spread = 2.6
+id = &"12ga_00buck"
+display_name = "12 gauge 00 buckshot"
+description = "Nine lead pellets. Devastating close, useless far."
+weight_kg = 0.04

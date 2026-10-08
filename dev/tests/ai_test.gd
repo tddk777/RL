@@ -88,7 +88,9 @@ func _wait(seconds: float) -> void:
 
 
 func _spawn(p: Vector3) -> NPC:
-	var data := Registry.enemy(&"scavenger")
+	# Everyone on the default rifle: this tests behaviour, not the weapon draw.
+	var data := Registry.enemy(&"scavenger").duplicate() as EnemyData
+	data.weapon_pool = []
 	var npc := data.scene.instantiate() as NPC
 	npc.data = data
 	add_child(npc)
@@ -127,9 +129,9 @@ func _log(npcs: Array, t: float) -> void:
 				c.get(&"_reaction"), sp.kind if sp else &"-"]
 			extra += " trig=%s cd=%.2f mode=%d burst=%d pause=%.2f pulse=%.2f" % [n.weapon.get(&"_trigger"), n.weapon.get(&"_cooldown"),
 				n.weapon.current_mode(), c.get(&"_burst_left"), c.get(&"_pause"), c.get(&"_pulse")]
-		print("  t%5.1f %s %-11s %-10s %s crouch=%s sup=%.2f aw=%.2f rounds=%d role=%s%s" % [t, n.name, n.brain.current_name, _tactic(n),
-			n.global_position.snapped(Vector3(0.1, 0.1, 0.1)), n.crouched, n.suppression, n.perception.awareness,
-			n.weapon.loaded_rounds(), n.director.role_of(n), extra])
+		print("  t%5.1f %s %-11s %-10s %s crouch=%s sup=%.2f aw=%.2f rounds=%d role=%s agg=%.2f vuln=%s%s" % [t, n.name,
+			n.brain.current_name, _tactic(n), n.global_position.snapped(Vector3(0.1, 0.1, 0.1)), n.crouched, n.suppression,
+			n.perception.awareness, n.weapon.loaded_rounds(), n.director.role_of(n), n.aggression, n.director.player_vulnerable(), extra])
 
 
 func _hidden_from_player(npc: NPC) -> bool:
@@ -201,8 +203,18 @@ func _run() -> void:
 	check(flanked, "someone works round the player's side")
 
 	# 4. The player reloads where they can hear: someone pushes.
+	# Some way off the nearest of them (close enough to hear the magazine,
+	# far enough that closing in is a move worth making).
 	var pushed := false
-	player.global_position = Vector3(0, 0, 4)
+	var nearest: NPC = null
+	for n: NPC in squad:
+		if is_instance_valid(n) and n.alive and (nearest == null
+				or n.global_position.distance_to(player.global_position) < nearest.global_position.distance_to(player.global_position)):
+			nearest = n
+	if nearest:
+		var away := (player.global_position - nearest.global_position)
+		away.y = 0.0
+		player.global_position = nearest.global_position + away.normalized() * 14.0
 	await _wait(0.5)
 	Events.actor_reloading.emit(player)
 	for n: NPC in squad:

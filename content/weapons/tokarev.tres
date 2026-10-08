@@ -51,6 +51,7 @@ loudness = 112.0
 muzzle_flash_scale = 0.6
 casing_scale = 0.8
 id = &"tokarev"
+effective_range = 22.0
 display_name = "TT-33"
 description = "Tokarev pistol. Eight rounds of hot 7.62x25 that punch through cover; no safety to speak of."
 weight_kg = 0.85

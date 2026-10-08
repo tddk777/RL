@@ -570,6 +570,43 @@ GUNS = {
                                                           (0.030, 1500, 0.08, 0.26),
                                                           (0.034, 2900, 0.04, 0.12)],
                   drive=2.2, rt60=1.25, wet=0.28),
+    # 12 gauge buckshot: a huge rounded boom, barely a crack.
+    "remington870": dict(crack=0.3, blast=1.2, nwave_ms=0.2, crack_hp=1500,
+                         band=(90, 4500), bright_t60=0.12, body_t60=0.28, dark_lp=900, dark_gain=1.7,
+                         boom=(120, 40, 0.016, 0.24, 0.7), mech=[(0.003, 2000, 0.05, 0.08)],
+                         drive=3.2, rt60=1.7, wet=0.34),
+    # Open bolt: the bolt slamming forward is half the sound.
+    "uzi": dict(crack=0.35, blast=1.0, nwave_ms=0.18, crack_hp=2400,
+                band=(220, 4200), bright_t60=0.05, body_t60=0.10, dark_lp=1400, dark_gain=1.0,
+                boom=(220, 90, 0.007, 0.08, 0.2), mech=[(0.004, 2200, 0.06, 0.25), (0.022, 1300, 0.09, 0.35)],
+                drive=2.0, rt60=1.15, wet=0.25),
+    "fal": dict(crack=1.0, blast=1.1, nwave_ms=0.36, crack_hp=1700,
+                band=(90, 6000), bright_t60=0.12, body_t60=0.26, dark_lp=1000, dark_gain=1.5,
+                boom=(140, 46, 0.014, 0.22, 0.55), mech=[(0.003, 2600, 0.05, 0.10), (0.045, 1400, 0.10, 0.16)],
+                drive=2.9, rt60=1.7, wet=0.34),
+    # Roller-delayed: a hard metallic slap after the blast.
+    "g3": dict(crack=1.0, blast=1.1, nwave_ms=0.35, crack_hp=1800,
+               band=(100, 6500), bright_t60=0.11, body_t60=0.24, dark_lp=1050, dark_gain=1.45,
+               boom=(145, 48, 0.013, 0.2, 0.5), mech=[(0.003, 2900, 0.05, 0.12), (0.030, 1800, 0.12, 0.22)],
+               drive=2.8, rt60=1.65, wet=0.33),
+    # Short barrel: a vicious, bright blast.
+    "aks74u": dict(crack=0.8, blast=1.2, nwave_ms=0.24, crack_hp=2600,
+                   band=(200, 8000), bright_t60=0.09, body_t60=0.15, dark_lp=1500, dark_gain=1.0,
+                   boom=(190, 70, 0.009, 0.12, 0.3), mech=[(0.003, 2600, 0.05, 0.10), (0.045, 1300, 0.10, 0.15)],
+                   drive=2.6, rt60=1.4, wet=0.30),
+    "svd": dict(crack=1.0, blast=1.1, nwave_ms=0.4, crack_hp=1500,
+                band=(80, 6000), bright_t60=0.13, body_t60=0.30, dark_lp=900, dark_gain=1.6,
+                boom=(130, 42, 0.016, 0.26, 0.6), mech=[(0.003, 2400, 0.05, 0.08), (0.050, 1200, 0.10, 0.14)],
+                drive=3.0, rt60=1.8, wet=0.36),
+    "beretta92": dict(crack=0.2, blast=0.8, nwave_ms=0.12, crack_hp=2400,
+                      band=(220, 5000), bright_t60=0.045, body_t60=0.09, dark_lp=1500, dark_gain=1.0,
+                      boom=(220, 85, 0.007, 0.09, 0.25), mech=[(0.003, 2600, 0.04, 0.12), (0.028, 1700, 0.07, 0.24)],
+                      drive=2.0, rt60=1.2, wet=0.27),
+    # .357 Magnum out of a revolver: loud, with the cylinder gap's spit.
+    "python": dict(crack=0.6, blast=1.15, nwave_ms=0.2, crack_hp=2200,
+                   band=(130, 5500), bright_t60=0.08, body_t60=0.16, dark_lp=1200, dark_gain=1.4,
+                   boom=(170, 55, 0.01, 0.16, 0.5), mech=[(0.003, 3300, 0.03, 0.05)],
+                   drive=2.6, rt60=1.4, wet=0.30),
 }
 
 
@@ -641,7 +678,11 @@ def seq(events, dur):
     return buf
 
 
-FOLEY_TILT = {"ak47": 0.85, "m16": 1.15, "mp5": 1.0, "m40": 0.95, "m1911": 1.05}
+FOLEY_TILT = {"ak47": 0.85, "m16": 1.15, "mp5": 1.0, "m40": 0.95, "m1911": 1.05, "remington870": 0.9, "uzi": 0.95,
+              "fal": 0.9, "g3": 1.05, "aks74u": 0.95, "svd": 0.88, "beretta92": 1.1, "python": 1.0}
+## Which handling sounds a gun shares (new guns borrow the nearest action).
+FOLEY_STYLE = {"remington870": "pump", "uzi": "mp5", "fal": "ak47", "g3": "mp5", "aks74u": "ak47", "svd": "ak47",
+               "beretta92": "m1911", "python": "revolver"}
 
 
 def foley_finish(name, x, wet=0.10, peak_db=-3.0):
@@ -652,24 +693,30 @@ def foley_finish(name, x, wet=0.10, peak_db=-3.0):
 def gen_weapon_foley(gid):
     k = FOLEY_TILT[gid]
     base = f"weapons/{gid}/"
+    style = FOLEY_STYLE.get(gid, gid)
 
     def R(name):
         return rng_for(f"{gid}_{name}")
 
     # dry fire -----------------------------------------------------------------
     r = R("dry")
-    if gid == "ak47":
+    if style == "ak47":
         ev = [(0.0, mclick(r, 3000 * k, 0.02), 0.18), (0.06, mclick(r, 1700 * k, 0.07), 1.0),
               (0.061, thud(r, 260, 0.04), 0.45)]
-    elif gid == "m16":
+    elif style == "m16":
         ev = [(0.0, mclick(r, 3400 * k, 0.02), 0.2), (0.05, mclick(r, 2500 * k, 0.05), 1.0),
               (0.051, thud(r, 320, 0.03), 0.25)]
-    elif gid == "mp5":
+    elif style == "mp5":
         ev = [(0.0, mclick(r, 2800, 0.015), 0.25), (0.045, mclick(r, 2100, 0.04, hard=6000), 1.0),
               (0.046, thud(r, 420, 0.03, noise_lp=2500), 0.5)]
-    elif gid == "m1911":  # hammer falling on an empty chamber
+    elif style == "m1911":  # hammer falling on an empty chamber
         ev = [(0.0, mclick(r, 3100, 0.015), 0.2), (0.03, mclick(r, 2200, 0.05), 1.0),
               (0.031, thud(r, 380, 0.025), 0.35)]
+    elif style == "revolver":  # double-action pull, hammer on a spent case
+        ev = [(0.0, scrape(r, 0.1, 1500, 5000, grit=0.1), 0.25), (0.12, mclick(r, 2600, 0.04), 1.0),
+              (0.121, thud(r, 420, 0.02), 0.3)]
+    elif style == "pump":  # hammer drop on an empty chamber
+        ev = [(0.0, mclick(r, 2800, 0.02), 0.25), (0.04, mclick(r, 1900, 0.06), 1.0), (0.041, thud(r, 300, 0.03), 0.4)]
     else:
         ev = [(0.0, mclick(r, 3500, 0.015), 0.2), (0.05, mclick(r, 3200, 0.04), 1.0),
               (0.051, spring(r, 2600, 0.09), 0.12)]
@@ -677,26 +724,32 @@ def gen_weapon_foley(gid):
 
     # mag out ------------------------------------------------------------------
     r = R("magout")
-    if gid == "ak47":
+    if style == "ak47":
         ev = [(0.0, mclick(r, 1600 * k, 0.05), 0.7),
               (0.05, scrape(r, 0.2, 600, 4000, grit=0.3), 0.35),
               (0.26, mclick(r, 900, 0.13), 0.75),
               (0.27, grains(r, ns(0.2), 0, 0.15, 14, 1500, 7000, decay=0.05), 0.5),
               (0.27, spring(r, 1400, 0.15), 0.08)]
-    elif gid == "m16":
+    elif style == "m16":
         ev = [(0.0, mclick(r, 2900, 0.03), 0.7),
               (0.035, scrape(r, 0.12, 1500, 7000, grit=0.2), 0.3),
               (0.16, mclick(r, 1750, 0.16, hard=11000), 0.55),
               (0.165, grains(r, ns(0.15), 0, 0.1, 10, 2000, 9000, decay=0.03), 0.35)]
-    elif gid == "mp5":
+    elif style == "mp5":
         ev = [(0.0, mclick(r, 2400, 0.03), 0.75),
               (0.04, scrape(r, 0.16, 900, 5000, grit=0.25), 0.33),
               (0.2, mclick(r, 1300, 0.10), 0.65),
               (0.205, grains(r, ns(0.15), 0, 0.1, 10, 1500, 8000, decay=0.03), 0.35)]
-    elif gid == "m1911":  # mag catch button, magazine slides out of the grip
+    elif style == "m1911":  # mag catch button, magazine slides out of the grip
         ev = [(0.0, mclick(r, 3300, 0.025), 0.75),
               (0.02, scrape(r, 0.09, 1600, 7000, grit=0.15), 0.3),
               (0.12, mclick(r, 1900, 0.06), 0.4)]
+    elif style == "revolver":  # cylinder latch, cylinder swings out, empties tinkle out
+        ev = [(0.0, mclick(r, 3000, 0.03), 0.7), (0.05, scrape(r, 0.08, 1200, 5000), 0.3),
+              (0.13, mclick(r, 1700, 0.07), 0.8),
+              (0.3, grains(r, ns(0.25), 0, 0.2, 18, 3000, 9000, decay=0.06), 0.5)]
+    elif style == "pump":  # nothing comes out: the tube is loaded from below
+        ev = [(0.0, mclick(r, 2400, 0.03), 0.4)]
     else:  # hinged floorplate release (internal magazine)
         ev = [(0.0, mclick(r, 3000, 0.03), 0.7), (0.03, scrape(r, 0.06, 1500, 6000), 0.2),
               (0.09, mclick(r, 1500, 0.08), 0.6), (0.09, spring(r, 1900, 0.18), 0.1)]
@@ -704,23 +757,30 @@ def gen_weapon_foley(gid):
 
     # mag in -------------------------------------------------------------------
     r = R("magin")
-    if gid == "ak47":
+    if style == "ak47":
         ev = [(0.0, scrape(r, 0.12, 700, 4500, grit=0.3), 0.35),
               (0.12, mclick(r, 1400, 0.05), 0.5),
               (0.24, mclick(r, 950, 0.11), 1.0), (0.241, thud(r, 210, 0.05), 0.55),
               (0.245, grains(r, ns(0.12), 0, 0.08, 10, 1500, 7000, decay=0.03), 0.3)]
-    elif gid == "m16":
+    elif style == "m16":
         ev = [(0.0, scrape(r, 0.10, 1500, 7500, grit=0.2), 0.3),
               (0.11, mclick(r, 2600, 0.06, hard=11000), 1.0), (0.112, thud(r, 180, 0.05), 0.5),
               (0.115, grains(r, ns(0.1), 0, 0.06, 8, 2500, 9000, decay=0.02), 0.25)]
-    elif gid == "mp5":
+    elif style == "mp5":
         ev = [(0.0, scrape(r, 0.12, 900, 5500, grit=0.25), 0.3),
               (0.13, mclick(r, 2000, 0.07), 1.0), (0.132, thud(r, 200, 0.05), 0.5),
               (0.14, mclick(r, 3300, 0.03), 0.3)]
-    elif gid == "m1911":  # magazine slapped home
+    elif style == "m1911":  # magazine slapped home
         ev = [(0.0, scrape(r, 0.07, 1500, 7000, grit=0.15), 0.3),
               (0.08, thud(r, 170, 0.05, noise_lp=1200), 0.7),
               (0.081, mclick(r, 2700, 0.05, hard=10000), 1.0)]
+    elif style == "revolver":  # one round into a chamber
+        ev = [(0.0, scrape(r, 0.05, 2500, 9000, rough=0.7), 0.25),
+              (0.055, mclick(r, 4200, 0.04, hard=12000), 0.9), (0.056, thud(r, 600, 0.015), 0.2)]
+    elif style == "pump":  # a shell thumbed into the tube against the spring
+        ev = [(0.0, scrape(r, 0.07, 900, 4000, rough=0.7), 0.35),
+              (0.075, mclick(r, 1500, 0.05), 0.8), (0.076, thud(r, 240, 0.04, noise_lp=1500), 0.6),
+              (0.08, spring(r, 1100, 0.12), 0.12)]
     else:  # single .308 round pushed into the internal magazine
         ev = [(0.0, scrape(r, 0.09, 2000, 8000, rough=0.8), 0.3),
               (0.095, mclick(r, 3900, 0.05, hard=12000), 0.9),
@@ -729,7 +789,7 @@ def gen_weapon_foley(gid):
 
     # charge -------------------------------------------------------------------
     r = R("charge")
-    if gid == "ak47":
+    if style == "ak47":
         ev = [(0.0, mclick(r, 1500, 0.04), 0.5),
               (0.02, scrape(r, 0.15, 700, 5000, rough=0.8, grit=0.4), 0.45),
               (0.17, mclick(r, 1100, 0.07), 0.6),
@@ -738,7 +798,7 @@ def gen_weapon_foley(gid):
               (0.34, grains(r, ns(0.2), 0, 0.14, 22, 1200, 7000, decay=0.04), 0.45),
               (0.335, spring(r, 1250, 0.2), 0.08)]
         dur = 0.9
-    elif gid == "m16":
+    elif style == "m16":
         ev = [(0.0, mclick(r, 2900, 0.03), 0.5),
               (0.02, scrape(r, 0.12, 1500, 7000, grit=0.2), 0.35),
               (0.15, mclick(r, 2000, 0.05), 0.5),
@@ -746,7 +806,7 @@ def gen_weapon_foley(gid):
               (0.302, spring(r, 1900, 0.3), 0.1),
               (0.37, mclick(r, 3200, 0.03), 0.55)]
         dur = 0.8
-    elif gid == "mp5":
+    elif style == "mp5":
         ev = [(0.0, mclick(r, 1800, 0.04), 0.5),
               (0.02, scrape(r, 0.09, 900, 5000, grit=0.2), 0.35),
               (0.11, mclick(r, 2600, 0.04), 0.7),
@@ -754,12 +814,23 @@ def gen_weapon_foley(gid):
               (0.362, mclick(r, 1300, 0.10), 1.0),
               (0.365, grains(r, ns(0.12), 0, 0.08, 12, 1500, 7000, decay=0.025), 0.35)]
         dur = 0.8
-    elif gid == "m1911":  # slide racked back and released
+    elif style == "m1911":  # slide racked back and released
         ev = [(0.0, mclick(r, 2300, 0.03), 0.5),
               (0.01, scrape(r, 0.1, 1300, 7000, grit=0.2), 0.45),
               (0.11, mclick(r, 3000, 0.04), 0.6),
               (0.22, mclick(r, 1800, 0.08), 1.0), (0.221, thud(r, 260, 0.04), 0.5),
               (0.222, spring(r, 2100, 0.15), 0.1)]
+        dur = 0.6
+    elif style == "revolver":  # cylinder snapped shut
+        ev = [(0.0, scrape(r, 0.05, 1500, 6000), 0.2), (0.06, mclick(r, 1900, 0.06), 1.0),
+              (0.061, thud(r, 320, 0.03), 0.45), (0.065, mclick(r, 3600, 0.03), 0.4)]
+        dur = 0.4
+    elif style == "pump":  # shuck-shuck: back (wood on steel, the action bars) and forward
+        ev = [(0.0, mclick(r, 1500, 0.04), 0.6),
+              (0.01, scrape(r, 0.12, 400, 3500, rough=0.9, grit=0.4), 0.55),
+              (0.13, mclick(r, 900, 0.10), 1.0), (0.131, thud(r, 180, 0.06, noise_lp=1200), 0.7),
+              (0.2, scrape(r, 0.1, 500, 3800, rough=0.9, grit=0.3), 0.45),
+              (0.31, mclick(r, 1150, 0.09), 1.0), (0.311, thud(r, 210, 0.05, noise_lp=1300), 0.6)]
         dur = 0.6
     else:  # bolt up, back, forward, down
         ev = [(0.0, mclick(r, 2400, 0.04), 0.6), (0.0, scrape(r, 0.07, 1500, 6000), 0.2),
@@ -773,15 +844,17 @@ def gen_weapon_foley(gid):
 
     # fire select / safety -----------------------------------------------------
     r = R("select")
-    if gid == "ak47":
+    if style == "ak47":
         ev = [(0.0, mclick(r, 1300, 0.08), 1.0), (0.018, mclick(r, 2300, 0.03), 0.4),
               (0.001, thud(r, 300, 0.03), 0.3)]
-    elif gid == "m16":
+    elif style == "m16":
         ev = [(0.0, mclick(r, 3000, 0.035, hard=11000), 1.0), (0.001, thud(r, 380, 0.02), 0.2)]
-    elif gid == "mp5":
+    elif style == "mp5":
         ev = [(0.0, mclick(r, 2600, 0.04, hard=7000), 1.0), (0.001, thud(r, 450, 0.02, noise_lp=2500), 0.3)]
-    elif gid == "m1911":  # thumb safety
+    elif style == "m1911":  # thumb safety
         ev = [(0.0, mclick(r, 3800, 0.02), 0.9), (0.001, thud(r, 500, 0.015), 0.15)]
+    elif style in ("revolver", "pump"):  # crossbolt safety / thumbing the hammer
+        ev = [(0.0, mclick(r, 3200, 0.03), 0.9), (0.001, thud(r, 450, 0.02), 0.2)]
     else:
         ev = [(0.0, mclick(r, 3600, 0.025), 0.8), (0.01, mclick(r, 4400, 0.015), 0.25)]
     write_wav(base + "fire_select.wav", foley_finish("select", seq(ev, 0.3), peak_db=-4.0))
@@ -1587,6 +1660,68 @@ def gen_world():
     write_wav("world/door_locked.wav", finish(reverb(seq(ev, 0.8), ir, 0.2), -4.0, trim_db=-60, lead=8))
 
 
+# =============================================================================
+# People: radio chatter (callouts) and gear rattle (running)
+# =============================================================================
+
+def radio_chatter(r, dur):
+    """A burst of radio traffic: squelch on, a voice too garbled to follow
+    (speech-band noise through two wandering formants, chopped into
+    syllables, clipped by a cheap set), squelch tail."""
+    n = ns(dur)
+    # Syllables: 4-7 per second, uneven, with short gaps.
+    env = np.zeros(n)
+    t = 0.05
+    while t < dur - 0.12:
+        L = r.uniform(0.07, 0.2)
+        s0, s1 = ns(t), min(n, ns(t + L))
+        seg = s1 - s0
+        if seg > 8:
+            env[s0:s1] = np.sin(np.linspace(0, np.pi, seg)) ** 0.6 * r.uniform(0.5, 1.0)
+        t += L + r.uniform(0.02, 0.09)
+    src = white(r, n)
+    f1 = 450 + 350 * smooth_curve(r, n, 6.0)
+    f2 = 1300 + 700 * smooth_curve(r, n, 5.0)
+    voice = np.zeros(n)
+    hop = ns(0.02)
+    for i in range(0, n, hop):
+        a, b = i, min(n, i + hop)
+        seg = src[a:b]
+        voice[a:b] = reson(seg, float(f1[a]), 6.0) + 0.7 * reson(seg, float(f2[a]), 8.0)
+    voice = unit(lp(voice, 3000, 2)) * env
+    voice = sat(voice * 2.5, 3.0)
+    hiss = bp(white(r, n), 400, 3200, 2) * 0.08
+    on = hp(white(r, ns(0.03)), 1500, 2) * env_ad(ns(0.03), 0.001, 0.02)
+    off = bp(white(r, ns(0.12)), 600, 4000, 2) * env_ad(ns(0.12), 0.002, 0.09)
+    y = np.zeros(n + ns(0.15))
+    place(y, mclick(r, 2400, 0.01), 0.0, 0.4)
+    place(y, on, 0.0, 0.5)
+    place(y, voice + hiss, 0.03, 0.8)
+    place(y, off, dur, 0.45)
+    y = bp(y, 300, 3400, 2)
+    return finish(y, -4.0, trim_db=-60, lead=4)
+
+
+def gear_rattle(r):
+    """Kit on a running body: buckles and magazines knocking, webbing rustling."""
+    n = ns(0.35)
+    y = np.zeros(n)
+    for i in range(r.integers(3, 7)):
+        place(y, mclick(r, r.uniform(1800, 4200), r.uniform(0.02, 0.06)), r.uniform(0.0, 0.2), r.uniform(0.2, 0.6))
+    rustle = scrape(r, 0.25, 600, 3500, rough=0.9, grit=0.2)
+    place(y, rustle, 0.0, 0.25)
+    place(y, thud(r, r.uniform(180, 260), 0.04), r.uniform(0.0, 0.05), 0.25)
+    return finish(reverb(y, small_ir("foley", 0.4), 0.06), -8.0, trim_db=-60, lead=4)
+
+
+def gen_people():
+    for i in range(1, 7):
+        r = rng_for(f"radio_{i}")
+        write_wav(f"people/radio_{i}.wav", radio_chatter(r, r.uniform(0.6, 1.5)))
+    for i in range(1, 5):
+        write_wav(f"people/gear_rattle_{i}.wav", gear_rattle(rng_for(f"gear_{i}")))
+
+
 FAMILIES = {
     "world": gen_world,
     "weapons": gen_weapons,
@@ -1596,6 +1731,7 @@ FAMILIES = {
     "ambience": gen_ambience,
     "player": gen_player,
     "ui": gen_ui,
+    "people": gen_people,
 }
 
 

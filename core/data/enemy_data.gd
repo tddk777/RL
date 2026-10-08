@@ -9,6 +9,9 @@ extends Resource
 @export var scene: PackedScene
 @export var max_health: float = 100.0
 @export var weapon: WeaponData
+## If set, each one carries one of these instead (pick weighted by `weapon_weights`).
+@export var weapon_pool: Array[WeaponData] = []
+@export var weapon_weights: Array[float] = []
 
 @export_group("Perception")
 @export var sight_range: float = 45.0

@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/charge.wav" id="1_w02kj"]
+[ext_resource type="Resource" path="res://content/ammo/9x19_fmj.tres" id="2_xrpm4"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_xxa2y"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/shot_distant.wav" id="4_qg1ou"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/dry_fire.wav" id="5_8nfpb"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/fire_select.wav" id="6_f6a7f"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/mag_in.wav" id="7_dgxfj"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/mag_out.wav" id="8_okck3"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/uzi/uzi.tscn" id="9_3lwk1"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_a7nh3"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/shot_1.wav" id="11_ir6d6"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/shot_2.wav" id="12_tw36a"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/uzi/shot_3.wav" id="13_57olm"]
+
+[resource]
+script = ExtResource("10_a7nh3")
+model_scene = ExtResource("9_3lwk1")
+caliber = &"9x19"
+default_ammo = ExtResource("2_xrpm4")
+magazine_size = 32
+muzzle_velocity = 390.0
+spread_hip = 2.8
+spread_ads = 0.4
+spread_moving = 1.0
+effective_range = 25.0
+recoil_vertical = 0.7
+recoil_horizontal = 0.55
+recoil_recovery = 0.75
+kick_back = 0.03
+kick_rotation = 2.4
+ads_time = 0.22
+ads_fov = 60.0
+hip_offset = Vector3(0.15, -0.16, -0.28)
+ads_eye_distance = 0.18
+sway = 0.85
+length = 0.47
+reload_time = 2.3
+reload_empty_time = 2.9
+cycle_time = 0.6
+equip_time = 0.35
+shot_sounds = Array[AudioStream]([ExtResource("11_ir6d6"), ExtResource("12_tw36a"), ExtResource("13_57olm")])
+distant_shot_sound = ExtResource("4_qg1ou")
+dry_fire_sound = ExtResource("5_8nfpb")
+mag_out_sound = ExtResource("8_okck3")
+mag_in_sound = ExtResource("7_dgxfj")
+charge_sound = ExtResource("1_w02kj")
+fire_select_sound = ExtResource("6_f6a7f")
+loudness = 100.0
+muzzle_flash_scale = 0.8
+casing_scale = 0.75
+id = &"uzi"
+display_name = "Uzi"
+description = "Israeli open-bolt SMG. Heavy for its size, steady in a hail of fire, crude sights."
+weight_kg = 3.5

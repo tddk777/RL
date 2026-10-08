@@ -2030,7 +2030,12 @@ func _place_pickups() -> void:
 	_shuffle(far)
 	var used := {}
 	var i := 0
-	for id in profile.weapon_pickups:
+	# A different handful of the guns each run.
+	var guns := Array(profile.weapon_pickups)
+	_shuffle(guns)
+	if profile.weapon_pickup_count > 0:
+		guns.resize(mini(guns.size(), profile.weapon_pickup_count))
+	for id: String in guns:
 		while i < far.size() and used.has(far[i]):
 			i += 1
 		if i >= far.size():
@@ -2038,7 +2043,7 @@ func _place_pickups() -> void:
 		used[far[i]] = true
 		L.pickups.append({"kind": &"weapon", "id": StringName(id), "position": _scatter(far[i]),
 			"yaw": rng.randf() * TAU, "taken": false})
-		i += far.size() / maxi(profile.weapon_pickups.size(), 1) / 2
+		i += far.size() / maxi(guns.size(), 1) / 2
 	var total := 0.0
 	for cal in profile.ammo_table:
 		total += profile.ammo_table[cal][0]

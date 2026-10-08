@@ -16,6 +16,8 @@ enum Feed { MAGAZINE, INTERNAL }
 @export var magazine_size: int = 30
 ## Closed-bolt weapons hold one extra round in the chamber.
 @export var can_chamber_extra: bool = true
+## Spent cases fly out with each shot (not from a revolver).
+@export var ejects_casings: bool = true
 
 @export_group("Firing")
 @export var fire_modes: Array[FireMode] = [FireMode.SEMI, FireMode.AUTO]
@@ -28,6 +30,9 @@ enum Feed { MAGAZINE, INTERNAL }
 @export var spread_ads: float = 0.15
 ## Extra spread while moving at full speed.
 @export var spread_moving: float = 1.5
+## Range (m) the weapon is good to: the AI tries to fight from inside it
+## (shotguns close in, marksman rifles hang back).
+@export var effective_range: float = 30.0
 
 @export_group("Recoil")
 ## Degrees of camera pitch per shot.

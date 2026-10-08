@@ -22,7 +22,8 @@ Everything below is data-driven: the Registry finds any `.tres` placed in
    right side +X, 1 unit = 1 m. An imported `.glb` works: drop it in as a child
    and add the markers.
 2. **Ammo.** If the caliber is new, add an `AmmoData` in `content/ammo/`
-   (`caliber`, `damage`).
+   (`caliber`, `damage`; for shot, `pellets` and `pellet_spread` in degrees,
+   with `damage` per pellet).
 3. **Definition.** In the FileSystem dock: right-click `content/weapons/` >
    New Resource > `WeaponData`. Set `id`, `model_scene`, `caliber`,
    `default_ammo`, fire modes, stats and sounds. The Inspector groups the
@@ -30,9 +31,18 @@ Everything below is data-driven: the Registry finds any `.tres` placed in
 4. Get it into the player's hands: add its id to `weapon_pickups` on a
    level's `LevelProfile` (it lies somewhere in the level, with ammo in
    `ammo_table`), or to `starting_weapon_ids` on `player/player.tscn`. Both
-   are placeholders until loot and inventory are designed.
+   are placeholders until loot and inventory are designed. A level lays out
+   `weapon_pickup_count` of its `weapon_pickups`, a different pick each seed.
+5. **Generated guns.** The built-in ones come from
+   `dev/generators/build_weapons.gd` (models: `-- <id> ...` builds only
+   those), `dev/asset_gen/audio.py weapons` (shots, mechanics, foley) and
+   `dev/generators/build_content.gd` (`-- <id> ...` writes only those
+   resources and leaves the rest alone).
 
-Tuning tips: `hip_offset` places the gun at the hip; `ads_eye_distance` is
+Tuning tips: `effective_range` is how far the gun is any good (NPCs carrying
+it want to fight inside about 60% of it, and play bolder with short-range
+guns); `ejects_casings` off for revolvers and pump actions that eject on the
+pump (the pump sound carries it); `hip_offset` places the gun at the hip; `ads_eye_distance` is
 how far the sight sits from the eye when aiming; `length` controls how early
 the gun pulls back near walls.
 
@@ -69,7 +79,8 @@ the gun pulls back near walls.
    procedural fallback.
 3. **Numbers.** `EnemyData` in `content/enemies/`: scene, health, weapon,
    sight range/FOV, detection time, hearing, aim error, reaction time, bursts,
-   tactics (aggression and skill, each rolled per NPC within a spread; aim
+   `weapon_pool` and `weapon_weights` (each NPC draws its gun from the pool;
+   empty means `weapon`), tactics (aggression and skill, each rolled per NPC within a spread; aim
    settle time and first-shot error; retreat health; suppression tolerance;
    cover search radius; callout range), speeds (walk, run, crouch).
 4. **Place it.** Add an `EnemySpawn` node to a level, set `enemy_id`, and

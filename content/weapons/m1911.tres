@@ -51,6 +51,7 @@ loudness = 105.0
 muzzle_flash_scale = 0.6
 casing_scale = 0.8
 id = &"m1911"
+effective_range = 20.0
 display_name = "M1911"
 description = "Single-action .45 pistol. Seven rounds, heavy kick, very old."
 weight_kg = 1.1

@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/charge.wav" id="1_5oab6"]
+[ext_resource type="Resource" path="res://content/ammo/9x19_fmj.tres" id="2_nl40c"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_bkq4u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/shot_distant.wav" id="4_3ay8c"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/dry_fire.wav" id="5_seh4c"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/fire_select.wav" id="6_i7eog"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/mag_in.wav" id="7_68wi0"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/mag_out.wav" id="8_x7e5a"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/beretta92/beretta92.tscn" id="9_w53kc"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_52m1t"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/shot_1.wav" id="11_l8ayf"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/shot_2.wav" id="12_3t86y"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/beretta92/shot_3.wav" id="13_73dm4"]
+
+[resource]
+script = ExtResource("10_52m1t")
+model_scene = ExtResource("9_w53kc")
+caliber = &"9x19"
+default_ammo = ExtResource("2_nl40c")
+magazine_size = 15
+fire_modes = Array[int]([0])
+rounds_per_minute = 500.0
+muzzle_velocity = 375.0
+spread_hip = 2.6
+spread_ads = 0.3
+spread_moving = 1.1
+effective_range = 20.0
+recoil_vertical = 1.5
+recoil_horizontal = 0.6
+recoil_recovery = 0.75
+kick_back = 0.035
+kick_rotation = 6.5
+ads_time = 0.17
+ads_fov = 62.0
+hip_offset = Vector3(0.12, -0.15, -0.36)
+ads_eye_distance = 0.42
+sway = 0.85
+length = 0.45
+reload_time = 1.6
+reload_empty_time = 2.0
+cycle_time = 0.4
+equip_time = 0.35
+shot_sounds = Array[AudioStream]([ExtResource("11_l8ayf"), ExtResource("12_3t86y"), ExtResource("13_73dm4")])
+distant_shot_sound = ExtResource("4_3ay8c")
+dry_fire_sound = ExtResource("5_seh4c")
+mag_out_sound = ExtResource("8_x7e5a")
+mag_in_sound = ExtResource("7_68wi0")
+charge_sound = ExtResource("1_5oab6")
+fire_select_sound = ExtResource("6_i7eog")
+loudness = 110.0
+muzzle_flash_scale = 0.65
+casing_scale = 0.75
+id = &"beretta92"
+display_name = "Beretta 92"
+description = "Italian service pistol. Fifteen rounds, light recoil, open-top slide."
+weight_kg = 0.95

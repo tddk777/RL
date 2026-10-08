@@ -50,6 +50,7 @@ fire_select_sound = ExtResource("6_7h8hg")
 muzzle_flash_scale = 0.7
 casing_scale = 0.75
 id = &"ppsh41"
+effective_range = 30.0
 display_name = "PPSh-41"
 description = "Wartime submachine gun. 35-round box of 7.62x25, about a thousand rounds a minute."
 weight_kg = 3.6

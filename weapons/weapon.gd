@@ -229,8 +229,10 @@ func _fire_once() -> bool:
 	var spread: float = (data.spread_ads if aiming else data.spread_hip) * _mods["spread"] + spread_bonus
 	var source := aim_source if aim_source else (model.muzzle if model.muzzle else self)
 	var direction := cone(-source.global_basis.z, spread)
-	Ballistics.fire(source.global_position, direction, data.muzzle_velocity * ammo.velocity_multiplier,
-		ammo.damage * data.damage_multiplier, ammo, user, exclude)
+	for i in maxi(ammo.pellets, 1):
+		var dir := direction if ammo.pellets <= 1 else cone(direction, ammo.pellet_spread)
+		Ballistics.fire(source.global_position, dir, data.muzzle_velocity * ammo.velocity_multiplier * randf_range(0.97, 1.03),
+			ammo.damage * data.damage_multiplier, ammo, user, exclude)
 	if _flash:
 		_flash.flash(data.muzzle_flash_scale * _mods["flash"])
 	_play_shot()
@@ -239,7 +241,8 @@ func _fire_once() -> bool:
 		_start_cycle(0.18)
 	else:
 		model.cycle_bolt(minf(data.time_between_shots() * 0.9, 0.08))
-		_eject_casing()
+		if data.ejects_casings:
+			_eject_casing()
 		_chamber_from_magazine()
 	fired.emit(self)
 	ammo_changed.emit(self)

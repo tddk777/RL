@@ -3,6 +3,15 @@
 [ext_resource type="PackedScene" path="res://ai/human_npc.tscn" id="1_huirl"]
 [ext_resource type="Script" path="res://core/data/enemy_data.gd" id="2_umjrn"]
 [ext_resource type="Resource" path="res://content/weapons/ak47.tres" id="3_x4ic0"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="4_5f0w6"]
+[ext_resource type="Resource" path="res://content/weapons/aks74u.tres" id="5_k2dgg"]
+[ext_resource type="Resource" path="res://content/weapons/remington870.tres" id="6_4a7j5"]
+[ext_resource type="Resource" path="res://content/weapons/sks.tres" id="7_cts74"]
+[ext_resource type="Resource" path="res://content/weapons/uzi.tres" id="8_v6bxh"]
+[ext_resource type="Resource" path="res://content/weapons/fal.tres" id="9_snsiw"]
+[ext_resource type="Resource" path="res://content/weapons/g3.tres" id="10_xwxqy"]
+[ext_resource type="Resource" path="res://content/weapons/svd.tres" id="11_k8lvh"]
+[ext_resource type="Resource" path="res://content/weapons/makarov.tres" id="12_xgyua"]
 
 [resource]
 script = ExtResource("2_umjrn")
@@ -10,6 +19,8 @@ id = &"scavenger"
 display_name = "Scavenger"
 scene = ExtResource("1_huirl")
 weapon = ExtResource("3_x4ic0")
+weapon_pool = Array[ExtResource("4_5f0w6")]([ExtResource("3_x4ic0"), ExtResource("5_k2dgg"), ExtResource("6_4a7j5"), ExtResource("7_cts74"), ExtResource("8_v6bxh"), ExtResource("9_snsiw"), ExtResource("10_xwxqy"), ExtResource("11_k8lvh"), ExtResource("12_xgyua")])
+weapon_weights = Array[float]([5.0, 2.0, 2.0, 1.5, 1.0, 0.8, 0.6, 0.5, 0.8])
 sight_range = 40.0
 detection_time = 0.9
 aim_error = 3.2

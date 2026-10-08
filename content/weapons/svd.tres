@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/charge.wav" id="1_8jf3f"]
+[ext_resource type="Resource" path="res://content/ammo/762x54r_lps.tres" id="2_2fu72"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_aiuff"]
+[ext_resource type="Resource" path="res://content/attachments/scope_pso1.tres" id="4_liuvs"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/shot_distant.wav" id="5_qrrd6"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/dry_fire.wav" id="6_qaobo"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/fire_select.wav" id="7_nyx7i"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/mag_in.wav" id="8_qkod4"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/mag_out.wav" id="9_e1n4y"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/svd/svd.tscn" id="10_0a0jv"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="11_iqcde"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/shot_1.wav" id="12_x6r2u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/shot_2.wav" id="13_2iyoj"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/svd/shot_3.wav" id="14_j3qkl"]
+
+[resource]
+script = ExtResource("11_iqcde")
+model_scene = ExtResource("10_0a0jv")
+caliber = &"7.62x54R"
+default_ammo = ExtResource("2_2fu72")
+magazine_size = 10
+fire_modes = Array[int]([0])
+rounds_per_minute = 300.0
+muzzle_velocity = 830.0
+spread_hip = 3.4
+spread_ads = 0.03
+spread_moving = 2.2
+effective_range = 150.0
+recoil_vertical = 2.8
+recoil_horizontal = 0.7
+recoil_recovery = 0.45
+kick_back = 0.07
+kick_rotation = 6.0
+ads_time = 0.38
+ads_fov = 30.0
+hip_offset = Vector3(0.16, -0.17, -0.36)
+ads_eye_distance = 0.07
+sway = 1.35
+length = 1.22
+reload_time = 2.6
+reload_empty_time = 3.3
+cycle_time = 0.9
+mount_types = {
+"optic": ["svd_rail"]
+}
+default_attachments = Array[ExtResource("3_aiuff")]([ExtResource("4_liuvs")])
+shot_sounds = Array[AudioStream]([ExtResource("12_x6r2u"), ExtResource("13_2iyoj"), ExtResource("14_j3qkl")])
+distant_shot_sound = ExtResource("5_qrrd6")
+dry_fire_sound = ExtResource("6_qaobo")
+mag_out_sound = ExtResource("9_e1n4y")
+mag_in_sound = ExtResource("8_qkod4")
+charge_sound = ExtResource("1_8jf3f")
+fire_select_sound = ExtResource("7_nyx7i")
+loudness = 150.0
+muzzle_flash_scale = 1.2
+casing_scale = 1.35
+id = &"svd"
+display_name = "SVD Dragunov"
+description = "Soviet marksman rifle. Ten rounds, semi-auto, a 4x scope. Clumsy indoors."
+weight_kg = 4.3

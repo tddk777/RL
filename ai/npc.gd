@@ -39,6 +39,7 @@ var _has_face_target: bool = false
 var _settle: float = 0.0  # 0 = first wild shots .. 1 = settled
 var _step: float = 0.0
 var _stuck: float = 0.0
+static var _gear: Array[AudioStream] = []
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 
@@ -55,18 +56,44 @@ func _ready() -> void:
 	_aim = Node3D.new()
 	_aim.name = "Aim"
 	add_child(_aim)
-	if data.weapon:
-		weapon = Weapon.create(data.weapon, self)
+	var gun := _pick_weapon()
+	if gun:
+		weapon = Weapon.create(gun, self)
 		weapon.aim_source = _aim
 		weapon.spread_bonus = data.aim_error
 		weapon.exclude = exclude_rids()
 		body.hold_weapon(weapon)
+		if weapon.data.effective_range < 25.0:
+			aggression = minf(aggression + 0.2, 1.0)
 	# Close enough to step exactly into and out of cover.
 	nav.target_desired_distance = 0.45
 	perception.npc = self
 	director = AIDirector.of(self)
 	director.register(self)
 	brain.setup(self)
+
+
+func _pick_weapon() -> WeaponData:
+	if data.weapon_pool.is_empty():
+		return data.weapon
+	var total := 0.0
+	for i in data.weapon_pool.size():
+		total += data.weapon_weights[i] if i < data.weapon_weights.size() else 1.0
+	var roll := randf() * total
+	for i in data.weapon_pool.size():
+		roll -= data.weapon_weights[i] if i < data.weapon_weights.size() else 1.0
+		if roll <= 0.0:
+			return data.weapon_pool[i]
+	return data.weapon_pool.back()
+
+
+## The range they like to fight at: their own preference, held inside what
+## their weapon is good for. Shotguns and SMGs make them bolder.
+func fight_range() -> float:
+	var r := data.preferred_range
+	if weapon:
+		r = minf(r, weapon.data.effective_range * 0.6)
+	return r
 
 
 func exclude_rids() -> Array[RID]:
@@ -256,6 +283,14 @@ func _footsteps(delta: float, speed: float) -> void:
 	if surface and not surface.footstep_sounds.is_empty():
 		var volume := -3.0 if _running else (-17.0 if crouched else -10.0)
 		Audio.play_3d(Audio.pick(surface.footstep_sounds), global_position, &"World", volume, 4.0 if _running else 2.5, 0.08)
+	# Kit rattles when they run.
+	if _running and randf() < 0.6:
+		if _gear.is_empty():
+			for i in 4:
+				var path := "res://assets/audio/people/gear_rattle_%d.wav" % (i + 1)
+				if ResourceLoader.exists(path):
+					_gear.append(load(path))
+		Audio.play_3d(Audio.pick(_gear), global_position + Vector3.UP * 1.0, &"World", -6.0, 3.0, 0.1)
 
 
 func _on_damaged(hit: HitInfo) -> void:

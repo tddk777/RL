@@ -75,6 +75,8 @@ extends Resource
 @export var exits_max: int = 3
 ## Weapon ids placed once each, far from the start.
 @export var weapon_pickups: PackedStringArray = ["mp5", "ak47", "m16", "m40", "makarov", "tokarev", "ppsh41", "sks"]
+## How many of them a run places, picked at random (0 = all).
+@export var weapon_pickup_count: int = 0
 @export var ammo_pickups: int = 14
 ## caliber -> [weight, min rounds, max rounds]
 @export var ammo_table: Dictionary = {

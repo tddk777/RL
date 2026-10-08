@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_cxulp"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/aks74u/aks74u_body.res" id="2_4255t"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/aks74u/aks74u_magazine.res" id="3_87bny"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/aks74u/aks74u_bolt.res" id="4_hrycy"]
+
+[node name="Aks74u" type="Node3D" unique_id=1056578067]
+script = ExtResource("1_cxulp")
+bolt_travel = Vector3(0, 0, 0.075)
+magazine_drop = Vector3(0, -0.24, -0.05)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1929355975]
+mesh = ExtResource("2_4255t")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=1502025868]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=495352532]
+mesh = ExtResource("3_87bny")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=617561610]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=522907745]
+mesh = ExtResource("4_hrycy")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1712237010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.53)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=81397103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.004, -0.165)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=634966844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.044, -0.29)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=1192298197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.095, -0.035)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=555562657]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.026, -0.36)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=667644246]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.53)
+gizmo_extents = 0.02

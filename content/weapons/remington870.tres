@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/charge.wav" id="1_htny3"]
+[ext_resource type="Resource" path="res://content/ammo/12ga_00buck.tres" id="2_q60kw"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_0jnwe"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/shot_distant.wav" id="4_on0rs"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/dry_fire.wav" id="5_aykj7"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/fire_select.wav" id="6_xuxut"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/mag_in.wav" id="7_rvmai"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/mag_out.wav" id="8_ndljp"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/remington870/remington870.tscn" id="9_1tutw"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_3xm8f"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/shot_1.wav" id="11_28o0s"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/shot_2.wav" id="12_mkq5u"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/remington870/shot_3.wav" id="13_3c7bb"]
+
+[resource]
+script = ExtResource("10_3xm8f")
+model_scene = ExtResource("9_1tutw")
+caliber = &"12ga"
+default_ammo = ExtResource("2_q60kw")
+feed = 1
+magazine_size = 4
+fire_modes = Array[int]([3])
+rounds_per_minute = 60.0
+muzzle_velocity = 400.0
+spread_hip = 1.6
+spread_ads = 0.5
+spread_moving = 1.2
+effective_range = 15.0
+recoil_vertical = 4.2
+recoil_horizontal = 1.2
+recoil_recovery = 0.45
+kick_back = 0.09
+kick_rotation = 9.0
+ads_time = 0.3
+ads_fov = 62.0
+hip_offset = Vector3(0.155, -0.165, -0.3)
+ads_eye_distance = 0.12
+sway = 1.1
+length = 1.0
+reload_time = 0.0
+reload_empty_time = 0.0
+cycle_time = 0.5
+shot_sounds = Array[AudioStream]([ExtResource("11_28o0s"), ExtResource("12_mkq5u"), ExtResource("13_3c7bb")])
+distant_shot_sound = ExtResource("4_on0rs")
+dry_fire_sound = ExtResource("5_aykj7")
+mag_out_sound = ExtResource("8_ndljp")
+mag_in_sound = ExtResource("7_rvmai")
+charge_sound = ExtResource("1_htny3")
+fire_select_sound = ExtResource("6_xuxut")
+loudness = 140.0
+muzzle_flash_scale = 1.5
+casing_scale = 1.9
+id = &"remington870"
+display_name = "Remington 870"
+description = "Pump shotgun. Nine pellets per shell: ends arguments in a room, does little past twenty metres."
+weight_kg = 3.6

@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/charge.wav" id="1_sabq0"]
+[ext_resource type="Resource" path="res://content/ammo/762x51_m118.tres" id="2_nnmt5"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_31kbk"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/shot_distant.wav" id="4_jea6s"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/dry_fire.wav" id="5_am7l5"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/fire_select.wav" id="6_hhclf"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/mag_in.wav" id="7_taegj"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/mag_out.wav" id="8_ujahs"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/fal/fal.tscn" id="9_xovqk"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_3p3kp"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/shot_1.wav" id="11_njkwr"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/shot_2.wav" id="12_tkl8c"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/fal/shot_3.wav" id="13_edhte"]
+
+[resource]
+script = ExtResource("10_3p3kp")
+model_scene = ExtResource("9_xovqk")
+caliber = &"7.62x51"
+default_ammo = ExtResource("2_nnmt5")
+magazine_size = 20
+rounds_per_minute = 650.0
+muzzle_velocity = 830.0
+spread_hip = 2.8
+spread_ads = 0.09
+spread_moving = 1.8
+effective_range = 90.0
+recoil_vertical = 2.1
+recoil_horizontal = 0.8
+recoil_recovery = 0.5
+kick_back = 0.06
+kick_rotation = 5.5
+ads_time = 0.33
+ads_fov = 52.0
+ads_eye_distance = 0.12
+sway = 1.25
+length = 1.09
+reload_time = 2.6
+reload_empty_time = 3.3
+cycle_time = 0.9
+shot_sounds = Array[AudioStream]([ExtResource("11_njkwr"), ExtResource("12_tkl8c"), ExtResource("13_edhte")])
+distant_shot_sound = ExtResource("4_jea6s")
+dry_fire_sound = ExtResource("5_am7l5")
+mag_out_sound = ExtResource("8_ujahs")
+mag_in_sound = ExtResource("7_taegj")
+charge_sound = ExtResource("1_sabq0")
+fire_select_sound = ExtResource("6_hhclf")
+loudness = 145.0
+muzzle_flash_scale = 1.3
+casing_scale = 1.3
+id = &"fal"
+display_name = "FN FAL"
+description = "Belgian battle rifle. Long reach and a full-power round; in full auto it climbs off the target."
+weight_kg = 4.3

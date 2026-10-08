@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_4571f"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/svd/svd_body.res" id="2_qng6t"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/svd/svd_magazine.res" id="3_1qr83"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/svd/svd_bolt.res" id="4_017pf"]
+
+[node name="Svd" type="Node3D" unique_id=41979743]
+script = ExtResource("1_4571f")
+bolt_travel = Vector3(0, 0, 0.09)
+magazine_drop = Vector3(0, -0.2, -0.02)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=163906575]
+mesh = ExtResource("2_qng6t")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=684984574]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=448675467]
+mesh = ExtResource("3_1qr83")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=1351773277]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1703968253]
+mesh = ExtResource("4_017pf")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=390365230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.05)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=156893353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.004, -0.17)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=537016256]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.034, -0.24)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=1416056327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.085, 0.045)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1890076962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, -0.45)
+gizmo_extents = 0.02
+
+[node name="Mount_optic" type="Marker3D" parent="." unique_id=755463385]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0, -0.17)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=1898272250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.05)
+gizmo_extents = 0.02

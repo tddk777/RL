@@ -44,6 +44,7 @@ charge_sound = ExtResource("1_kjc0e")
 fire_select_sound = ExtResource("6_by61m")
 loudness = 130.0
 id = &"ak47"
+effective_range = 60.0
 display_name = "AK-47"
 description = "Soviet assault rifle. Heavy round, heavy recoil, runs on anything."
 weight_kg = 3.5

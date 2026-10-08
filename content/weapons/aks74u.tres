@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/charge.wav" id="1_217br"]
+[ext_resource type="Resource" path="res://content/ammo/545x39_7n6.tres" id="2_i17v5"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_01yw3"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/shot_distant.wav" id="4_34ujx"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/dry_fire.wav" id="5_chjhh"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/fire_select.wav" id="6_afq76"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/mag_in.wav" id="7_ohqpu"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/mag_out.wav" id="8_6jl3r"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/aks74u/aks74u.tscn" id="9_ve6ta"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_4ynqd"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/shot_1.wav" id="11_cdovt"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/shot_2.wav" id="12_xhsgm"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/aks74u/shot_3.wav" id="13_vj5yt"]
+
+[resource]
+script = ExtResource("10_4ynqd")
+model_scene = ExtResource("9_ve6ta")
+caliber = &"5.45x39"
+default_ammo = ExtResource("2_i17v5")
+rounds_per_minute = 700.0
+muzzle_velocity = 735.0
+spread_hip = 2.3
+spread_ads = 0.28
+spread_moving = 1.2
+effective_range = 45.0
+recoil_vertical = 1.1
+recoil_horizontal = 0.7
+kick_rotation = 3.6
+ads_time = 0.2
+ads_fov = 58.0
+hip_offset = Vector3(0.15, -0.165, -0.28)
+sway = 0.85
+length = 0.73
+reload_time = 2.3
+reload_empty_time = 3.0
+cycle_time = 0.8
+shot_sounds = Array[AudioStream]([ExtResource("11_cdovt"), ExtResource("12_xhsgm"), ExtResource("13_vj5yt")])
+distant_shot_sound = ExtResource("4_34ujx")
+dry_fire_sound = ExtResource("5_chjhh")
+mag_out_sound = ExtResource("8_6jl3r")
+mag_in_sound = ExtResource("7_ohqpu")
+charge_sound = ExtResource("1_217br")
+fire_select_sound = ExtResource("6_afq76")
+loudness = 140.0
+muzzle_flash_scale = 1.6
+casing_scale = 0.9
+id = &"aks74u"
+display_name = "AKS-74U"
+description = "Soviet carbine. Short, quick to the shoulder, a fireball at the muzzle, a short sight line."
+weight_kg = 2.7

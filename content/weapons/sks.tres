@@ -50,6 +50,7 @@ charge_sound = ExtResource("1_jjpbf")
 fire_select_sound = ExtResource("6_4xhn8")
 loudness = 130.0
 id = &"sks"
+effective_range = 70.0
 display_name = "SKS"
 description = "Semi-automatic carbine. Ten rounds of 7.62x39 in a fixed magazine, loaded through the top."
 weight_kg = 3.85

@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/charge.wav" id="1_m66fn"]
+[ext_resource type="Resource" path="res://content/ammo/762x51_m118.tres" id="2_vnvq2"]
+[ext_resource type="Script" path="res://core/data/attachment_data.gd" id="3_ia3mj"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/shot_distant.wav" id="4_x7752"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/dry_fire.wav" id="5_cyp6e"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/fire_select.wav" id="6_pn6ch"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/mag_in.wav" id="7_n2ex8"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/mag_out.wav" id="8_syjaf"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/g3/g3.tscn" id="9_3qdyc"]
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="10_320th"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/shot_1.wav" id="11_tvad5"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/shot_2.wav" id="12_biq12"]
+[ext_resource type="AudioStream" path="res://assets/audio/weapons/g3/shot_3.wav" id="13_7i8xl"]
+
+[resource]
+script = ExtResource("10_320th")
+model_scene = ExtResource("9_3qdyc")
+caliber = &"7.62x51"
+default_ammo = ExtResource("2_vnvq2")
+magazine_size = 20
+rounds_per_minute = 550.0
+muzzle_velocity = 800.0
+spread_hip = 2.7
+spread_ads = 0.08
+spread_moving = 1.8
+effective_range = 90.0
+recoil_vertical = 2.0
+recoil_horizontal = 0.7
+recoil_recovery = 0.5
+kick_back = 0.06
+kick_rotation = 5.0
+ads_time = 0.32
+ads_fov = 52.0
+sway = 1.25
+length = 1.02
+reload_time = 2.5
+reload_empty_time = 3.2
+cycle_time = 0.8
+shot_sounds = Array[AudioStream]([ExtResource("11_tvad5"), ExtResource("12_biq12"), ExtResource("13_7i8xl")])
+distant_shot_sound = ExtResource("4_x7752")
+dry_fire_sound = ExtResource("5_cyp6e")
+mag_out_sound = ExtResource("8_syjaf")
+mag_in_sound = ExtResource("7_n2ex8")
+charge_sound = ExtResource("1_m66fn")
+fire_select_sound = ExtResource("6_pn6ch")
+loudness = 145.0
+muzzle_flash_scale = 1.2
+casing_scale = 1.3
+id = &"g3"
+display_name = "HK G3"
+description = "German battle rifle. Precise diopter sights, a brutal roller-delayed kick."
+weight_kg = 4.4

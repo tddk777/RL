@@ -49,6 +49,7 @@ loudness = 90.0
 muzzle_flash_scale = 0.7
 casing_scale = 0.75
 id = &"mp5"
+effective_range = 30.0
 display_name = "MP5"
 description = "Roller-delayed submachine gun. Quiet, controllable, short range."
 weight_kg = 2.5

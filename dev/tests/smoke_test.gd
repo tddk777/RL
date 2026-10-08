@@ -241,8 +241,9 @@ func _run() -> void:
 	await wait(0.5)
 	check(not UI.get_node("Scope").visible, "scope overlay hides after aiming")
 
-	# --- Soviet guns (imported models) ---
-	for id: StringName in [&"makarov", &"tokarev", &"ppsh41", &"sks"]:
+	# --- Soviet guns (imported models) and the 1970s-80s set ---
+	for id: StringName in [&"makarov", &"tokarev", &"ppsh41", &"sks", &"remington870", &"uzi", &"fal", &"g3", &"aks74u", &"svd",
+			&"beretta92", &"python"]:
 		var w := player.add_weapon(Registry.weapon(id))
 		player.ammo_reserve[String(w.data.caliber)] = player.count_ammo(w.data.caliber) + 60
 		player.equip(player.weapons.size() - 1)
@@ -254,7 +255,9 @@ func _run() -> void:
 		check(after < before and (after == before - 1 or w.data.id == &"ppsh41"), "%s fires (%d -> %d)" % [w.data.display_name, before, after])
 		await shot("05_%s_hip.png" % id)
 		Input.action_press(&"aim")
-		await wait(0.7)
+		await wait(1.0 if not w.attachments.is_empty() else 0.7)
+		if not w.attachments.is_empty():
+			check(UI.get_node("Scope").visible, "%s scope overlay shows when aiming" % w.data.display_name)
 		await shot("05_%s_ads.png" % id)
 		Input.action_release(&"aim")
 		await wait(0.3)

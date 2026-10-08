@@ -33,7 +33,7 @@ static func find(npc: NPC, threat_eye: Vector3, opts: Dictionary) -> Spot:
 	var origin := npc.global_position
 	var min_r: float = opts.get("min_r", 1.5)
 	var max_r: float = opts.get("max_r", npc.data.cover_radius)
-	var want: float = opts.get("want_range", npc.data.preferred_range)
+	var want: float = opts.get("want_range", npc.fight_range())
 	var flank: Vector3 = opts.get("flank_dir", Vector3.ZERO)
 	var away: bool = opts.get("away", false)
 	var need_shot: bool = opts.get("need_shot", true)

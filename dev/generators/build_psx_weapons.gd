@@ -273,6 +273,7 @@ func _weapon(id: String, scene: PackedScene, ammo: Dictionary) -> void:
 			w.spread_ads = 0.09
 			w.loudness = 130.0
 	w.id = StringName(id)
+	w.effective_range = {"makarov": 18.0, "tokarev": 22.0, "ppsh41": 30.0, "sks": 70.0}[id]
 	w.model_scene = scene
 	w.default_ammo = ammo[w.caliber]
 	for prop in ["spread_moving", "recoil_recovery", "kick_back", "kick_rotation", "ads_time", "ads_fov", "hip_offset",

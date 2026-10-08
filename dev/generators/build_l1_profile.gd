@@ -40,6 +40,14 @@ func _initialize() -> void:
 	p.exits_min = 2
 	p.exits_max = 3
 	p.ammo_pickups = 14
+	p.weapon_pickups = PackedStringArray(["mp5", "ak47", "m16", "m40", "makarov", "tokarev", "ppsh41", "sks", "remington870",
+		"uzi", "fal", "g3", "aks74u", "svd", "beretta92", "python"])
+	p.weapon_pickup_count = 9
+	p.ammo_table = {
+		".45ACP": [5.0, 7, 14], "9x19": [3.0, 15, 30], "7.62x39": [2.0, 10, 30], "5.56x45": [2.0, 10, 30],
+		"7.62x51": [1.0, 5, 10], "9x18": [3.0, 8, 16], "7.62x25": [2.0, 10, 35], "12ga": [1.5, 4, 12],
+		"5.45x39": [2.0, 10, 30], "7.62x54R": [1.0, 5, 10], ".357": [1.5, 6, 12],
+	}
 	p.corpses = 4
 	p.symbols = 3
 	p.odd_corpses = 2

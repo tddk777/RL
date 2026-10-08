@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_w6j51"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/remington870/remington870_body.res" id="2_e0wi6"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/remington870/remington870_bolt.res" id="3_uafg7"]
+
+[node name="Remington870" type="Node3D" unique_id=1167526066]
+script = ExtResource("1_w6j51")
+bolt_travel = Vector3(0, 0, 0.09)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=670231826]
+mesh = ExtResource("2_e0wi6")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=1978105302]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=67011137]
+mesh = ExtResource("3_uafg7")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=785016456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.68)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=572360575]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0, -0.11)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=519128553]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0255, 0)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=589004957]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0.05)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1251878063]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.045, -0.36)
+gizmo_extents = 0.02
+
+[node name="Mount_muzzle" type="Marker3D" parent="." unique_id=954922651]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.68)
+gizmo_extents = 0.02

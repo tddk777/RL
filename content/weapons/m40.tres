@@ -57,6 +57,7 @@ loudness = 160.0
 muzzle_flash_scale = 1.3
 casing_scale = 1.3
 id = &"m40"
+effective_range = 150.0
 display_name = "M40"
 description = "Bolt-action sniper rifle with a fixed 10x scope."
 weight_kg = 6.6

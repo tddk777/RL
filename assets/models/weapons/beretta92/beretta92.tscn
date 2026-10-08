@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_model.gd" id="1_ejer2"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/beretta92/beretta92_body.res" id="2_bbru6"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/beretta92/beretta92_magazine.res" id="3_vfpgy"]
+[ext_resource type="ArrayMesh" path="res://assets/models/weapons/beretta92/beretta92_bolt.res" id="4_abar0"]
+
+[node name="Beretta92" type="Node3D" unique_id=580478168]
+script = ExtResource("1_ejer2")
+bolt_travel = Vector3(0, 0, 0.04)
+magazine_drop = Vector3(0, -0.17, 0.05)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=612727643]
+mesh = ExtResource("2_bbru6")
+
+[node name="Magazine" type="Node3D" parent="." unique_id=94688338]
+
+[node name="Mesh" type="MeshInstance3D" parent="Magazine" unique_id=1243084187]
+mesh = ExtResource("3_vfpgy")
+
+[node name="Bolt" type="Node3D" parent="." unique_id=39526275]
+
+[node name="Mesh" type="MeshInstance3D" parent="Bolt" unique_id=1610561235]
+mesh = ExtResource("4_abar0")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1362422480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.218)
+gizmo_extents = 0.02
+
+[node name="Eject" type="Marker3D" parent="." unique_id=861697662]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013, 0.012, -0.11)
+gizmo_extents = 0.02
+
+[node name="ADS" type="Marker3D" parent="." unique_id=1257769221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0215, -0.01)
+gizmo_extents = 0.02
+
+[node name="Grip_R" type="Marker3D" parent="." unique_id=1280929509]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07, 0.012)
+gizmo_extents = 0.02
+
+[node name="Grip_L" type="Marker3D" parent="." unique_id=1075560066]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.024, -0.08, 0.004)
+gizmo_extents = 0.02

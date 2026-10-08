@@ -46,6 +46,7 @@ charge_sound = ExtResource("1_uqvrn")
 fire_select_sound = ExtResource("6_ut0tv")
 loudness = 125.0
 id = &"m16"
+effective_range = 70.0
 display_name = "M16A2"
 description = "US service rifle. Fast, flat round with a three-round burst."
 weight_kg = 3.6

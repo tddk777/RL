@@ -179,8 +179,13 @@ func _decide_now() -> void:
 	if role == AIDirector.ROLE_FLANK and not _flanked and allies >= 1 and tactic != Tactic.FLANK:
 		var to := (npc.global_position - p.last_known_position)
 		to.y = 0.0
-		var side := to.normalized().cross(Vector3.UP) * (1.0 if randf() < 0.5 else -1.0)
-		var s := Tactics.find(npc, threat_eye, {"min_r": 6.0, "max_r": 22.0, "want_range": 9.0, "flank_dir": side})
+		# Whichever side has the better way round (cover to get to, an angle on them).
+		var side := to.normalized().cross(Vector3.UP)
+		var s: Tactics.Spot = null
+		for d: float in [1.0, -1.0]:
+			var c := Tactics.find(npc, threat_eye, {"min_r": 6.0, "max_r": 22.0, "want_range": 9.0, "flank_dir": side * d})
+			if c and (s == null or c.score > s.score):
+				s = c
 		if s:
 			_start_move(Tactic.FLANK, s, true)
 			Events.ai_callout.emit(npc, &"flanking")
@@ -207,7 +212,7 @@ func _decide_now() -> void:
 
 
 func _take_new_cover(threat_eye: Vector3) -> void:
-	var want := npc.data.preferred_range * (0.8 if npc.weapon and npc.weapon.data.length < 0.6 else 1.0)
+	var want := npc.fight_range()
 	var s := Tactics.find(npc, threat_eye, {"want_range": want})
 	if s == null:
 		s = Tactics.find(npc, threat_eye, {"want_range": want, "need_shot": false, "max_r": npc.data.cover_radius * 1.3})

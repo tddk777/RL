@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/attachments/scope_pso1/scope_pso1_body.res" id="1_foepm"]
+
+[node name="ScopePso1" type="Node3D" unique_id=1752490116]
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=949864010]
+mesh = ExtResource("1_foepm")
+
+[node name="ADS" type="Marker3D" parent="." unique_id=416074183]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.062, 0.12)
+gizmo_extents = 0.02
