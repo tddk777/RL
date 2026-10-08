@@ -30,6 +30,7 @@ const MOUNT_PISTOL_AIM := Vector3(0.05, 1.44, -0.4)
 
 var skeleton: Skeleton3D
 var weapon_mount: Node3D
+var ragdoll: Ragdoll
 
 var _model: Node3D
 var _anim: AnimationPlayer
@@ -113,15 +114,26 @@ func flinch(head: bool) -> void:
 	_anim.play(&"Hit_Head" if head else &"Hit_Chest", 0.06)
 
 
-func die(_direction: Vector3) -> void:
+func die(direction: Vector3) -> void:
 	_dead = true
 	_aim_blend = 0.0
-	_anim.speed_scale = 1.0
-	_play(&"Death01", 0.12)
-	create_tween().tween_property(self, "_arm_weight", 0.0, 0.3)
+	_arm_weight = 0.0
 	if _weapon:
 		# The gun goes down with the right hand.
 		_weapon.reparent(_attach(&"DEF-hand.R"), true)
+	go_limp(direction.normalized() * 30.0 if direction != Vector3.ZERO else Vector3.ZERO)
+
+
+## Physics takes the body from its current pose (see Ragdoll): it drops where
+## it stands, over steps, edges and whatever is behind it.
+func go_limp(impulse: Vector3 = Vector3.ZERO) -> void:
+	if skeleton == null:
+		_build()
+	_dead = true
+	_anim.active = false
+	_hook.active = false
+	set_process(false)
+	ragdoll.go_limp(impulse)
 
 
 func pose_dead(pose: int, variant: int = 0) -> void:
@@ -284,6 +296,7 @@ func _build() -> void:
 	_hook.name = "PoseHook"
 	_hook.apply = _pose
 	skeleton.add_child(_hook)
+	ragdoll = Ragdoll.build(skeleton)
 	weapon_mount = Node3D.new()
 	weapon_mount.name = "WeaponMount"
 	weapon_mount.position = MOUNT

@@ -21,6 +21,11 @@ var build_ms: Array = []
 var instantiate_ms: Array = []
 
 var _chunks: Dictionary = {}  # Vector2i -> Node3D
+## Shelves, benches and desks pickups can be put on: [position, yaw].
+var loot_spots: Array = []
+## Tests: keep [kit id, Transform3D] of every prop placed.
+static var record_placements: bool = false
+var placements: Array = []
 var _tasks: Dictionary = {}  # Vector2i -> WorkerThreadPool task id
 var _results: Dictionary = {}  # Vector2i -> ChunkData
 var _mutex := Mutex.new()
@@ -77,6 +82,7 @@ func prepare() -> void:
 		await get_tree().physics_frame
 		t += get_physics_process_delta_time()
 	_snap_to_navigation()
+	_pickups_onto_surfaces()
 	_spawn_entities()
 
 
@@ -401,6 +407,9 @@ func _scene(id: String) -> PackedScene:
 
 
 func _instantiate(d: ChunkBuilder.ChunkData) -> void:
+	if record_placements:
+		placements.append_array(d.placed)
+	loot_spots.append_array(d.loot_spots)
 	var root := Node3D.new()
 	root.name = "Chunk_%d_%d" % [d.coord.x, d.coord.y]
 	add_child(root)
@@ -458,6 +467,14 @@ func _instantiate(d: ChunkBuilder.ChunkData) -> void:
 				if e:
 					e.material_override = _material(&"lamp_dead")
 		prop_nodes.append(inst)
+	for rec: Array in d.doors:
+		var door := Door.new()
+		door.width = rec[1]
+		door.height = rec[2]
+		door.material = _material(rec[3])
+		door.angle = rec[4]
+		root.add_child(door)
+		door.transform = rec[0]
 	for l in d.lights:
 		_make_light(l, root, prop_nodes)
 	for dec in d.decals:
@@ -605,6 +622,38 @@ func _snap_to_navigation() -> void:
 		var patrol: Array = e["patrol"]
 		for i in patrol.size():
 			patrol[i] = snap.call(patrol[i])
+
+
+## Most pickups end up on a shelf, bench or desk near where the layout put
+## them (same storey, a few metres away) rather than on the floor.
+func _pickups_onto_surfaces() -> void:
+	var used := {}
+	for i in layout.pickups.size():
+		var rec: Dictionary = layout.pickups[i]
+		var r := RandomNumberGenerator.new()
+		r.seed = hash([level_seed, i, "pickup_surface"])
+		if r.randf() >= profile.pickup_surface_chance:
+			continue
+		var p: Vector3 = rec["position"]
+		var best := -1
+		var best_d := 14.0
+		for j in loot_spots.size():
+			if used.has(j):
+				continue
+			var q: Vector3 = loot_spots[j][0]
+			var dy := q.y - p.y
+			if dy < -0.2 or dy > 1.9:
+				continue
+			var dist := Vector2(q.x - p.x, q.z - p.z).length()
+			if dist < best_d:
+				best_d = dist
+				best = j
+		if best < 0:
+			continue
+		used[best] = true
+		rec["position"] = loot_spots[best][0] + Vector3.UP * 0.005
+		rec["yaw"] = float(loot_spots[best][1]) + r.randf_range(-0.15, 0.15)
+		rec["on_surface"] = true
 
 
 func _spawn_entities() -> void:

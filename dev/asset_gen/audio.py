@@ -1722,6 +1722,42 @@ def gen_people():
         write_wav(f"people/gear_rattle_{i}.wav", gear_rattle(rng_for(f"gear_{i}")))
 
 
+# =============================================================================
+# Doors: opening (latch, hinge squeal), closing (swing, slam, latch)
+# =============================================================================
+
+def hinge_squeal(r, dur, f_center):
+    """A dry hinge: stick-slip pulses gliding in rate, ringing a few steel modes."""
+    n = ns(dur)
+    t = tvec(n)
+    rate = r.uniform(180, 320) * (1 + 0.6 * smooth_curve(r, n, 3) + 0.3 * t / dur)
+    amp = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.8
+    exc = friction_pulses(r, n, rate, amp, jitter=0.05)
+    ratios = np.array([1.0, 1.47, 2.09, 2.8, 3.9])
+    ir = modal_ir(f_center * ratios, np.array([0.06, 0.05, 0.04, 0.03, 0.02]), np.array([1, 0.7, 0.5, 0.3, 0.15]), 0.15, r)
+    return unit(signal.fftconvolve(exc, ir)[:n])
+
+
+def gen_doors():
+    ir = small_ir("door_room", 0.8)
+    for i in range(1, 4):
+        r = rng_for(f"door_open_{i}")
+        dur = r.uniform(0.7, 1.2)
+        ev = [(0.0, mclick(r, r.uniform(1300, 1900), 0.07), 0.7),     # handle and latch
+              (0.02, thud(r, r.uniform(180, 260), 0.04), 0.35),
+              (0.12, hinge_squeal(r, dur, r.uniform(700, 1100)), 0.5),
+              (0.12, wood_creak(r, dur * 0.8, r.uniform(240, 340)), 0.25),
+              (0.1, scrape(r, dur, 200, 1500, rough=0.4, grit=0.1), 0.12)]
+        write_wav(f"doors/open_{i}.wav", finish(reverb(seq(ev, dur + 0.4), ir, 0.22), -4.0, trim_db=-60, lead=4))
+    for i in range(1, 3):
+        r = rng_for(f"door_close_{i}")
+        ev = [(0.0, bp(white(r, ns(0.25)), 150, 900, 2) * env_hann(ns(0.25)), 0.12),   # the swing
+              (0.22, thud(r, r.uniform(90, 130), 0.18, noise_lp=700), 1.0),           # slam
+              (0.221, mclick(r, r.uniform(700, 1000), 0.2), 0.6),
+              (0.24, mclick(r, r.uniform(1600, 2200), 0.06), 0.5)]                   # latch
+        write_wav(f"doors/close_{i}.wav", finish(reverb(seq(ev, 1.0), ir, 0.3), -2.0, trim_db=-60, lead=4))
+
+
 FAMILIES = {
     "world": gen_world,
     "weapons": gen_weapons,
@@ -1732,6 +1768,7 @@ FAMILIES = {
     "player": gen_player,
     "ui": gen_ui,
     "people": gen_people,
+    "doors": gen_doors,
 }
 
 

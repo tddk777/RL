@@ -28,3 +28,11 @@ func _ready() -> void:
 		cs.position = Vector3(0, 0.15, 0)
 	col.add_child(cs)
 	add_child(col)
+	# Onto the floor (placed from the navmesh, which floats above it).
+	var own: Array[RID] = [col.get_rid()]
+	Ground.settle.call_deferred(self, 0.4, 1.6, own)
+	# A fallen body drapes over whatever it lies on (steps, a kerb); the
+	# staged poses (spread out, kneeling against a wall) stay as they are.
+	if pose == Pose.FALLEN and body is Mannequin:
+		col.queue_free()
+		(body as Mannequin).go_limp.call_deferred()

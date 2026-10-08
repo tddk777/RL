@@ -41,10 +41,15 @@ grow deeper level by level.
   hideouts can only be reached by crawling. Floors rise and fall: machine
   plinths and platforms with steps, sunken pits, and here and there a floor
   broken through to the storey below, a quick way down but not back up.
+  Stairwells climb in switchbacks with a landing at every floor; factory
+  halls have freestanding steel stairs. Most doors are long gone or hanging
+  off their hinges; the ones that still work open with F (and enemies push
+  them open, loudly).
 - **Dark where nothing lights it**, with a flashlight on T. A few things are not quite right. The seed is shown in the pause menu.
 - **You start with an M1911 and one spare magazine.** Nine of the other guns
-  and their ammunition lie around the level, a different nine each run
-  (placeholder pickups until the loot system is designed).
+  and their ammunition lie around the level, a different nine each run,
+  mostly on shelves, workbenches and desks (placeholder pickups until the
+  loot system is designed).
 - **Firearms**, East and West, 1940s to 1980s: M1911, Beretta 92, Colt
   Python, Makarov PM, TT-33, Uzi, MP5, PPSh-41, AKS-74U, AK-47, M16A2, FAL,
   G3, SKS, Remington 870, M40 (10x scope) and SVD (PSO-1 scope). Real
@@ -53,7 +58,8 @@ grow deeper level by level.
   round-by-round loading (M40, SKS, 870, Python), recoil, ADS.
 - **Rival scavengers** (animated, gas-masked) who patrol, hear gunshots and
   footsteps, investigate, spot you, fight in bursts and reload from cover.
-  Each carries one of the era's guns and fights at that gun's range.
+  Each carries one of the era's guns and fights at that gun's range. The
+  dead go limp and fall where they were shot.
 - **Audio** for every shot, reload, impact, footstep, casing and the
   ambience, with the space measured live round you: small rooms ring short,
   halls long, outdoors gunshots slap back off far walls; sounds through walls

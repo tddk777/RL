@@ -14,37 +14,40 @@ extends RefCounted
 ## Front is +Z for all of them, as for kit props.
 
 const DIR := "res://assets/third_party/polyhaven/models/"
-## id -> {model, surface, origin, solid (box collider from the bounds),
-## scale (models that come in other units), far (m, culled beyond)}
+## id -> {model, surface, origin, solid (box collider from the bounds; for
+## compact things), parts (open things: a movement-only box round the bounds
+## plus CollisionBoxes from the mesh for bullets), scale (models that come in
+## other units), far (m, culled beyond)}. Neither: no collision (things hung
+## on walls).
 const MODELS := {
 	"barrel_red": {"model": "Barrel_01", "solid": true},
 	"barrel_plastic": {"model": "Barrel_02", "solid": true},
 	"barrel_steel": {"model": "barrel_03", "solid": true},
-	"cardboard_box": {"model": "cardboard_box_01", "surface": &"wood", "far": 45.0},
+	"cardboard_box": {"model": "cardboard_box_01", "surface": &"wood", "solid": true, "far": 45.0},
 	"tool_chest": {"model": "metal_tool_chest", "solid": true},
-	"toolbox": {"model": "metal_toolbox", "far": 30.0},
-	"rack_wide": {"model": "steel_frame_shelves_01", "solid": true, "scale": 0.1},
-	"rack_narrow": {"model": "steel_frame_shelves_02", "solid": true},
-	"rack_worn": {"model": "worn_metal_rack", "solid": true},
-	"office_desk": {"model": "metal_office_desk", "solid": true},
-	"school_chair": {"model": "SchoolChair_01", "far": 40.0},
-	"wet_floor_sign": {"model": "WetFloorSign_01", "far": 35.0},
+	"toolbox": {"model": "metal_toolbox", "solid": true, "far": 30.0},
+	"rack_wide": {"model": "steel_frame_shelves_01", "parts": true, "scale": 0.1},
+	"rack_narrow": {"model": "steel_frame_shelves_02", "parts": true},
+	"rack_worn": {"model": "worn_metal_rack", "parts": true},
+	"office_desk": {"model": "metal_office_desk", "parts": true},
+	"school_chair": {"model": "SchoolChair_01", "parts": true, "far": 40.0},
+	"wet_floor_sign": {"model": "WetFloorSign_01", "parts": true, "far": 35.0},
 	"fire_alarm": {"model": "fire_alarm", "origin": &"back", "far": 25.0},
 	"power_box": {"model": "power_box_01", "origin": &"back", "far": 40.0},
 	"utility_box": {"model": "utility_box_01", "solid": true},
 	"utility_box_wide": {"model": "utility_box_02", "solid": true},
-	"hand_truck": {"model": "hand_truck", "far": 45.0},
-	"tool_cart": {"model": "tool_cart", "solid": true},
-	"storage_cart": {"model": "industrial_storage_cart", "solid": true},
-	"cement_bag": {"model": "cement_bag", "surface": &"concrete", "far": 40.0},
+	"hand_truck": {"model": "hand_truck", "parts": true, "far": 45.0},
+	"tool_cart": {"model": "tool_cart", "parts": true},
+	"storage_cart": {"model": "industrial_storage_cart", "parts": true},
+	"cement_bag": {"model": "cement_bag", "surface": &"concrete", "solid": true, "far": 40.0},
 	"bins": {"model": "metal_trash_can", "solid": true},
-	"tyre": {"model": "old_tyre", "surface": &"wood", "far": 50.0},
+	"tyre": {"model": "old_tyre", "surface": &"wood", "solid": true, "far": 50.0},
 	"road_barrier": {"model": "concrete_road_barrier", "surface": &"concrete", "solid": true},
-	"ladder": {"model": "ladder_sectioned_01", "far": 50.0},
-	"vice": {"model": "bench_vice_01", "origin": &"native", "far": 25.0},
-	"drill_press": {"model": "drill_press_01", "far": 35.0},
+	"ladder": {"model": "ladder_sectioned_01", "parts": true, "far": 50.0},
+	"vice": {"model": "bench_vice_01", "origin": &"native", "solid": true, "far": 25.0},
+	"drill_press": {"model": "drill_press_01", "parts": true, "far": 35.0},
 	"generator": {"model": "portable_generator", "solid": true},
-	"stool": {"model": "metal_stool_01", "far": 35.0},
+	"stool": {"model": "metal_stool_01", "parts": true, "far": 35.0},
 	"camera": {"model": "security_camera_01", "origin": &"back", "far": 35.0},
 }
 
@@ -52,6 +55,11 @@ const MODELS := {
 var meshes: Dictionary = {}
 ## id -> AABB of the baked mesh
 var bounds: Dictionary = {}
+## id -> Array of [center, size] boxes (models with `parts`)
+var parts: Dictionary = {}
+## id -> Array of shelf tops [height, Rect2 (x, z footprint)] found in the
+## parts: wide thin horizontal boxes (shelving, a desk top, a cart's decks)
+var shelves: Dictionary = {}
 
 
 ## Main thread only (loads scenes).
@@ -77,6 +85,16 @@ func surface(id: String) -> StringName:
 
 func solid(id: String) -> bool:
 	return MODELS[id].get("solid", false)
+
+
+## Shelf tops of an open prop (see `shelves`), lowest first, or [].
+func shelves_of(id: String) -> Array:
+	return shelves.get(id, [])
+
+
+## Collision boxes for open props, or [] (see `parts` in MODELS).
+func parts_of(id: String) -> Array:
+	return parts.get(id, [])
 
 
 func far(id: String) -> float:
@@ -148,6 +166,12 @@ func _bake(id: String, def: Dictionary, root: Node3D) -> void:
 		mesh.surface_set_material(mesh.get_surface_count() - 1, part[1])
 	meshes[id] = mesh
 	bounds[id] = AABB(box.position + shift, box.size)
+	if def.get("parts", false):
+		var tris := PackedVector3Array()
+		for i in mesh.get_surface_count():
+			tris.append_array(CollisionBoxes.triangles(mesh.surface_get_arrays(i)))
+		self.parts[id] = CollisionBoxes.from_triangles(tris)
+		self.shelves[id] = CollisionBoxes.shelves(self.parts[id], bounds[id], tris)
 
 
 static func _relative(root: Node, node: Node3D) -> Transform3D:

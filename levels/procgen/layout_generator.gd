@@ -944,9 +944,11 @@ func _place_stair(x: int, z: int, s: int, dir: int, side: int) -> bool:
 	var a := L.idx(x, z, s + 1)
 	if L.flags[i] & LevelLayout.STAIR or L.flags[a] & LevelLayout.STAIR_ABOVE:
 		return false
-	if L.flags[i] & LevelLayout.STAIR_ABOVE and L.hole_side(x, z, s) == side:
+	# Another stair's strip in the same cell: fine on another wall, or stacked
+	# exactly over it (a stairwell: same strip, same way up).
+	if L.flags[i] & LevelLayout.STAIR_ABOVE and L.hole_side(x, z, s) == side and L.hole_dir(x, z, s) != dir:
 		return false
-	if L.flags[a] & LevelLayout.STAIR and L.stair_side(x, z, s + 1) == side:
+	if L.flags[a] & LevelLayout.STAIR and L.stair_side(x, z, s + 1) == side and L.stair_dir(x, z, s + 1) != dir:
 		return false
 	if L.has_door(x, z, s, side) or L.has_door(x, z, s + 1, side):
 		return false
@@ -991,10 +993,11 @@ func _stairwell(z: LevelLayout.Zone, c: Vector2i) -> void:
 				break
 	if dir < 0:
 		return
-	var sides := [(dir + 1) % 4, (dir + 3) % 4]
+	# The same switchback stacked storey over storey along one lateral wall,
+	# its foot (and every floor's arrival landing) at the hallway end.
+	var side := (dir + 1) % 4 if rng.randf() < 0.5 else (dir + 3) % 4
 	for s in range(0, z.top):
-		var d := dir if s % 2 == 0 else (dir + 2) % 4
-		_place_stair(c.x, c.y, s, d, sides[s % 2])
+		_place_stair(c.x, c.y, s, (dir + 2) % 4, side)
 
 
 ## Stairs from the floor up to a catwalk strip along a wall; the landing joins

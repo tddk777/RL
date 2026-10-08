@@ -320,7 +320,13 @@ func _run() -> void:
 	check(npc.brain.current_name == &"dead", "NPC brain is in dead state")
 	player.health.max_health = 100.0
 	player.health.current = 100.0
-	await wait(1.0)
+	await wait(2.5)
+	var corpse_body := npc.body as Mannequin
+	if corpse_body:
+		var head := (corpse_body.ragdoll.bones[&"DEF-head"] as Node3D).global_position
+		var floor_y := Ground.below(npc.get_world_3d(), head, 0.0, 3.0).y
+		check(corpse_body.ragdoll.limp and head.y - floor_y < 0.45,
+			"the body goes limp and comes to rest on the floor (head %.2f m up)" % (head.y - floor_y))
 
 	# --- Exit ---
 	for i in L.exits.size():

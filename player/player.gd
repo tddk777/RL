@@ -99,6 +99,7 @@ var _was_on_floor: bool = true
 var _fall_speed: float = 0.0
 var _shake: float = 0.0
 var _interact_target: Interactable
+var _prompt_text: String = ""
 var _heartbeat: AudioStreamPlayer
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _since_run: float = 10.0
@@ -184,8 +185,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			current_weapon.cycle_fire_mode()
 	if event.is_action_pressed(&"flashlight"):
 		flashlight.toggle()
-	if event.is_action_pressed(&"interact") and _interact_target:
-		_interact_target.interact(self)
+	if event.is_action_pressed(&"interact") and is_instance_valid(_interact_target):
+		var t := _interact_target
+		_interact_target = null
+		t.interact(self)
 
 
 func _physics_process(delta: float) -> void:
@@ -703,9 +706,14 @@ func _update_interaction() -> void:
 	var target: Interactable = null
 	if hit and hit.collider is Interactable and (hit.collider as Interactable).can_interact(self):
 		target = hit.collider
-	if target != _interact_target:
+	# Compare the prompt text too: a target that was just taken (freed) or
+	# whose prompt changed must clear or update the HUD.
+	var text := target.get_prompt() if target else ""
+	if target != _interact_target or text != _prompt_text or not is_instance_valid(_interact_target):
 		_interact_target = target
-		interaction_prompt.emit(target.get_prompt() if target else "")
+		if text != _prompt_text:
+			_prompt_text = text
+			interaction_prompt.emit(text)
 
 
 # --- Health -----------------------------------------------------------------------

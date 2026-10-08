@@ -785,6 +785,7 @@ func _workbench(k: Cell, p: Vector3, A: Vector3, facing: Vector3) -> void:
 		for f: float in [-1.0, 1.0]:
 			box(k, p + A * (e * 0.92) + facing * (f * 0.34) + UP * 0.44, Vector3(0.06, 0.88, 0.06), &"painted_steel")
 	box(k, p + UP * 0.25, _sz(A, 1.9, 0.03, 0.7), &"painted_steel")
+	cb.loot_spot(k.d, p + A * r.randf_range(-0.5, 0.5) + UP * 0.27, atan2(A.x, A.z))  # the shelf under the top
 	box(k, p - facing * 0.38 + UP * 1.5, _sz(A, 1.9, 1.1, 0.03), &"prop_wood")  # pegboard
 	var turn := atan2(facing.x, facing.z)  # scanned models face +Z
 	if cb.models.has("vice"):

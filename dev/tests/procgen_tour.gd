@@ -6,6 +6,7 @@ extends Node
 var _out := ""
 var _limit := 40
 var _only := ""  # only views whose name starts with this
+const STRIP_SIDE := LevelLayout.STRIP + 2.6  # beside a stair's strip, looking across it
 
 
 func _ready() -> void:
@@ -178,6 +179,38 @@ func _run() -> void:
 	var sun := level.builder.sun_dir()
 	var to_sun := Vector3(-sun.x, 0, -sun.z).normalized()
 	views.append(["outside_sun", Vector3(size.x * 0.5, 0, size.y * 0.5) - to_sun * (size.length() * 0.5 + 10.0), to_sun, 34.0])
+	# Features: each kind of stair from its foot and from its half landing, a
+	# working door, a pickup on a shelf (prefix f_).
+	var stairs_seen := {}
+	for s: int in L.all_storeys():
+		for z in L.size.y:
+			for x in L.size.x:
+				if not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
+					continue
+				var st := level.builder.stair_at(x, z, s)
+				var kind := "steel" if st.steel else ("well" if L.has_flag(x, z, s, LevelLayout.STAIR_ABOVE) else "concrete")
+				if stairs_seen.has(kind):
+					continue
+				stairs_seen[kind] = true
+				var mid_lat := (st.wall_lo + st.inner_lo + st.lane) * 0.5
+				views.append(["f_stair_%s_foot" % kind, st.p(0.25, st.inner_lo + st.lane * 0.5 + 1.2, 0.0),
+					(st.a * 3.0 - st.inner * 0.9).normalized(), 14.0])
+				views.append(["f_stair_%s_side" % kind, st.p(st.foot + st.run * 0.5, STRIP_SIDE, 0.0),
+					-st.inner, 12.0])
+				views.append(["f_stair_%s_landing" % kind, st.p(st.end - 0.35, mid_lat, st.h * 0.5), (-st.a * 2.0 - st.inner * 0.3).normalized(), 8.0])
+	var doors := level.find_children("*", "Door", true, false)
+	if not doors.is_empty():
+		var dn := doors[0] as Door
+		var face := dn.global_basis.z
+		views.append(["f_door_working", dn.global_position + dn.global_basis.x * (dn.width * 0.5) + face * 2.4, -face, -6.0])
+	for rec: Dictionary in L.pickups:
+		if rec.get("on_surface", false):
+			var p: Vector3 = rec["position"]
+			var c := L.world_to_cell(p)
+			var centre := L.cell_center(c.x, c.z, c.y)
+			var out := Vector3(centre.x - p.x, 0, centre.z - p.z).normalized()
+			views.append(["f_pickup_shelf", Vector3(p.x, centre.y, p.z) + out * 1.7, -out, -20.0])
+			break
 	var e: Dictionary = L.exits[0]
 	var ev := LevelLayout.dir_vector(e["dir"])
 	views.append(["exit_" + String(e["kind"]), (e["position"] as Vector3) - ev * 3.5, ev, -2.0])

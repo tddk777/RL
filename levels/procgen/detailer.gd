@@ -611,25 +611,31 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 	var yaw := SetPieces._face_from_wall(dir)
 	# A scanned model with its back to the wall (they face +Z, kit props -Z).
 	# Things on wheels or light enough to shove are often left askew.
-	var against := func(model: String, turn: float = 0.0) -> void:
+	# Returns where it went (things put on it follow).
+	var against := func(model: String, turn: float = 0.0) -> Transform3D:
 		var sz := cb.models.size(model)
 		var out := 0.03
 		if model in MOVABLE and r.randf() < 0.4:
 			turn += r.randf_range(-0.4, 0.4)
 			out += r.randf_range(0.05, 0.35)
-		cb.kit(k.d, model, base + N * ((sz.x if absf(turn) > 1.0 else sz.z) * 0.5 + out), yaw + PI + turn)
+		var at := base + N * ((sz.x if absf(turn) > 1.0 else sz.z) * 0.5 + out)
+		cb.kit(k.d, model, at, yaw + PI + turn)
+		return Transform3D(Basis(UP, yaw + PI + turn), at)
 	match id:
 		"rack":
 			var model: String = ["rack_wide", "rack_narrow", "rack_worn"][r.randi_range(0, 2)]
-			against.call(model)
+			var rack: Transform3D = against.call(model)
 			# What was left on the bottom shelf.
-			if r.randf() < 0.5:
-				cb.kit(k.d, "cardboard_box", base + N * 0.3 + A * r.randf_range(-0.2, 0.2) + UP * 0.12, yaw + r.randf_range(-0.3, 0.3))
+			var shelves := cb.models.shelves_of(model)
+			if r.randf() < 0.5 and not shelves.is_empty() and float(shelves[0][0]) < 0.3:
+				var sh: Rect2 = shelves[0][1]
+				cb.kit(k.d, "cardboard_box", rack * Vector3(sh.get_center().x + r.randf_range(-0.15, 0.15), float(shelves[0][0]), sh.get_center().y),
+					yaw + r.randf_range(-0.3, 0.3))
 		"tool_chest":
-			against.call("tool_chest")
+			var chest: Transform3D = against.call("tool_chest")
 			if r.randf() < 0.4:
-				cb.kit(k.d, "toolbox", base + N * 0.24 + A * r.randf_range(-0.1, 0.1) + UP * cb.models.size("tool_chest").y,
-					yaw + PI + r.randf_range(-0.4, 0.4))
+				cb.kit(k.d, "toolbox", chest * Vector3(r.randf_range(-0.1, 0.1), cb.models.bounds["tool_chest"].end.y, 0.0),
+					chest.basis.get_euler().y + r.randf_range(-0.4, 0.4))
 		"tool_cart", "storage_cart", "generator", "bins":
 			against.call(id)
 		"hand_truck":
@@ -722,10 +728,11 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 			if cb.models.has("cement_bag") and r.randf() < 0.4:
 				# Cement, two bags to a layer.
 				var bag := cb.models.size("cement_bag")
-				for layer in r.randi_range(1, 4):
+				var layers := r.randi_range(1, 4)
+				for layer in layers:
 					for e: float in [-1.0, 1.0]:
-						if r.randf() < 0.12:
-							continue
+						if layer == layers - 1 and r.randf() < 0.3:
+							continue  # one off the top layer
 						var q := c + A * (e * bag.x * 0.52) + UP * (0.15 + layer * bag.y)
 						cb.kit(k.d, "cement_bag", q, yaw + r.randf_range(-0.08, 0.08))
 				sp.solid(k, c + UP * 0.45, SetPieces._sz(A, 1.2, 0.9, 1.0), &"wood")

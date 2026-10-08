@@ -78,6 +78,9 @@ extends Resource
 ## How many of them a run places, picked at random (0 = all).
 @export var weapon_pickup_count: int = 0
 @export var ammo_pickups: int = 14
+## Share of pickups moved onto a shelf, bench or desk near where the layout
+## put them (the rest stay on the floor).
+@export_range(0.0, 1.0) var pickup_surface_chance: float = 0.75
 ## caliber -> [weight, min rounds, max rounds]
 @export var ammo_table: Dictionary = {
 	".45ACP": [5.0, 7, 14], "9x19": [3.0, 15, 30], "7.62x39": [2.0, 10, 30],

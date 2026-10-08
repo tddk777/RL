@@ -12,7 +12,6 @@ extends RefCounted
 
 const T := 0.3  # wall thickness
 const STRIP := LevelLayout.STRIP  # width of a stair or catwalk strip
-const RUN := LevelLayout.RUN  # horizontal length of a flight
 const BRIDGE := 2.2  # width of a catwalk bridge
 const TALL: Array[StringName] = [&"hall", &"foundry", &"warehouse", &"loading_dock"]
 ## Parapet above a roofline, boundary walls of yards, wall footings below
@@ -43,6 +42,17 @@ const FOOTPRINTS := {
 	"bedroll": [Vector3(0.8, 0.15, 2.0), 0.07],
 }
 
+## Share of narrow doorways with no door left, and with one that still works
+## (the rest have a broken one).
+const DOOR_MISSING := 0.55
+const DOOR_INTACT := 0.2
+
+## Kit props whose tops pickups can be put on.
+const LOOT_TOPS := ["crate_wood", "crate_small", "filing_cabinet"]
+
+## Kit props with gaps you can shoot through (see CollisionBoxes).
+const OPEN_KIT := ["shelf", "desk", "conveyor"]
+
 const SURFACES := {
 	&"wood_planks": &"wood", &"corrugated_metal": &"metal", &"painted_steel": &"metal",
 	&"painted_steel_yellow": &"metal", &"painted_steel_red": &"metal", &"painted_steel_blue": &"metal",
@@ -68,6 +78,14 @@ class ChunkData:
 	var leaks: Array = []
 	var nav_faces := PackedVector3Array()
 	var obstructions: Array = []
+	## [id, Transform3D, collides] of every kit and model prop placed (tests)
+	var placed: Array = []
+	## Places a pickup can sit on: [position on the surface, yaw (the
+	## surface's long axis along local Z)], from shelves, benches and desks
+	var loot_spots: Array = []
+	## Working doors: [hinge Transform3D (X along the leaf, Y up), width,
+	## height, material, starting angle in degrees] (see Door)
+	var doors: Array = []
 	## World AABBs of everything solid placed so far (set pieces check it
 	## before adding clutter).
 	var taken: Array[AABB] = []
@@ -262,19 +280,6 @@ func strip(side: int, depth: float) -> Rect2:
 
 ## Cell-local rectangle over the run of a flight climbing `dir` on `side`
 ## (the part of the strip it rises through; the rest of the strip is landing).
-func run_rect(dir: int, side: int) -> Rect2:
-	var sr := strip(side, STRIP)
-	var f := LevelLayout.FOOT
-	match dir:
-		0:
-			return Rect2(sr.position.x, C - f - RUN, sr.size.x, RUN).intersection(sr)
-		1:
-			return Rect2(f, sr.position.y, RUN, sr.size.y).intersection(sr)
-		2:
-			return Rect2(sr.position.x, f, sr.size.x, RUN).intersection(sr)
-		_:
-			return Rect2(C - f - RUN, sr.position.y, RUN, sr.size.y).intersection(sr)
-
 
 ## r minus hole, as up to four rectangles.
 static func subtract(r: Rect2, hole: Rect2) -> Array[Rect2]:
@@ -476,15 +481,14 @@ func _catwalk(d: ChunkData, x: int, z: int, s: int, o: Vector3, flags: int) -> v
 		if flags & bridge:
 			spans.assign([Vector2(a0, -BRIDGE * 0.5), Vector2(BRIDGE * 0.5, a1)])
 		if hole.size != Vector2.ZERO and L.hole_side(x, z, s) == side:
-			# The flight comes up through this strip: rail the stub at its foot
-			# and the landing, and close the stub off from the opening.
-			var hd := LevelLayout.dir_vector(L.hole_dir(x, z, s))
-			var lc := lateral.dot(o + Vector3(hole.get_center().x, 0, hole.get_center().y) - edge_center)
-			var h0 := lc - RUN * 0.5
-			var h1 := lc + RUN * 0.5
-			spans.assign([Vector2(a0, h0), Vector2(h1, a1)])
-			var low := edge_center + lateral * (h0 if lateral.dot(hd) > 0.0 else h1)
-			railing(d.geo, low, low - inward * STRIP)
+			# The stair comes up through this strip: no deck (or edge rail) over
+			# the opening, rails across its far end and beside the arrival.
+			var st := _stair(o, L.hole_dir(x, z, s), side, _stair_steel(x, z, s - 1))
+			var p_foot := lateral.dot(st.p(st.foot, 0.0, 0.0) - edge_center)
+			var p_end := lateral.dot(st.p(st.end, 0.0, 0.0) - edge_center)
+			spans.assign([Vector2(a0, minf(p_foot, p_end)), Vector2(maxf(p_foot, p_end), a1)])
+			railing(d.geo, st.p(st.end + 0.04, T * 0.5 + 0.05, 0.0), st.p(st.end + 0.04, STRIP, 0.0))
+			_arrival_rails(d, st)
 		for sp in spans:
 			if sp.y - sp.x < 0.1:
 				continue
@@ -560,147 +564,315 @@ func _broken_floor(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: String
 		d.geo.box(o + Vector3(r.randf_range(2.5, 5.5), -1.6, r.randf_range(2.5, 5.5)), Vector3(2.4, 0.25, 1.8), mat, &"", false, tilt)
 
 
-## A flight up one storey along `side`, from the cell edge behind it to its
-## landing in the same column.
-## A flight of stairs up its strip. Two kinds: a solid concrete flight with
-## a sloped soffit, steel nosings (yellow on the first and last) and a
-## balustrade, in office blocks, stores, stairwells and tunnels; a steel
-## stair (channel stringers, tread plates with lips, open risers, posted
-## rails) on factory floors. Both walk on the same ramp collider.
+# --- Stairs ---------------------------------------------------------------------
+## A stair is a switchback in its cell's strip (STRIP wide, against the wall
+## on `side`, climbing along `dir`): a clear landing at the foot
+## (STAIR_LAND deep), the first flight up the inner lane to a half landing at
+## the far end, the second flight back up the wall lane, arriving over the
+## foot landing, so every floor has the same clear landing to step onto.
+## Concrete (stairwells, interiors, tunnels): solid flights closed down to the
+## floor with steel nosings, balustrades along the well and the open side and
+## a handrail on the wall. Steel (factory floors): a freestanding stair set
+## off the wall, half landing on posts, channel stringers, tread plates and
+## rails. Both walk on invisible ramp colliders.
+
+const STAIR_LAND := 1.5
+const STAIR_MID := 1.3
+const STAIR_GOING := 0.28
+
+
+## Where a stair's parts are: along (from the cell edge behind the foot) and
+## lateral (from the wall line) in metres; `p()` gives world points.
+class Stair:
+	var origin: Vector3
+	var a: Vector3
+	var inner: Vector3
+	var steel: bool
+	var m: int  # risers per flight
+	var rise: float
+	var run: float  # one flight's length
+	var lane: float  # flight width
+	var wall_lo: float  # wall lane: lateral wall_lo .. wall_lo + lane
+	var inner_lo: float  # inner lane: lateral inner_lo .. inner_lo + lane
+	var h: float  # storey height
+	var foot: float  # along: where the first flight starts (= the arrival edge above)
+	var turn: float  # along: the first flight's top, the half landing's near edge
+	var end: float  # along: the half landing's far edge
+	## Another stair comes up through this cell (a stairwell, or a strip on
+	## another wall): nothing may reach down below the flights.
+	var open_below: bool
+
+	func p(along: float, lateral: float, y: float) -> Vector3:
+		return origin + a * along + inner * lateral + Vector3.UP * y
+
+
+func _stair(o: Vector3, dir: int, side: int, steel: bool) -> Stair:
+	var st := Stair.new()
+	st.a = LevelLayout.dir_vector(dir)
+	st.inner = -LevelLayout.dir_vector(side)
+	st.origin = o + Vector3(C * 0.5, 0.0, C * 0.5) - st.a * (C * 0.5) - st.inner * (C * 0.5)
+	st.steel = steel
+	st.h = H
+	st.m = ceili(H * 0.5 / 0.19)
+	st.rise = H * 0.5 / st.m
+	st.run = st.m * STAIR_GOING
+	st.foot = STAIR_LAND
+	st.turn = STAIR_LAND + st.run
+	st.end = st.turn + STAIR_MID
+	if steel:
+		st.wall_lo = T * 0.5 + 0.55
+		st.lane = 1.1
+		st.inner_lo = st.wall_lo + st.lane + 0.15
+	else:
+		st.wall_lo = T * 0.5 + 0.02
+		st.lane = 1.3
+		st.inner_lo = st.wall_lo + st.lane + 0.2
+	return st
+
+
+## The stair starting in cell (x, z, s), for tests and placement: see Stair.
+func stair_at(x: int, z: int, s: int) -> Stair:
+	return _stair(L.cell_origin(x, z, s), L.stair_dir(x, z, s), L.stair_side(x, z, s), _stair_steel(x, z, s))
+
+
+## The opening a stair needs in the floor above (cell-local, x/z): over both
+## flights and the half landing, the whole strip wide.
+func run_rect(dir: int, side: int) -> Rect2:
+	var a := Vector2(LevelLayout.DIRS[dir])
+	var inner := -Vector2(LevelLayout.DIRS[side])
+	var origin := Vector2(C * 0.5, C * 0.5) - a * (C * 0.5) - inner * (C * 0.5)
+	var st := _stair(Vector3.ZERO, dir, side, false)
+	var p0 := origin + a * st.foot
+	var p1 := origin + a * st.end + inner * STRIP
+	return Rect2(Vector2(minf(p0.x, p1.x), minf(p0.y, p1.y)), (p1 - p0).abs())
+
+
+## Steel stair (factory floors) or concrete (everywhere else) for the flight
+## starting in this cell.
+func _stair_steel(x: int, z: int, s: int) -> bool:
+	var zn := L.zone_of(x, z, s)
+	var room := L.room_of(x, z, s)
+	return not (s < 0 or (zn.style and zn.style.family != &"factory") or (room and room.use == &"stairwell"))
+
+
 func _flight(d: ChunkData, x: int, z: int, s: int, o: Vector3) -> void:
-	var dir := L.stair_dir(x, z, s)
-	var side := L.stair_side(x, z, s)
-	var rr := run_rect(dir, side)
-	var a := LevelLayout.dir_vector(dir)
-	var center := o + Vector3(rr.position.x + rr.size.x * 0.5, 0.0, rr.position.y + rr.size.y * 0.5)
-	var bottom := center - a * (RUN * 0.5)
-	var top := center + a * (RUN * 0.5) + Vector3.UP * H
+	var st := _stair(o, L.stair_dir(x, z, s), L.stair_side(x, z, s), _stair_steel(x, z, s))
+	st.open_below = L.has_flag(x, z, s, LevelLayout.STAIR_ABOVE)
+	var g := d.geo
+	var half := st.h * 0.5
+	var w_mid := st.wall_lo + st.lane * 0.5
+	var i_mid := st.inner_lo + st.lane * 0.5
+	var surf := &"metal" if st.steel else &"concrete"
+	# Walking surfaces: two ramps and the half landing.
+	_ramp(g, st.p(st.foot, i_mid, 0.0), st.p(st.turn, i_mid, half), st.lane, surf)
+	_ramp(g, st.p(st.turn, w_mid, half), st.p(st.foot, w_mid, st.h), st.lane, surf)
+	var l0 := st.wall_lo - (0.05 if not st.steel else 0.0)
+	var l1 := st.inner_lo + st.lane
+	var deck := 0.08 if st.steel else 0.2
+	var land_c := st.p((st.turn + st.end) * 0.5, (l0 + l1) * 0.5, half - deck * 0.5)
+	var land_size := _oriented(st.a, Vector3(l1 - l0, deck, st.end - st.turn))
+	if st.steel:
+		g.box(land_c, land_size, &"steel_grate", &"metal")
+	elif st.open_below:
+		g.box(land_c, land_size, &"concrete_dark", &"concrete")
+	# Nobody walks (or crawls) under the flights or the landing - unless the
+	# space down there belongs to the stair below.
+	if not st.open_below:
+		var block := Layers.CLIP if st.steel else Layers.WORLD
+		var under_mat := &"" if st.steel else &"concrete_dark"
+		g.box(st.p((st.foot + st.turn) * 0.5, w_mid, (half - 0.25) * 0.5), _oriented(st.a, Vector3(st.lane, half - 0.25, st.run)),
+			under_mat, surf, false, Basis.IDENTITY, block)
+		for k in range(1, 4):
+			var t0 := st.foot + st.run * k / 4.0
+			var top := (t0 - st.foot) / st.run * half - 0.2
+			g.box(st.p(t0 + st.run / 8.0, i_mid, top * 0.5), _oriented(st.a, Vector3(st.lane, top, st.run / 4.0)), &"", surf, false,
+				Basis.IDENTITY, block)
+	if not st.steel:
+		if not st.open_below:
+			g.box(st.p((st.turn + st.end) * 0.5, (l0 + l1) * 0.5, half * 0.5), _oriented(st.a, Vector3(l1 - l0, half, st.end - st.turn)),
+				&"concrete_dark", &"concrete")
+		_concrete_switchback(d, st)
+	else:
+		_steel_switchback(d, st)
+
+
+## Invisible walking ramp from `foot` to `head` (points on the step noses).
+## Its surface runs 2 cm above that line so it passes over the edge of the
+## landing or slab at the top: a capsule meeting that corner even 1 cm proud
+## of the slope touches it at over 50 degrees, which counts as a wall.
+func _ramp(g: GeoBuilder, foot: Vector3, head: Vector3, width: float, surface: StringName) -> void:
+	var forward := (head - foot).normalized()
+	var lateral := forward.cross(Vector3.UP).normalized()
+	var up := lateral.cross(forward).normalized()
+	if up.y < 0.0:
+		up = -up
+		lateral = -lateral
+	g.box((foot + head) * 0.5 - up * 0.04, Vector3(width, 0.12, foot.distance_to(head)), &"", surface, false,
+		Basis(lateral, up, forward))
+
+
+## Side profile of a flight of `m` steps rising `rise` each over `going`:
+## closed down `below` under its foot (solid concrete), or with `below` < 0 a
+## 20 cm slab with a sloping soffit (open underneath).
+func _flight_profile(m: int, going: float, rise: float, below: float) -> PackedVector2Array:
+	var run := m * going
+	var prof := PackedVector2Array()
+	if below < 0.0:
+		var tan := rise / going
+		var waist := 0.2 * sqrt(1.0 + tan * tan)
+		prof.append(Vector2(0.0, -0.03))
+		prof.append(Vector2((waist - 0.03) / tan, -0.03))
+		prof.append(Vector2(run - 0.005, (run - 0.005) * tan - waist))
+	else:
+		prof.append(Vector2(0.0, -below))
+		prof.append(Vector2(run - 0.005, -below))
+	prof.append(Vector2(run - 0.005, m * rise))
+	for i in range(m - 1, -1, -1):
+		prof.append(Vector2(i * going, (i + 1) * rise))
+		if i > 0:
+			prof.append(Vector2(i * going, i * rise))
+	prof.append(Vector2(0.0, 0.0))
+	var clean := PackedVector2Array()
+	for q in prof:
+		if clean.is_empty() or clean[clean.size() - 1].distance_to(q) > 0.001:
+			clean.append(q)
+	return clean
+
+
+func _concrete_switchback(d: ChunkData, st: Stair) -> void:
+	var g := d.geo
+	var half := st.h * 0.5
+	# Flight 1 on the inner lane, flight 2 back up the wall lane (sunk 5 cm
+	# into the wall); both solid to the floor.
+	g.extrude(_flight_profile(st.m, STAIR_GOING, st.rise, -1.0 if st.open_below else 0.0), st.p(st.foot, 0.0, 0.0), st.a, st.inner,
+		st.inner_lo, st.inner_lo + st.lane, &"concrete_dark")
+	g.extrude(_flight_profile(st.m, STAIR_GOING, st.rise, -1.0 if st.open_below else half), st.p(st.turn, 0.0, half), -st.a, st.inner,
+		st.wall_lo - 0.05, st.wall_lo + st.lane, &"concrete_dark")
+	# Nosings, the first and last of each flight painted.
+	for f in 2:
+		var lo := st.inner_lo if f == 0 else st.wall_lo
+		var dir := st.a if f == 0 else -st.a
+		var start := st.foot if f == 0 else st.turn
+		for i in st.m:
+			var mat := &"painted_steel_yellow" if i == 0 or i == st.m - 1 else &"gun_metal"
+			var t := start + (i * STAIR_GOING + 0.02) * (1.0 if f == 0 else -1.0)
+			var y := (i + 1) * st.rise - 0.011 + (half if f == 1 else 0.0)
+			g.box(st.p(t, lo + st.lane * 0.5, y), _oriented(dir, Vector3(st.lane - 0.1, 0.038, 0.05)), mat)
+	# Balustrades: the open side and well side of flight 1, the well side of
+	# flight 2, round the half landing; a handrail on the wall.
+	var f1 := func(t: float) -> float: return (t - st.foot) / st.run * half + st.rise
+	var f2 := func(t: float) -> float: return half + (st.turn - t) / st.run * half + st.rise
+	_stair_rail(g, st, st.inner_lo + st.lane - 0.06, st.foot + 0.15, st.turn, f1, true)
+	_stair_rail(g, st, st.inner_lo + 0.05, st.foot + 0.15, st.turn, f1, false)
+	_stair_rail(g, st, st.wall_lo + st.lane - 0.05, st.foot + 0.15, st.turn, f2, false)
+	var flat := func(_t: float) -> float: return half
+	_landing_rails(g, st, flat)
+	var wall := st.wall_lo + 0.07
+	var y_at := func(t: float) -> Vector3: return st.p(t, wall, (f2.call(t) as float) + 0.88)
+	g.cylinder(y_at.call(st.turn - 0.3), y_at.call(st.foot + 0.3), 0.022, &"gun_metal", 6, true)
+	for t: float in [st.turn - 0.6, (st.turn + st.foot) * 0.5, st.foot + 0.6]:
+		g.box((y_at.call(t) as Vector3) - st.inner * 0.04 + Vector3.DOWN * 0.03,
+			Vector3(0.025, 0.06, 0.025) + Vector3(absf(st.inner.x), 0, absf(st.inner.z)) * 0.06, &"gun_metal")
+
+
+func _steel_switchback(d: ChunkData, st: Stair) -> void:
+	var g := d.geo
+	var half := st.h * 0.5
+	_steel_flight(d, st.p(st.foot, st.inner_lo + st.lane * 0.5, 0.0), st.a, st.inner, st.lane, st.run, half, st.m)
+	_steel_flight(d, st.p(st.turn, st.wall_lo + st.lane * 0.5, half), -st.a, st.inner, st.lane, st.run, half, st.m)
+	# Half landing frame and the posts it stands on.
+	var l0 := st.wall_lo
+	var l1 := st.inner_lo + st.lane
+	for lat: float in [l0, l1]:
+		g.box(st.p((st.turn + st.end) * 0.5, lat, half - 0.13), _oriented(st.a, Vector3(0.06, 0.18, st.end - st.turn)), &"painted_steel_yellow")
+	for along: float in [st.turn, st.end]:
+		g.box(st.p(along, (l0 + l1) * 0.5, half - 0.13), _oriented(st.a, Vector3(l1 - l0, 0.18, 0.06)), &"painted_steel_yellow")
+	for along: float in [st.turn + 0.05, st.end - 0.05]:
+		for lat: float in [l0 + 0.05, l1 - 0.05]:
+			g.box(st.p(along, lat, (half - 0.2) * 0.5), Vector3(0.08, half - 0.2, 0.08), &"painted_steel_yellow", &"metal")
+	var flat := func(_t: float) -> float: return half
+	_landing_rails(g, st, flat)
+	# The wall side of the landing is open (the stair stands off the wall).
+	_stair_rail(g, st, l0 + 0.03, st.turn + 0.05, st.end - 0.05, func(_t: float) -> float: return half, true)
+
+
+## Balustrade along `lateral` from along t0 to t1, its feet at height
+## `foot_y(t)`: posts, a top rail and a mid rail, and a guard collider if the
+## side is open (`guard`).
+func _stair_rail(g: GeoBuilder, st: Stair, lateral: float, t0: float, t1: float, foot_y: Callable, guard: bool) -> void:
+	var span := absf(t1 - t0)
+	var posts := maxi(int(ceil(span / 1.0)), 1)
+	var top_mat := &"painted_steel_yellow" if st.steel else &"prop_wood"
+	var post_mat := &"painted_steel_yellow" if st.steel else &"painted_steel"
+	for i in posts + 1:
+		var t := lerpf(t0, t1, float(i) / posts)
+		g.box(st.p(t, lateral, (foot_y.call(t) as float) + 0.47), Vector3(0.045, 0.94, 0.045), post_mat)
+	var a0 := st.p(t0, lateral, (foot_y.call(t0) as float) + 0.95)
+	var a1 := st.p(t1, lateral, (foot_y.call(t1) as float) + 0.95)
+	g.cylinder(a0, a1, 0.026, top_mat, 8, true)
+	g.cylinder(a0 + Vector3.DOWN * 0.47, a1 + Vector3.DOWN * 0.47, 0.015, post_mat, 6)
+	if guard:
+		var c := (a0 + a1) * 0.5 + Vector3.DOWN * 0.35
+		var fwd := (a1 - a0).normalized()
+		g.box(c, Vector3(0.08, 1.3, a0.distance_to(a1)), &"", &"metal", false, Basis.looking_at(fwd, Vector3.UP), Layers.CLIP)
+
+
+## Rails round the half landing: its far edge and its open (inner) side.
+func _landing_rails(g: GeoBuilder, st: Stair, y: Callable) -> void:
+	var l0 := st.wall_lo
+	var l1 := st.inner_lo + st.lane
+	var half := st.h * 0.5
+	var far := st.end - 0.04
+	var p0 := st.p(far, l0 + 0.03, half)
+	var p1 := st.p(far, l1 - 0.03, half)
+	railing(g, p0, p1, &"painted_steel_yellow" if st.steel else &"painted_steel")
+	_stair_rail(g, st, l1 - 0.06, st.turn, far, y, true)
+
+
+## A steel flight: channel stringers either side, tread plates with a lip on
+## open risers. `foot` is the middle of the bottom edge, climbing along `a`.
+func _steel_flight(d: ChunkData, foot: Vector3, a: Vector3, lat: Vector3, width: float, run: float, rise_total: float, m: int) -> void:
+	var g := d.geo
+	var go := run / m
+	var rise := rise_total / m
+	var length := sqrt(run * run + rise_total * rise_total)
+	var forward := (a * run + Vector3.UP * rise_total).normalized()
 	var lateral := a.cross(Vector3.UP).normalized()
-	var length := sqrt(RUN * RUN + H * H)
-	var forward := (a * RUN + Vector3.UP * H).normalized()
 	var up := lateral.cross(forward).normalized()
 	if up.y < 0.0:
 		up = -up
 		lateral = -lateral
 	var basis := Basis(lateral, up, forward)
-	var mid := (bottom + top) * 0.5
-	var width := STRIP - 0.35
-	# Walkable ramp collider along the step noses. Its surface runs 2 cm
-	# above the line from foot to landing so it passes over the landing
-	# slab's edge: a capsule meeting that corner even 1 cm proud of the slope
-	# touches it at over 50 degrees, which counts as a wall.
-	d.geo.box(mid - up * 0.04, Vector3(width, 0.12, length), &"", &"metal", false, basis)
-	var inner := -LevelLayout.dir_vector(side)  # from the wall toward the open side
-	var zn := L.zone_of(x, z, s)
-	var room := L.room_of(x, z, s)
-	var concrete := s < 0 or (zn.style and zn.style.family != &"factory") or (room and room.use == &"stairwell")
-	if concrete:
-		_concrete_flight(d, bottom, a, inner, width)
-	else:
-		_steel_flight(d, bottom, a, inner, width, mid, basis, length, top)
-	# Clip guard on the open (inner) edge of the upper half of the flight.
-	var gmid := center + inner * (width * 0.5 + 0.1) + a * (RUN * 0.2) + Vector3.UP * (H * 0.7 + 0.5)
-	d.geo.box(gmid, Vector3(0.1, 1.2, length * 0.6), &"", &"metal", false, basis, Layers.CLIP)
-
-
-func _stair_steps() -> int:
-	return int(round(H / 0.19))
-
-
-func _concrete_flight(d: ChunkData, bottom: Vector3, a: Vector3, inner: Vector3, width: float) -> void:
-	var g := d.geo
-	var n := _stair_steps()
-	var go := RUN / n
-	var rise := H / n
-	var tan := H / RUN
-	var waist := 0.2 * sqrt(1.0 + tan * tan)  # vertical depth of a 20 cm thick slab
-	var t_end := RUN - 0.005  # stops short of the landing slab's edge
-	# Side profile (along, up), counter-clockwise from the foot.
-	var prof := PackedVector2Array()
-	prof.append(Vector2(0.0, -0.03))
-	prof.append(Vector2((waist - 0.03) / tan, -0.03))
-	prof.append(Vector2(t_end, t_end * tan - waist))
-	prof.append(Vector2(t_end, H))
-	for i in range(n - 1, -1, -1):
-		var front := i * go
-		prof.append(Vector2(front, (i + 1) * rise))
-		prof.append(Vector2(front, i * rise if i > 0 else 0.0))
-	# Drop repeated points (the last riser meets the start).
-	var clean := PackedVector2Array()
-	for p in prof:
-		if clean.is_empty() or clean[clean.size() - 1].distance_to(p) > 0.001:
-			clean.append(p)
-	# Wall side sunk 5 cm into the wall; open side flush with the flight.
-	g.extrude(clean, bottom, a, inner, -(width * 0.5 + 0.08), width * 0.5, &"concrete_dark")
-	# Nosings: steel edges, the first and last painted.
-	for i in n:
-		var mat := &"painted_steel_yellow" if i == 0 or i == n - 1 else &"gun_metal"
-		var p := bottom + a * (i * go + 0.02) + Vector3.UP * ((i + 1) * rise - 0.011) + inner * (-0.04)
-		g.box(p, _oriented(a, Vector3(width - 0.1, 0.038, 0.05)), mat)
-	# Balustrade on the open side: posts every third step, rail and mid rail.
-	var post_w := width * 0.5 - 0.07
-	var rail_at := func(t: float, h: float, w: float) -> Vector3:
-		return bottom + a * t + Vector3.UP * (t * tan + rise + h) + inner * w
-	var posts: Array[float] = []
-	var i := 1
-	while i < n - 1:
-		posts.append((i + 0.5) * go)
-		i += 3
-	posts.append(RUN - go * 0.5)
-	for t in posts:
-		var base := bottom + a * t + Vector3.UP * (floorf(t / go) * rise + rise) + inner * post_w
-		g.box(base + Vector3.UP * 0.47, Vector3(0.045, 0.94, 0.045), &"painted_steel")
-	var t0 := posts[0]
-	var t1 := posts[posts.size() - 1]
-	g.cylinder(rail_at.call(t0, 0.95, post_w), rail_at.call(t1, 0.95, post_w), 0.028, &"prop_wood", 8, true)
-	g.cylinder(rail_at.call(t0, 0.48, post_w), rail_at.call(t1, 0.48, post_w), 0.015, &"painted_steel", 6)
-	# Handrail on the wall side, on brackets.
-	var wall_w := -(STRIP * 0.5 - 0.15 - 0.07)
-	g.cylinder(rail_at.call(0.3, 0.9, wall_w), rail_at.call(RUN - 0.3, 0.9, wall_w), 0.022, &"gun_metal", 6, true)
-	for t: float in [0.6, RUN * 0.5, RUN - 0.6]:
-		var p: Vector3 = rail_at.call(t, 0.9, wall_w)
-		g.box(p + inner * -0.04 + Vector3.DOWN * 0.03, Vector3(0.025, 0.06, 0.025) + Vector3(absf(inner.x), 0, absf(inner.z)) * 0.06, &"gun_metal")
-
-
-func _steel_flight(d: ChunkData, bottom: Vector3, a: Vector3, inner: Vector3, width: float, mid: Vector3, basis: Basis,
-		length: float, top: Vector3) -> void:
-	var g := d.geo
-	var n := _stair_steps()
-	var go := RUN / n
-	var rise := H / n
-	var tan := H / RUN
-	var up := basis.y
-	# Channel stringers: web, top and bottom flanges.
+	var mid := foot + a * (run * 0.5) + Vector3.UP * (rise_total * 0.5)
 	for e: float in [-1.0, 1.0]:
-		var off := inner * (e * (width * 0.5 + 0.035))
+		var off := lat * (e * (width * 0.5 + 0.035))
 		var c := mid + off - up * 0.13
 		g.box(c, Vector3(0.012, 0.3, length), &"painted_steel_yellow", &"", false, basis)
 		for f: float in [-1.0, 1.0]:
-			g.box(c + up * (f * 0.144) - inner * (e * 0.035), Vector3(0.07, 0.012, length), &"painted_steel_yellow", &"", false, basis)
-	# Tread plates with a turned-down front lip; open risers.
-	for i in n:
+			g.box(c + up * (f * 0.144) - lat * (e * 0.035), Vector3(0.07, 0.012, length), &"painted_steel_yellow", &"", false, basis)
+	for i in m:
 		var t0 := maxf(i * go - 0.01, 0.0)
-		var t1 := minf((i + 1) * go + 0.01, RUN - 0.005)
+		var t1 := minf((i + 1) * go + 0.01, run - 0.005)
 		var h := (i + 1) * rise
-		var p := bottom + a * ((t0 + t1) * 0.5) + Vector3.UP * (h - 0.016)
-		g.box(p, _oriented(a, Vector3(width, 0.03, t1 - t0)), &"rusted_metal")
-		var lip := bottom + a * (t0 + 0.0105) + Vector3.UP * (h - 0.045)  # 1.5 mm proud of the plate's edge
-		g.box(lip, _oriented(a, Vector3(width - 0.004, 0.06, 0.024)), &"painted_steel_yellow" if i == 0 or i == n - 1 else &"rusted_metal")
+		g.box(foot + a * ((t0 + t1) * 0.5) + Vector3.UP * (h - 0.016), _oriented(a, Vector3(width, 0.03, t1 - t0)), &"rusted_metal")
+		var lip := foot + a * (t0 + 0.0105) + Vector3.UP * (h - 0.045)  # 1.5 mm proud of the plate's edge
+		g.box(lip, _oriented(a, Vector3(width - 0.004, 0.06, 0.024)), &"painted_steel_yellow" if i == 0 or i == m - 1 else &"rusted_metal")
 	# Rails both sides: posts off the stringers, top and knee rails.
 	for e: float in [-1.0, 1.0]:
 		var w := e * (width * 0.5 + 0.035)
 		var pts: Array[Vector3] = []
 		var t := go * 1.5
-		while t < RUN - 0.3:
-			pts.append(bottom + a * t + Vector3.UP * (t * tan + rise) + inner * w)
-			t += 1.15
-		pts.append(bottom + a * (RUN - 0.25) + Vector3.UP * ((RUN - 0.25) * tan + rise) + inner * w)
+		while t < run - 0.3:
+			pts.append(foot + a * t + Vector3.UP * (t / run * rise_total + rise) + lat * w)
+			t += 1.0
+		pts.append(foot + a * (run - 0.2) + Vector3.UP * ((run - 0.2) / run * rise_total + rise) + lat * w)
 		for p in pts:
-			g.box(p + Vector3.UP * 0.45, Vector3(0.05, 0.9 + 0.2, 0.05), &"painted_steel_yellow")
+			g.box(p + Vector3.UP * 0.45, Vector3(0.05, 1.1, 0.05), &"painted_steel_yellow")
 		g.cylinder(pts[0] + Vector3.UP * 0.98, pts[pts.size() - 1] + Vector3.UP * 0.98, 0.024, &"painted_steel_yellow", 6, true)
 		g.cylinder(pts[0] + Vector3.UP * 0.5, pts[pts.size() - 1] + Vector3.UP * 0.5, 0.018, &"painted_steel_yellow", 6, true)
-	# Landing support under the top end when there's no floor slab there yet.
-	g.box(top + a * 0.05 + Vector3.DOWN * 0.165, _oriented(a, Vector3(width - 0.1, 0.3, 0.2)), &"painted_steel")
+		var gc := (pts[0] + pts[pts.size() - 1]) * 0.5 + Vector3.UP * 0.6
+		g.box(gc, Vector3(0.08, 1.2, pts[0].distance_to(pts[pts.size() - 1])), &"", &"metal", false,
+			Basis.looking_at((pts[pts.size() - 1] - pts[0]).normalized(), Vector3.UP), Layers.CLIP)
 
 
 func _oriented(along: Vector3, size: Vector3) -> Vector3:
@@ -708,18 +880,24 @@ func _oriented(along: Vector3, size: Vector3) -> Vector3:
 	return Vector3(size.z, size.y, size.x) if absf(along.x) > 0.5 else size
 
 
-## Railings round the opening a flight comes up through.
+## Railings round the opening a stair comes up through: along its room side
+## and far end, and across the arrival end beside where the second flight
+## comes up (and across the gap behind a stair that stands off the wall).
 func _hole_rails(d: ChunkData, x: int, z: int, s: int, o: Vector3) -> void:
-	var rr := run_rect(L.hole_dir(x, z, s), L.hole_side(x, z, s))
-	var side := L.hole_side(x, z, s)
-	var a := LevelLayout.dir_vector(L.hole_dir(x, z, s))
-	var inner := -LevelLayout.dir_vector(side)
-	var c := o + Vector3(rr.position.x + rr.size.x * 0.5, 0.0, rr.position.y + rr.size.y * 0.5)
-	var edge := c + inner * (STRIP * 0.5)
-	railing(d.geo, edge - a * (RUN * 0.5), edge + a * (RUN * 0.5 - 1.0))
-	# Across the low end of the opening (the flight's foot space is floor up here).
-	var low := c - a * (RUN * 0.5)
-	railing(d.geo, low + inner * (STRIP * 0.5), low - inner * (STRIP * 0.5 - 0.15))
+	var st := _stair(o, L.hole_dir(x, z, s), L.hole_side(x, z, s), _stair_steel(x, z, s - 1))
+	railing(d.geo, st.p(st.foot - 0.04, STRIP + 0.04, 0.0), st.p(st.end + 0.04, STRIP + 0.04, 0.0))
+	railing(d.geo, st.p(st.end + 0.04, T * 0.5 + 0.05, 0.0), st.p(st.end + 0.04, STRIP + 0.04, 0.0))
+	# A stairwell carries on up from the same landing: leave its foot open.
+	var stacked := L.has_flag(x, z, s, LevelLayout.STAIR) and L.stair_side(x, z, s) == L.hole_side(x, z, s) \
+		and L.stair_dir(x, z, s) == L.hole_dir(x, z, s)
+	if not stacked:
+		_arrival_rails(d, st)
+
+
+func _arrival_rails(d: ChunkData, st: Stair) -> void:
+	railing(d.geo, st.p(st.foot - 0.04, st.wall_lo + st.lane + 0.03, 0.0), st.p(st.foot - 0.04, STRIP + 0.04, 0.0))
+	if st.wall_lo - T * 0.5 > 0.3:
+		railing(d.geo, st.p(st.foot - 0.04, T * 0.5 + 0.05, 0.0), st.p(st.foot - 0.04, st.wall_lo - 0.03, 0.0))
 
 
 func railing(g: GeoBuilder, p0: Vector3, p1: Vector3, mat: StringName = &"painted_steel_yellow") -> void:
@@ -1131,36 +1309,63 @@ func _door_frame(d: ChunkData, x: int, z: int, s: int, o: Vector3, dir: int, op:
 	wall_box(g, o, dir, a0 - 0.06, a0 + 0.04, 0.0, h + 0.04, &"rusted_metal", false, T + 0.06)
 	wall_box(g, o, dir, a1 - 0.04, a1 + 0.06, 0.0, h + 0.04, &"rusted_metal", false, T + 0.06)
 	wall_box(g, o, dir, a0 - 0.08, a1 + 0.08, h - 0.04, h + 0.1, &"rusted_metal", false, T + 0.08)
-	# Narrow doors keep a leaf: hanging open, half off its hinges, or flat on the floor.
+	# Narrow doorways: most lost their door long ago, a quarter keep a broken
+	# one (hanging off a hinge, kicked in, propped against the wall), a few
+	# still have a working door (a Door node: see ChunkData.doors).
 	var w := a1 - a0
 	if w > 1.6:
 		return
 	var r := rng(x, z, s, 20 + dir)
 	var roll := r.randf()
-	if roll < 0.35:
+	if roll < DOOR_MISSING:
 		return
-	var hinge_a := a0 + 0.04 if r.randf() < 0.5 else a1 - 0.04
+	var hinge_low := r.randf() < 0.5
 	var inward := -LevelLayout.dir_vector(dir)
 	if r.randf() < 0.5:
-		inward = -inward  # opens into the neighbour
+		inward = -inward  # into the neighbour
 	var along := LevelLayout.dir_vector((dir + 1) % 4)
 	var edge := o + Vector3(C * 0.5, 0, C * 0.5) + LevelLayout.dir_vector(dir) * (C * 0.5)
-	var hinge := edge + along * (hinge_a - C * 0.5) + inward * 0.2
-	var toward := along * (1.0 if hinge_a < C * 0.5 else -1.0)
+	var hinge_a := a0 + 0.04 if hinge_low else a1 - 0.04
+	var hinge := edge + along * (hinge_a - C * 0.5)
+	var toward := along * (1.0 if hinge_low else -1.0)
 	var mat: StringName = [&"painted_steel_blue", &"painted_steel", &"wood_planks", &"painted_steel_green"][r.randi_range(0, 3)]
-	if roll < 0.85:
-		# Swung open, resting against the wall at 75-105 degrees.
-		var ang := deg_to_rad(r.randf_range(75.0, 105.0))
+	var lw := w - 0.08
+	var lh := h - 0.04
+	if roll >= 1.0 - DOOR_INTACT:
+		var ar := r.randf()
+		var ang := 0.0
+		if ar > 0.5:
+			ang = r.randf_range(15.0, 50.0) if ar < 0.85 else r.randf_range(80.0, 95.0)
+			ang *= 1.0 if r.randf() < 0.5 else -1.0
+		d.doors.append([Transform3D(Basis(toward, Vector3.UP, toward.cross(Vector3.UP)), hinge), lw, lh, mat, ang])
+		return
+	var surf: StringName = &"wood" if mat == &"wood_planks" else &"metal"
+	var kind := r.randi_range(0, 2)
+	if kind == 0:
+		# Off its top hinge: swung back toward the wall and dropped at the
+		# latch corner, which rests on the floor.
+		var ang := deg_to_rad(r.randf_range(70.0, 100.0))
 		var leaf_dir := (toward * cos(ang) + inward * sin(ang)).normalized()
-		var basis := Basis.looking_at(leaf_dir, Vector3.UP)
-		var sag := r.randf_range(0.0, 0.06) if roll > 0.7 else 0.0
-		g.box(hinge + leaf_dir * (w * 0.5 - 0.04) + Vector3.UP * (h * 0.5 - 0.02 - sag), Vector3(0.05, h - 0.08, w - 0.12), mat, &"", false,
-			basis * Basis(Vector3.FORWARD, sag * 2.0))
+		var drop := r.randf_range(0.18, 0.35)
+		var tilt := atan2(drop, lw)
+		var basis := Basis.looking_at(leaf_dir, Vector3.UP) * Basis(Vector3.RIGHT, -tilt)
+		var centre := hinge + inward * 0.06 + leaf_dir * (lw * 0.5 - 0.02) + Vector3.UP * (lh * 0.5 + 0.02 - drop * 0.5)
+		g.box(centre, Vector3(0.05, lh, lw), mat, surf, false, basis)
+	elif kind == 1:
+		# Kicked in, lying flat in the room.
+		var p := edge + inward * r.randf_range(1.0, 1.6) + along * r.randf_range(-0.6, 0.6)
+		var basis := Basis(Vector3.UP, r.randf() * TAU) * Basis(Vector3.RIGHT, r.randf_range(-0.04, 0.04))
+		g.box(p + Vector3.UP * 0.03, Vector3(lw, 0.05, lh), mat, surf, false, basis)
 	else:
-		# Torn off, lying in the room.
-		var p := edge + inward * r.randf_range(1.2, 1.8) + along * r.randf_range(-0.8, 0.8)
-		var basis := Basis(Vector3.UP, r.randf() * TAU) * Basis(Vector3.RIGHT, r.randf_range(-0.12, 0.12))
-		g.box(p + Vector3.UP * 0.04, Vector3(w - 0.04, 0.05, h - 0.06), mat, &"", false, basis)
+		# Torn off and propped against the wall beside the doorway, top
+		# resting on the wall, foot out on the floor.
+		var lean := deg_to_rad(r.randf_range(8.0, 14.0))
+		var x_axis := toward.normalized()
+		var y_axis := (Vector3.UP * cos(lean) - inward * sin(lean)).normalized()
+		var basis := Basis(x_axis, y_axis, x_axis.cross(y_axis))
+		var at := hinge - toward * (0.3 + lw * 0.5)
+		var centre := at + inward * (T * 0.5 + 0.04 + lh * sin(lean) * 0.5) + Vector3.UP * (lh * cos(lean) * 0.5)
+		g.box(centre, Vector3(lw, lh, 0.05), mat, surf, false, basis)
 
 
 ## Glazed partition between two interior spaces: frame, mullions, some glass.
@@ -2203,6 +2408,15 @@ func _load_kit() -> void:
 				dst[0] = dv
 				dst[1] = dn
 		_kit[id] = {"arrays": arrays, "surface": StringName(root.get_meta(&"surface", &"metal"))}
+		if id in OPEN_KIT:
+			var tris := PackedVector3Array()
+			for mat: StringName in arrays:
+				tris.append_array((arrays[mat] as Array)[0])
+			_kit[id]["parts"] = CollisionBoxes.from_triangles(tris)
+			var box := AABB(tris[0], Vector3.ZERO)
+			for p in tris:
+				box = box.expand(p)
+			_kit[id]["shelves"] = CollisionBoxes.shelves(_kit[id]["parts"], box, tris)
 		root.free()
 
 
@@ -2228,11 +2442,18 @@ static func box_aabb(center: Vector3, size: Vector3, basis: Basis) -> AABB:
 func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary = {}, tilt: Basis = Basis.IDENTITY) -> int:
 	var xform := Transform3D(Basis(Vector3.UP, yaw) * tilt, pos)
 	var collide: bool = options.get("collide", true)
+	d.placed.append([id, xform, collide])
 	if ModelProps.MODELS.has(id) and not models.has(id):
 		return -1  # not fetched
 	if models.has(id):
 		var b: AABB = models.bounds[id]
-		if collide and models.solid(id):
+		if collide and not models.parts_of(id).is_empty():
+			_open_collision(d, models.parts_of(id), b, xform, models.surface(id))
+		if tilt == Basis.IDENTITY:
+			_shelf_spots(d, models.shelves_of(id), xform)
+			if id == "tool_chest":
+				loot_spot(d, xform * Vector3(0.0, b.end.y, b.get_center().z), yaw + PI * 0.5)
+		elif collide and models.solid(id):
 			d.geo.box(xform * b.get_center(), b.size, &"", models.surface(id), false, xform.basis)
 		d.taken.append(box_aabb(xform * b.get_center(), b.size, xform.basis))
 		if d.geo.visuals:
@@ -2244,7 +2465,15 @@ func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary
 		var fp: Array = FOOTPRINTS[id]
 		var size: Vector3 = fp[0]
 		var surf: StringName = _kit[id]["surface"] if _kit.has(id) else &"metal"
-		d.geo.box(xform * (Vector3.UP * float(fp[1])), size, &"", surf, false, xform.basis)
+		if _kit.has(id) and _kit[id].has("parts"):
+			_open_collision(d, _kit[id]["parts"], AABB(Vector3.UP * float(fp[1]) - size * 0.5, size), xform, surf)
+			if tilt == Basis.IDENTITY:
+				_shelf_spots(d, _kit[id]["shelves"], xform)
+		elif id in LOOT_TOPS and tilt == Basis.IDENTITY:
+			# Something can sit on top of a crate or a cabinet.
+			loot_spot(d, xform * (Vector3.UP * (float(fp[1]) + size.y * 0.5)), yaw + PI * 0.5)
+		else:
+			d.geo.box(xform * (Vector3.UP * float(fp[1])), size, &"", surf, false, xform.basis)
 		d.taken.append(box_aabb(xform * (Vector3.UP * float(fp[1])), size, xform.basis))
 	if not d.geo.visuals:
 		return -1
@@ -2253,6 +2482,41 @@ func kit(d: ChunkData, id: String, pos: Vector3, yaw: float, options: Dictionary
 		return -1
 	d.props.append([id, xform, options])
 	return d.props.size() - 1
+
+
+## Loot spots on a prop's shelves within easy reach (0.3-1.75 m up): the
+## middle of each, or both halves of a long one.
+func _shelf_spots(d: ChunkData, shelves: Array, xform: Transform3D) -> void:
+	for lv: Array in shelves:
+		var h: float = lv[0]
+		if h < 0.3 or h > 1.75:
+			continue
+		var rect: Rect2 = lv[1]
+		if minf(rect.size.x, rect.size.y) < 0.3:
+			continue  # a rail or a sign's crossbar, not somewhere to put things
+		var c := rect.get_center()
+		var long_x := rect.size.x >= rect.size.y
+		var yaw_local := PI * 0.5 if long_x else 0.0
+		var offsets: Array[float] = [0.0]
+		if maxf(rect.size.x, rect.size.y) >= 1.0:
+			offsets = [-0.25, 0.25]
+		for f in offsets:
+			var off := Vector2(rect.size.x * f, 0.0) if long_x else Vector2(0.0, rect.size.y * f)
+			var p := xform * Vector3(c.x + off.x, h, c.y + off.y)
+			loot_spot(d, p, xform.basis.get_euler().y + yaw_local)
+
+
+## A place a pickup can be put (see ChunkData.loot_spots).
+func loot_spot(d: ChunkData, p: Vector3, yaw: float) -> void:
+	d.loot_spots.append([p, yaw])
+
+
+## Open props: a box round the bounds that only stops movement (and keeps the
+## navmesh off it), and the frame itself (`parts`) for bullets and sight.
+func _open_collision(d: ChunkData, parts: Array, bounds: AABB, xform: Transform3D, surface: StringName) -> void:
+	d.geo.box(xform * bounds.get_center(), bounds.size, &"", surface, false, xform.basis, Layers.CLIP)
+	for part: Array in parts:
+		d.geo.box(xform * (part[0] as Vector3), part[1], &"", surface, false, xform.basis, Layers.WORLD, false)
 
 
 # --- Lights -----------------------------------------------------------------------------

@@ -45,12 +45,8 @@ const CORNER_DIRS: Array = [[0, 3], [0, 1], [2, 1], [2, 3]]
 ## How far a chamfer cuts along each of the two walls.
 const CHAMFER_CUT := 2.8
 
-## Stair geometry: a flight climbs one storey over RUN metres along its strip,
-## starting FOOT metres in from the cell edge behind it (room to step on in
-## line), and arrives on a landing inside the same cell column. Its strip is
-## STRIP wide along one side of the cell.
-const FOOT := 0.9
-const RUN := 5.6
+## A stair climbs one storey inside its cell column, in a strip STRIP wide
+## along one side of the cell (the switchback's shape: ChunkBuilder.Stair).
 const STRIP := 3.2
 
 const DIRS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]

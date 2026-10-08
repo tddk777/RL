@@ -141,11 +141,21 @@ Key contracts:
   breaches; vents only with `crawl`, so enemies and exits never depend on
   them. Everything that isn't a building cell (open ground, yards,
   walkways) is "outdoor" to a building, which builds that wall whole.
-  Stairs (`ChunkBuilder._flight`): solid concrete flights with a soffit,
-  nosings and a balustrade in interiors, stairwells and tunnels; steel
-  stairs (channel stringers, tread plates, posted rails) on factory floors;
-  both walk on one ramp collider. `GeoBuilder.extrude()` builds stepped
-  profiles.
+  Stairs (`ChunkBuilder._flight`, `Stair`, `stair_at()`) are switchbacks in
+  their cell's strip: a 1.5 m landing at the foot, the first flight up the
+  inner lane to a half landing at the far end, the second back up the wall
+  lane, arriving over the foot landing (`run_rect()` is the opening that
+  needs in the floor above). Concrete in interiors, stairwells and tunnels
+  (solid to the floor, or slab flights with a soffit where another stair is
+  below: `Stair.open_below`; nosings, balustrades along the well and the
+  open side, a wall handrail); a freestanding steel stair on posts, set off
+  the wall, on factory floors. Stairwells stack the same switchback storey
+  over storey, foot at the hallway door. Both walk on invisible ramp
+  colliders. `GeoBuilder.extrude()` builds stepped profiles.
+  Doorways: most narrow ones have no door left, a quarter a broken one
+  (off a hinge, kicked in, propped against the wall), a fifth a working
+  `Door` (`entities/door.gd`: player opens/closes it, NPCs shove it open on
+  approach, the noise carries; `ChunkData.doors`).
   `ChunkBuilder` (architecture) and `SetPieces` (machines, conveyor lines,
   furnaces, racks, cubicles, boilers, lockers, yards, open ground, and
   `_clutter` odds and ends checked against `ChunkData.taken`) turn
@@ -187,9 +197,23 @@ Key contracts:
   newly added region.
 - **Scanned props** (`levels/procgen/model_props.gd`): Poly Haven models
   (CC0) baked once into one mesh each with a kit-style origin, placed through
-  `ChunkBuilder.kit()` by id like kit props (box collider round the bounds if
-  `solid`), drawn as one MultiMesh per model per chunk. They face +Z (kit
-  props -Z). The Detailer and set pieces skip them when they aren't fetched.
+  `ChunkBuilder.kit()` by id like kit props, drawn as one MultiMesh per model
+  per chunk. They face +Z (kit props -Z). The Detailer and set pieces skip
+  them when they aren't fetched. Collision: `solid` (compact things) gets a
+  box round the bounds; `parts` (open things: shelving, carts, chairs,
+  ladders, the desk; kit `OPEN_KIT`) gets a movement-only CLIP box plus
+  `CollisionBoxes` voxelised from the mesh for bullets, so shots pass
+  between shelves and legs. Shelf heights come from those boxes
+  (`shelves_of()`) and become loot spots.
+- **Loot spots** (`ChunkData.loot_spots`, `ChunkBuilder.loot_spot()`):
+  shelves within reach, workbench shelves, desk and crate tops.
+  `ProceduralLevel` moves `LevelProfile.pickup_surface_chance` of pickups
+  onto one near where the layout put them (`on_surface`); the rest settle
+  onto the floor (`Ground.settle`, since the navmesh floats above it).
+- **Death**: `Ragdoll` (`characters/ragdoll.gd`) builds physical bones from
+  any skeleton given bone names (`Ragdoll.UAL`); `Mannequin.die()` /
+  `go_limp()` hands the current pose to physics. Fallen corpses placed in
+  levels go limp too and drape over what they lie on.
 - **World surfaces**: level materials use `assets/shaders/world_surface.gdshader`
   (world-space triplanar, no UVs needed): noise-driven texture offsets hide
   tiling, and grime, water and rust runs, damp, dust and ceiling stains are

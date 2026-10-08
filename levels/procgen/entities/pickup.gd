@@ -37,6 +37,10 @@ func _ready() -> void:
 		prompt = "Take %s rounds (%d)" % [caliber, amount]
 		_build_box()
 		_shape(Vector3(0.45, 0.3, 0.4), Vector3(0, 0.12, 0))
+	# Placed from the navmesh, which floats above the floor: drop onto it
+	# (once whoever placed it has set the transform).
+	if not record.get("on_surface", false):
+		Ground.settle.call_deferred(self)
 
 
 func interact(by: Node) -> void:

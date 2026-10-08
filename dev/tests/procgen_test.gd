@@ -49,6 +49,7 @@ func _run() -> void:
 	var t0 := Time.get_ticks_msec()
 	var args := OS.get_cmdline_user_args()
 	seed(int(args[1]) if args.size() > 1 else 7)
+	ProceduralLevel.record_placements = true
 	Game.start_run()
 	while Game.state != Game.State.PLAYING and Time.get_ticks_msec() - t0 < 180000:
 		await wait(0.25)
@@ -71,6 +72,89 @@ func _run() -> void:
 	var decals := level.find_children("*", "Decal", true, false).size()
 	var bodies := level.find_children("*", "StaticBody3D", true, false).size()
 	print("INFO  nodes: %d mesh instances, %d lights, %d decals, %d static bodies" % [meshes, lights, decals, bodies])
+	# Nothing floor-standing hangs in the air: from each prop's base, the
+	# surface under it must be right there (hung things, found on walls with
+	# nothing under them in reach, are skipped).
+	var prop_space := level.get_world_3d().direct_space_state
+	# Resting: a surface right under the base (front faces only, so a prop's
+	# own collider doesn't count), or the top of another prop it is stacked on.
+	var tops: Array = []  # [AABB of each sized placement]
+	for rec: Array in level.placements:
+		var pid: String = rec[0]
+		var pxf: Transform3D = rec[1]
+		var box := AABB()
+		if level.builder.models.has(pid):
+			box = level.builder.models.bounds[pid]
+		elif ChunkBuilder.FOOTPRINTS.has(pid):
+			var fp: Array = ChunkBuilder.FOOTPRINTS[pid]
+			box = AABB(Vector3(0, float(fp[1]), 0) - (fp[0] as Vector3) * 0.5, fp[0])
+		else:
+			continue
+		tops.append(pxf * box)
+	var supported := func(base: Vector3) -> bool:
+		# From a little above: shelf colliders are voxel boxes whose tops sit
+		# up to a voxel (6-9 cm) over the surface drawn.
+		for from_h: float in [0.05, 0.16]:
+			var q := PhysicsRayQueryParameters3D.create(base + Vector3.UP * from_h, base + Vector3.DOWN * 0.08, Layers.WORLD | Layers.CLIP)
+			q.hit_back_faces = false
+			q.hit_from_inside = false
+			var hit := prop_space.intersect_ray(q)
+			if not hit.is_empty() and (hit.position as Vector3).y < base.y + 0.1:
+				return true
+		for t: AABB in tops:
+			var top := t.end.y
+			if absf(top - base.y) < 0.09 and base.x > t.position.x and base.x < t.end.x and base.z > t.position.z and base.z < t.end.z:
+				return true
+		return false
+	var floating := {}
+	var float_where: Array = []
+	for rec: Array in level.placements:
+		var id: String = rec[0]
+		if ModelProps.MODELS.has(id) and ModelProps.MODELS[id].get("origin", &"base") != &"base":
+			continue
+		if id in ChunkBuilder.NODE_PROPS:
+			continue  # lamps hang off walls and pillars
+		var xf: Transform3D = rec[1]
+		if not rec[2]:
+			continue  # stacked dressing (pallets on pallets) has no collider of its own
+		if xf.basis.y.dot(Vector3.UP) < 0.9:
+			continue  # toppled / leaning things rest on an edge
+		var base := xf.origin
+		if supported.call(base):
+			continue
+		var hit := prop_space.intersect_ray(PhysicsRayQueryParameters3D.create(base, base + Vector3.DOWN * 0.8, Layers.WORLD | Layers.CLIP))
+		if hit:  # (nothing in reach below: hung on a wall)
+			floating[id] = floating.get(id, 0) + 1
+			if float_where.size() < 12:
+				float_where.append("%s %s gap %.2f" % [id, base.snapped(Vector3.ONE * 0.1), base.y - (hit.position as Vector3).y])
+	var n_float: int = floating.values().reduce(func(a: int, b: int) -> int: return a + b, 0) if not floating.is_empty() else 0
+	print("INFO  floating props by kind: %s" % [floating])
+	for w: String in float_where:
+		print("INFO    ", w)
+	check(n_float <= 4, "floor props rest on something (%d of %d float)" % [n_float, level.placements.size()])
+	# Pickups mostly on shelves, benches and desks, and resting on them.
+	var on_surface := 0
+	var resting := 0
+	for rec: Dictionary in L.pickups:
+		if rec.get("on_surface", false):
+			on_surface += 1
+			if supported.call(rec["position"] as Vector3):
+				resting += 1
+			else:
+				print("INFO  pickup not resting at %s" % [(rec["position"] as Vector3).snapped(Vector3.ONE * 0.01)])
+	print("INFO  pickups on surfaces: %d of %d (%d loot spots)" % [on_surface, L.pickups.size(), level.loot_spots.size()])
+	check(on_surface >= L.pickups.size() / 3, "most pickups lie on shelves, benches or desks (%d of %d)" % [on_surface, L.pickups.size()])
+	check(resting == on_surface, "and rest on them (%d of %d)" % [resting, on_surface])
+	# Doors: most doorways empty or with a broken door, some working ones.
+	var working := level.find_children("*", "Door", true, false)
+	print("INFO  working doors: %d" % working.size())
+	check(working.size() > 0, "some doors still work (%d)" % working.size())
+	if not working.is_empty():
+		var door := working[0] as Door
+		var was := door.is_open()
+		door.toggle(level.get_node_or_null("Player") as Node3D)
+		await wait(1.2)
+		check(door.is_open() != was, "a door opens and closes")
 	# Scanned props (ModelProps): drawn as MultiMeshes named after the model.
 	var kinds := {}
 	var placed := 0
@@ -104,12 +188,9 @@ func _run() -> void:
 				if not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
 					continue
 				stairs += 1
-				var rr := level.builder.run_rect(L.stair_dir(x, z, s), L.stair_side(x, z, s))
-				var o := L.cell_origin(x, z, s)
-				var a := LevelLayout.dir_vector(L.stair_dir(x, z, s))
-				var mid := o + Vector3(rr.position.x + rr.size.x * 0.5, 0, rr.position.y + rr.size.y * 0.5)
-				var bottom := mid - a * (LevelLayout.RUN * 0.5 - 0.6) + Vector3.UP * 0.45
-				var landing := mid + a * (LevelLayout.RUN * 0.5 + 0.9) + Vector3.UP * L.storey_height
+				var st := level.builder.stair_at(x, z, s)
+				var bottom := st.p(st.foot - 0.6, st.inner_lo + st.lane * 0.5, 0.45)
+				var landing := st.p(st.foot - 0.7, st.wall_lo + st.lane * 0.5, st.h + 0.45)
 				var from := NavigationServer3D.map_get_closest_point(map, bottom + Vector3.UP * 0.3)
 				var to := NavigationServer3D.map_get_closest_point(map, landing + Vector3.UP * 0.3)
 				var path := nav_path(map, from, to)
@@ -119,12 +200,17 @@ func _run() -> void:
 					walkable += 1
 				else:
 					bad.append(Vector3i(x, z, s))
+					print("INFO  stair %s dir %d side %d %s: foot snap %.2f, arrival snap %.2f, path ends %.2f from it (%d points)" % [
+						Vector3i(x, z, s), L.stair_dir(x, z, s), L.stair_side(x, z, s), "steel" if st.steel else "concrete",
+						from.distance_to(bottom), to.distance_to(landing), path[path.size() - 1].distance_to(to) if path.size() > 0 else -1.0, path.size()])
 	print("INFO  unwalkable stairs: %s" % [bad])
 	check(stairs > 0 and walkable >= stairs * 0.9, "stairs walkable on the navmesh (%d of %d)" % [walkable, stairs])
 
 	# Enemies and loot stand on walkable ground, not inside machines.
 	var inside := 0
 	for e: Dictionary in L.enemies + L.pickups:
+		if e.get("on_surface", false):
+			continue  # on a shelf or bench, checked below
 		var p: Vector3 = e["position"]
 		var q := NavigationServer3D.map_get_closest_point(map, p)
 		if q.distance_to(p) > 0.8:
@@ -296,20 +382,30 @@ func _run() -> void:
 				if flights >= 5 or not L.has_flag(x, z, s, LevelLayout.STAIR) or L.distance[L.idx(x, z, s)] < 0:
 					continue
 				flights += 1
-				var rr := level.builder.run_rect(L.stair_dir(x, z, s), L.stair_side(x, z, s))
-				var o := L.cell_origin(x, z, s)
-				var a := LevelLayout.dir_vector(L.stair_dir(x, z, s))
-				var mid := o + Vector3(rr.position.x + rr.size.x * 0.5, 0, rr.position.y + rr.size.y * 0.5)
-				if await _walk(player, mid - a * (LevelLayout.RUN * 0.5 + 0.5), a,
-						func() -> bool: return player.global_position.y > o.y + L.storey_height - 0.2 and (player.global_position - mid).dot(a) > LevelLayout.RUN * 0.5):
+				# Each switchback: up the first flight onto the half landing, up the
+				# second onto the floor above; then back down both.
+				var st := level.builder.stair_at(x, z, s)
+				var half := st.h * 0.5
+				var base_y := st.origin.y
+				var along := func() -> float: return (player.global_position - st.origin).dot(st.a)
+				var i_mid := st.inner_lo + st.lane * 0.5
+				var w_mid := st.wall_lo + st.lane * 0.5
+				var up1: bool = await _walk(player, st.p(st.foot - 0.5, i_mid, 0.0), st.a,
+					func() -> bool: return player.global_position.y > base_y + half - 0.2 and along.call() > st.turn + 0.3)
+				var up2: bool = up1 and await _walk(player, st.p(st.turn + 0.6, w_mid, half), -st.a,
+					func() -> bool: return player.global_position.y > base_y + st.h - 0.2 and along.call() < st.foot - 0.3)
+				if up2:
 					climbed += 1
 				else:
-					print("INFO  stuck going up the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
-				if await _walk(player, mid + a * (LevelLayout.RUN * 0.5 + 0.8) + Vector3.UP * L.storey_height, -a,
-						func() -> bool: return player.global_position.y < o.y + 0.2 and (player.global_position - mid).dot(a) < -LevelLayout.RUN * 0.5):
+					print("INFO  stuck going up the stair at %s (%s, now %s)" % [Vector3i(x, z, s), "first flight" if not up1 else "second flight", player.global_position])
+				var down1: bool = await _walk(player, st.p(st.foot - 0.7, w_mid, st.h), st.a,
+					func() -> bool: return player.global_position.y < base_y + half + 0.2 and along.call() > st.turn + 0.3)
+				var down2: bool = down1 and await _walk(player, st.p(st.turn + 0.6, i_mid, half), -st.a,
+					func() -> bool: return player.global_position.y < base_y + 0.2 and along.call() < st.foot - 0.3)
+				if down2:
 					descended += 1
 				else:
-					print("INFO  stuck going down the flight at %s (now %s)" % [Vector3i(x, z, s), player.global_position])
+					print("INFO  stuck going down the stair at %s (%s, now %s)" % [Vector3i(x, z, s), "second flight" if not down1 else "first flight", player.global_position])
 	check(flights > 0 and climbed == flights and descended == flights, "player walks up and down flights (%d of %d up, %d down)" % [climbed, flights, descended])
 
 	# Drop-downs: through the hole onto the heap in the room below.
@@ -355,7 +451,7 @@ func _run() -> void:
 				var h: float = f["h"]
 				var ok := false
 				if kind == &"podium":
-					var from := c + out * (half + (f["n"] as int) * LevelLayout.FOOT * 0.0 + (f["n"] as int) * 0.3 + 0.5)
+					var from := c + out * (half + (f["n"] as int) * 0.3 + 0.5)
 					ok = await _walk(player, from, -out, func() -> bool: return player.global_position.y > c.y + h - 0.1)
 				else:
 					var from := c - out * 0.2 + Vector3.UP * -h

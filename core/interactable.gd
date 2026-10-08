@@ -20,7 +20,7 @@ func get_prompt() -> String:
 
 
 func can_interact(_by: Node) -> bool:
-	return enabled
+	return enabled and not is_queued_for_deletion()
 
 
 func interact(by: Node) -> void:

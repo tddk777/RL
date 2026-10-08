@@ -42,7 +42,7 @@ const _FACES := [
 ## Box with optional visual (mat != &""), collision (surface != &"") and
 ## occluder. `basis` rotates (and may scale) around the center.
 func box(center: Vector3, size: Vector3, mat: StringName, surface: StringName = &"", occlude: bool = false,
-		basis: Basis = Basis.IDENTITY, layer: int = 1) -> void:
+		basis: Basis = Basis.IDENTITY, layer: int = 1, navigable: bool = true) -> void:
 	var half := size * 0.5
 	if record_solids and visuals and mat != &"":
 		solids.append([center, size, basis])
@@ -53,7 +53,7 @@ func box(center: Vector3, size: Vector3, mat: StringName, surface: StringName = 
 		normals.append((nb * (face[0] as Vector3)).normalized())
 		for c: Vector3 in face[1]:
 			corners.append(center + basis * (c * half))
-	var in_nav := surface != &"" and (nav_bounds.size == Vector3.ZERO or _intersects(corners))
+	var in_nav := navigable and surface != &"" and (nav_bounds.size == Vector3.ZERO or _intersects(corners))
 	if in_nav and layer != 0 and minf(size.x, minf(size.y, size.z)) >= 0.5:
 		_obstruction(corners)
 	var col_key := "%s|%d" % [surface, layer]
