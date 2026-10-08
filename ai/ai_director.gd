@@ -44,6 +44,36 @@ func _init_signals() -> void:
 	if not Events.actor_reloading.is_connected(_on_reloading):
 		Events.actor_reloading.connect(_on_reloading)
 		Events.actor_damaged.connect(_on_damaged)
+		Events.ai_callout.connect(_on_callout)
+
+
+const RADIO := "res://assets/audio/people/radio_%d.wav"
+var _radio: Array[AudioStream] = []
+var _last_call: Dictionary = {}  # NPC -> time
+
+
+## Callouts go out over the radio: the player hears the squelch and the
+## garble from whoever keys up (a mate, if the caller is down).
+func _on_callout(npc: Node, kind: StringName) -> void:
+	if _radio.is_empty():
+		for i in 6:
+			if ResourceLoader.exists(RADIO % (i + 1)):
+				_radio.append(load(RADIO % (i + 1)))
+	if _radio.is_empty() or not npc is NPC:
+		return
+	var speaker := npc as NPC
+	if not speaker.alive:
+		speaker = null
+		var best := 20.0
+		for n in alive_npcs():
+			var d := n.global_position.distance_to((npc as NPC).global_position)
+			if d < best:
+				best = d
+				speaker = n
+	if speaker == null or now() - float(_last_call.get(speaker, -100.0)) < (2.5 if kind in [&"contact", &"man_down"] else 5.0):
+		return
+	_last_call[speaker] = now()
+	Audio.play_3d(_radio.pick_random(), speaker.eye_position(), &"World", -7.0, 3.0, 0.04)
 
 
 static func now() -> float:

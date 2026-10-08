@@ -1,6 +1,9 @@
 extends Node
 ## Plays one-shot sounds from pools so gameplay code never manages players.
 ## Buses: Master > SFX > (World, Weapons); Ambience; Music; UI.
+## `acoustics` shapes the World and Weapons reverb and echo from the space
+## round the listener; 3D sounds are muffled through walls, and gunshots
+## from far off arrive late (speed of sound).
 
 const POOL_3D := 48
 const POOL_2D := 16
@@ -12,6 +15,7 @@ var _next_2d := 0
 var _ambience: AudioStreamPlayer
 var _bed: AudioStreamPlayer  # second ambience layer (wind, weather) under the first
 var _music: AudioStreamPlayer
+var acoustics: Acoustics
 
 
 func _ready() -> void:
@@ -39,6 +43,9 @@ func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.bus = &"Music"
 	add_child(_music)
+	acoustics = Acoustics.new()
+	acoustics.name = "Acoustics"
+	add_child(acoustics)
 
 
 ## Picks a random stream from a list, or null when empty.
@@ -51,6 +58,18 @@ func play_3d(stream: AudioStream, position: Vector3, bus: StringName = &"World",
 		max_distance: float = 0.0) -> AudioStreamPlayer3D:
 	if stream == null:
 		return null
+	# Far gunshots take their time to arrive.
+	if bus == &"Weapons" and acoustics:
+		var delay := acoustics.arrival_delay(position)
+		if delay > 0.06:
+			get_tree().create_timer(delay, true, false, true).timeout.connect(
+				_play_3d_now.bind(stream, position, bus, volume_db, unit_size, pitch_jitter, max_distance))
+			return null
+	return _play_3d_now(stream, position, bus, volume_db, unit_size, pitch_jitter, max_distance)
+
+
+func _play_3d_now(stream: AudioStream, position: Vector3, bus: StringName, volume_db: float, unit_size: float,
+		pitch_jitter: float, max_distance: float) -> AudioStreamPlayer3D:
 	var p := _pool_3d[_next_3d]
 	_next_3d = (_next_3d + 1) % POOL_3D
 	p.stop()
@@ -61,6 +80,11 @@ func play_3d(stream: AudioStream, position: Vector3, bus: StringName = &"World",
 	p.max_distance = max_distance
 	p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
 	p.global_position = position
+	# Through walls: quieter and dull.
+	var occ := acoustics.occlusion(position) if acoustics and bus in [&"World", &"Weapons"] else Vector2(0.0, 20500.0)
+	p.volume_db = volume_db + occ.x
+	p.attenuation_filter_cutoff_hz = occ.y if occ.y < 20000.0 else 6000.0
+	p.attenuation_filter_db = -30.0 if occ.y < 20000.0 else -18.0
 	p.play()
 	return p
 

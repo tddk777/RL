@@ -9,6 +9,25 @@ damping = 0.55
 spread = 0.8
 wet = 0.14
 
+[sub_resource type="AudioEffectReverb" id="Reverb_weapons"]
+room_size = 0.8
+damping = 0.35
+spread = 1.0
+hipass = 0.1
+wet = 0.3
+
+[sub_resource type="AudioEffectDelay" id="Echo_weapons"]
+dry = 1.0
+tap1_active = true
+tap1_delay_ms = 180.0
+tap1_level_db = -14.0
+tap1_pan = 0.2
+tap2_active = true
+tap2_delay_ms = 420.0
+tap2_level_db = -20.0
+tap2_pan = -0.3
+feedback_active = false
+
 [resource]
 bus/0/effect/0/effect = SubResource("Limiter_master")
 bus/0/effect/0/enabled = true
@@ -32,6 +51,10 @@ bus/3/mute = false
 bus/3/bypass_fx = false
 bus/3/volume_db = 0.0
 bus/3/send = &"SFX"
+bus/3/effect/0/effect = SubResource("Echo_weapons")
+bus/3/effect/0/enabled = true
+bus/3/effect/1/effect = SubResource("Reverb_weapons")
+bus/3/effect/1/enabled = true
 bus/4/name = &"Ambience"
 bus/4/solo = false
 bus/4/mute = false

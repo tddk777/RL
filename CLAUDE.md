@@ -48,7 +48,8 @@ autoload/        Global services (autoloads, in load order)
   events.gd        Signal bus (noise for AI hearing, damage, kills, spawns, settings)
   settings.gd      Input bindings, graphics presets, volumes; user://settings.cfg
   registry.gd      Indexes every .tres under res://content/<category>/ by `id`
-  audio.gd         Pooled 2D/3D one-shots, ambience and music crossfades
+  audio.gd         Pooled 2D/3D one-shots, ambience and music crossfades; owns
+                   an Acoustics node (acoustics.gd, not an autoload)
   ballistics.gd    Projectile simulation (velocity, drop, flyby cracks)
   effects.gd       Impact particles, decals, casings, tracers (from SurfaceData)
   game.gd          Run flow: menu -> level N -> next level -> end; pause; death
@@ -196,6 +197,19 @@ Key contracts:
   (`dev/generators/build_materials.gd`); most use Poly Haven scans
   (`ph/<name>`, scale = 1 / the scan's real size in metres). Normal Z is
   rebuilt from X and Y, so normal maps can be VRAM-compressed (RGTC).
+- **Acoustics** (`autoload/acoustics.gd`, `Audio.acoustics`): rays round the
+  listener (`listener`, the player's head) every 0.2 s measure how big and
+  enclosed the space is and whether there's sky, and steer the World and
+  Weapons bus reverbs and the Weapons bus echo taps (timed off far walls
+  beyond 12 m). `Audio.play_3d` muffles sounds behind walls (`occlusion()`:
+  dB and low-pass cutoff per wall) and holds back Weapons-bus sounds by their
+  travel time (`arrival_delay()`, 343 m/s). AI hearing (`Events` noise) is
+  not delayed. Bus effects live in `default_bus_layout.tres`.
+- **Weapons**: `WeaponData.effective_range` sets how far NPCs carrying it
+  want to fight; shot is `AmmoData.pellets` / `pellet_spread` (damage per
+  pellet); pump actions and revolvers use the BOLT fire mode with
+  `ejects_casings` off. `EnemyData.weapon_pool` / `weapon_weights` give each
+  NPC its gun.
 - **Surfaces**: tag a collider with metadata `surface` (`concrete`, `metal`,
   `wood`, `flesh`, ...); `SurfaceData` drives impact sound/particles/decals,
   footsteps and casing sounds.
@@ -231,11 +245,11 @@ Regenerate the generated ones with:
 
 ```
 python3 dev/asset_gen/textures.py           # PBR textures + FX sprites (numpy, scipy, Pillow)
-python3 dev/asset_gen/audio.py              # all sound effects and ambience
+python3 dev/asset_gen/audio.py              # all sound effects and ambience (or one family: weapons, people, ...)
 godot --headless --path . --script res://dev/generators/build_materials.gd
-godot --headless --path . --script res://dev/generators/build_weapons.gd
+godot --headless --path . --script res://dev/generators/build_weapons.gd   # -- <id> ... for only those
 godot --headless --path . --script res://dev/generators/build_kit.gd
-godot --headless --path . --script res://dev/generators/build_content.gd   # overwrites content/*.tres
+godot --headless --path . --script res://dev/generators/build_content.gd   # overwrites content/*.tres (-- <id> ... for only those)
 godot --headless --path . --script res://dev/generators/build_l1_profile.gd  # overwrites the L1 profile
 python3 dev/asset_gen/decals.py             # wall symbols, puddles, papers, cracks, oil, moss, peeling plaster
 python3 dev/asset_gen/noise.py              # tileable noise for the world surface shader

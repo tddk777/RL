@@ -135,6 +135,7 @@ func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	Ballistics.listener = head
+	Audio.acoustics.listener = head
 	Ballistics.listener_owner = self
 	Events.settings_changed.connect(_apply_settings)
 	_apply_settings()
