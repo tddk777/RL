@@ -84,8 +84,22 @@ Key contracts:
   `characters/mannequin.gd` is the rigged one (Quaternius UAL: clips play,
   then `PoseHook` bends the chest to the aim and solves the arms onto the
   weapon's `Grip_R`/`Grip_L`); `characters/humanoid.gd` is procedural.
-- **AI behaviour**: one `AIState` node per behaviour under the NPC's `Brain`.
-  States switch with `brain.change(&"name")`. Enemy types = scene + EnemyData.
+- **AI behaviour**: one `AIState` node per behaviour under the NPC's `Brain`
+  (idle, patrol, investigate, combat, search, dead). States switch with
+  `brain.change(&"name")`. Enemy types = scene + EnemyData.
+  `Perception`: awareness builds from sight (distance, stance, movement,
+  `Player.light_exposure`, muzzle flash, torch in the face, centre vs edge
+  of view) and hearing (`Events.noise_emitted`, halved through walls, placed
+  roughly); the AI only ever goes for `last_known_position` (own senses and
+  mates' callouts, never the real position). `AIDirector` (one per level):
+  callouts passed to mates in earshot after a delay, roles (flank / hold /
+  fight), cover reservations, openings (player reloading in earshot, just
+  hit). `Tactics.find()` samples navmesh spots and classifies cover (low,
+  side, deep) by rays from the threat's eyes. Combat: take cover, peek and
+  hide, flank, push, retreat, suppressive fire, tactical reloads; aim error
+  starts wide and settles while tracking, grows when moving, hit or pinned
+  (`NPC.suppression`, from near misses in `Ballistics`). The player is
+  suppressed by NPC fire too (aim sway, darker edges).
 - **Levels**: root has a `Level` script and `player_spawn_transform()`;
   `Game` calls `configure(seed)` (if present), adds it, then awaits
   `prepare()` before placing the player. Register with a `LevelData` (order
@@ -233,6 +247,7 @@ godot --headless --import                              # re-import, surfaces par
 godot --headless res://dev/tests/smoke_test.tscn       # end-to-end test, prints PASS/FAIL, exit code
 godot --headless res://dev/tests/procgen_test.tscn     # generation, navigation, stairs, doors, exits, pickups
 godot --headless res://dev/tests/movement_test.tscn    # running, stamina, aim sway, vault, mantle, prone, lean
+godot --headless res://dev/tests/ai_test.tscn          # cover, peeking, suppression, flanking, pushing, searching
 godot --headless --script res://dev/tests/layout_test.gd   # layout invariants over several seeds
 godot --rendering-driver vulkan res://dev/tests/smoke_test.tscn -- <dir>   # also saves screenshots
 godot --rendering-driver vulkan res://dev/tests/procgen_tour.tscn -- <dir> [seed]   # one shot per space type, plus views from outside

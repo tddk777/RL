@@ -85,6 +85,11 @@ var exhausted: bool = false
 var lean: float = 0.0
 ## Breath held while aiming (sprint key): the aim steadies until it runs out.
 var holding_breath: bool = false
+## 0..1: how lit the player is (lamps, daylight, their own flashlight). The AI
+## spots a lit player far quicker than one in the dark.
+var light_exposure: float = 0.5
+## 0..1: near misses and impacts close by. The aim shakes, the edges darken.
+var suppression: float = 0.0
 
 var _pitch: float = 0.0
 var _recoil_pool: float = 0.0
@@ -108,6 +113,10 @@ var _vault_t: float = 0.0
 var _vault_time: float = 0.0
 var _aim: Node3D
 var _breath: AudioStreamPlayer
+var _last_shot: float = -100.0
+var _light_timer: float = 0.0
+var _lights: Array = []
+var _lights_age: float = 100.0
 
 const HEARTBEAT := "res://assets/audio/player/heartbeat_loop.wav"
 const BREATH := "res://assets/audio/player/breath_heavy_loop.wav"
@@ -205,6 +214,11 @@ func _process(delta: float) -> void:
 	_look_delta = Vector2.ZERO
 	_update_heartbeat(delta)
 	_update_breath_sound(delta)
+	suppression = maxf(suppression - delta * 0.35, 0.0)
+	_light_timer -= delta
+	if _light_timer <= 0.0:
+		_light_timer = 0.25
+		light_exposure = _measure_light()
 
 
 # --- Weapons --------------------------------------------------------------------
@@ -256,7 +270,54 @@ func _update_weapon_input() -> void:
 		+ (1.5 if not is_on_floor() else 0.0)
 
 
+func seconds_since_shot() -> float:
+	return Time.get_ticks_msec() / 1000.0 - _last_shot
+
+
+## Rounds cracking past or hitting close (from Ballistics).
+func suppress(amount: float) -> void:
+	if alive:
+		suppression = minf(suppression + amount, 1.0)
+		_shake = maxf(_shake, amount * 0.3)
+
+
+## Roughly how lit the player is: lamps in range with a clear line, daylight
+## from an open sky, the flashlight.
+func _measure_light() -> float:
+	_lights_age += 0.25
+	if _lights_age > 4.0:
+		_lights_age = 0.0
+		_lights = get_tree().get_nodes_in_group(&"world_lights")
+	var chest := global_position + Vector3.UP * 1.0
+	var space := get_world_3d().direct_space_state
+	var total := 0.08
+	var near: Array = []
+	for node in _lights:
+		if not is_instance_valid(node) or not (node as Light3D).is_visible_in_tree():
+			continue
+		var light := node as Light3D
+		if light is DirectionalLight3D:
+			var up := PhysicsRayQueryParameters3D.create(chest, chest - (light as DirectionalLight3D).global_basis.z * -40.0, Layers.WORLD)
+			if space.intersect_ray(up).is_empty():
+				total += 0.6 * clampf(light.light_energy, 0.0, 1.5)
+			continue
+		var reach: float = (light as OmniLight3D).omni_range if light is OmniLight3D else (light as SpotLight3D).spot_range
+		var d := light.global_position.distance_to(chest)
+		if d < reach:
+			near.append([light.light_energy * pow(1.0 - d / reach, 2.0), light])
+	near.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	for i in mini(near.size(), 3):
+		var light: Light3D = near[i][1]
+		var q := PhysicsRayQueryParameters3D.create(light.global_position, chest, Layers.WORLD)
+		if space.intersect_ray(q).is_empty():
+			total += float(near[i][0]) * 0.3
+	if flashlight and flashlight.on:
+		total += 0.35
+	return clampf(total, 0.0, 1.0)
+
+
 func _on_weapon_fired(weapon: Weapon) -> void:
+	_last_shot = Time.get_ticks_msec() / 1000.0
 	var mult: float = weapon.recoil_multiplier() * ([1.0, 0.75, 0.5][stance] as float) * (0.85 if is_aiming else 1.0) \
 		* lerpf(1.25, 1.0, stamina)
 	var kick := deg_to_rad(weapon.data.recoil_vertical * mult * randf_range(0.85, 1.15))
@@ -581,6 +642,7 @@ func _update_sway(delta: float) -> void:
 		amp *= 1.15
 	if current_weapon:
 		amp *= clampf(0.6 + current_weapon.data.weight_kg * 0.12, 0.7, 1.6) * current_weapon.data.sway
+	amp += suppression * 2.0
 	if holding_breath:
 		amp *= 0.15
 	var speed := Vector2(velocity.x, velocity.z).length()

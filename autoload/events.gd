@@ -10,3 +10,8 @@ signal player_spawned(player: Node)
 signal player_died(player: Node)
 signal level_started(level: Node)
 signal settings_changed
+## Someone started reloading (the AI listens for the player's).
+signal actor_reloading(actor: Node)
+## An NPC calls something out to its mates: &"contact", &"lost", &"reloading",
+## &"flanking", &"man_down", &"retreat", &"suppressed".
+signal ai_callout(npc: Node, kind: StringName)

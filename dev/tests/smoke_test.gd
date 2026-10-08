@@ -301,9 +301,13 @@ func _run() -> void:
 		await wait(0.2)
 		t += 0.2
 	check(npc.brain.current_name == &"combat", "NPC spots the player and enters combat (%.1fs)" % t)
-	await wait(4.0)
+	# It gets to cover first, then shoots back.
+	t = 0.0
+	while t < 10.0 and player.health.current >= player_hp and npc.weapon.loaded_rounds() >= npc.weapon.data.magazine_size:
+		await wait(0.25)
+		t += 0.25
 	check(player.health.current < player_hp or npc.weapon.loaded_rounds() < npc.weapon.data.magazine_size,
-		"NPC returns fire (player hp %.0f, npc rounds %d)" % [player.health.current, npc.weapon.loaded_rounds()])
+		"NPC returns fire (%.1f s; player hp %.0f, npc rounds %d)" % [t, player.health.current, npc.weapon.loaded_rounds()])
 	await shot("06_under_fire.png")
 	for i in 3:
 		var eye := player.head.global_position

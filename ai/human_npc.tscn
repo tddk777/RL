@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://ai/states/investigate.gd" id="8_investigate"]
 [ext_resource type="Script" path="res://ai/states/combat.gd" id="9_combat"]
 [ext_resource type="Script" path="res://ai/states/dead.gd" id="10_dead"]
+[ext_resource type="Script" path="res://ai/states/search.gd" id="11_search"]
 
 [sub_resource type="CapsuleShape3D" id="Capsule_body"]
 radius = 0.3
@@ -55,6 +56,9 @@ script = ExtResource("8_investigate")
 
 [node name="Combat" type="Node" parent="Brain"]
 script = ExtResource("9_combat")
+
+[node name="Search" type="Node" parent="Brain"]
+script = ExtResource("11_search")
 
 [node name="Dead" type="Node" parent="Brain"]
 script = ExtResource("10_dead")

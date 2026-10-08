@@ -44,6 +44,9 @@ func begin() -> void:
 		Settings.apply_environment(_environment)
 		Events.settings_changed.connect(_on_settings_changed)
 	_apply_reverb()
+	# The AI's sight takes how lit the player is from these.
+	for light in find_children("*", "Light3D", true, false):
+		light.add_to_group(&"world_lights")
 	if ambience:
 		Audio.play_ambience(ambience, ambience_volume_db, 3.0)
 	Audio.play_ambience_bed(ambience_bed, ambience_bed_volume_db, 3.0)

@@ -50,13 +50,18 @@ the gun pulls back near walls.
 ## An enemy
 
 1. **Behaviour.** AI states are nodes under the NPC's `Brain`. The base scene
-   `ai/human_npc.tscn` has Idle, Patrol, Investigate, Combat and Dead. For a
-   new kind of enemy, duplicate the scene and add or replace state scripts
-   (extend `AIState`; switch with `brain.change(&"state")`; use the helpers on
-   `NPC`: `move_to`, `face`, `aim_at`, `weapon`, `perception`).
+   `ai/human_npc.tscn` has Idle, Patrol, Investigate, Combat, Search and
+   Dead. For a new kind of enemy, duplicate the scene and add or replace
+   state scripts (extend `AIState`; switch with `brain.change(&"state")`; use
+   the helpers on `NPC`: `move_to`, `face`, `aim_at`, `set_crouch`, `track`,
+   `weapon`, `perception`, `director`). Cover and flanking spots come from
+   `Tactics.find()`; shared knowledge, callouts and roles from `AIDirector`.
+   `dev/tests/ai_test.tscn` checks the fighting behaviour in an arena
+   (`-- verbose` prints each NPC's state and tactic every half second).
 2. **Body.** The `Body` node extends `NPCBody`: `setup(health)`,
    `hold_weapon(weapon)`, `set_motion(speed, run)`, `set_aim(target, aiming)`,
-   `die(direction)`, `pose_dead(pose)` and an `eye` node.
+   `set_crouch()`, `set_backward()`, `flinch()`, `die(direction)`,
+   `pose_dead(pose)` and an `eye` node.
    `characters/mannequin.gd` drives a rigged model (the UAL mannequin): for
    another humanoid rig with UAL-style bone names (`DEF-hips`,
    `DEF-upper_arm.R`, ...) change `MODEL` and the materials; its hitboxes and
@@ -64,7 +69,9 @@ the gun pulls back near walls.
    procedural fallback.
 3. **Numbers.** `EnemyData` in `content/enemies/`: scene, health, weapon,
    sight range/FOV, detection time, hearing, aim error, reaction time, bursts,
-   speeds.
+   tactics (aggression and skill, each rolled per NPC within a spread; aim
+   settle time and first-shot error; retreat health; suppression tolerance;
+   cover search radius; callout range), speeds (walk, run, crouch).
 4. **Place it.** Add an `EnemySpawn` node to a level, set `enemy_id`, and
    optionally point `patrol_route` at a Node3D whose Marker3D children are the
    patrol points.

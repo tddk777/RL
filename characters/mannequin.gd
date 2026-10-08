@@ -11,6 +11,9 @@ const MODEL := preload("res://assets/third_party/quaternius_ual/AnimationLibrary
 const WALK_SPEED := 1.25
 const JOG_SPEED := 3.4
 const SPRINT_SPEED := 5.5
+const CROUCH_SPEED := 1.0
+## How far the chest twists toward the aim before the hips have to turn.
+const MAX_TWIST := deg_to_rad(70.0)
 ## Weapon pivot (body space): in front of the right shoulder at low ready,
 ## raised toward the eye when aiming; pistols are pushed out at arm's length.
 const MOUNT := Vector3(0.12, 1.36, -0.08)
@@ -35,6 +38,12 @@ var _weapon: Weapon
 var _clip: StringName = &""
 var _speed: float = 0.0
 var _aim_pitch: float = 0.0
+var _aim_yaw: float = 0.0
+var _twist: float = 0.0
+var _crouched: bool = false
+var _crouch: float = 0.0
+var _backward: bool = false
+var _flinch: float = 0.0
 var _aim_blend: float = 0.0
 var _mount_pitch: float = 0.0
 var _chest_pitch: float = 0.0
@@ -82,7 +91,26 @@ func set_aim(target: Vector3, aiming: bool) -> void:
 	var from := global_transform.affine_inverse() * eye.global_position
 	var d := local - from
 	_aim_pitch = atan2(d.y, Vector2(d.x, d.z).length())
+	# The body faces -Z; the chest and gun twist toward the target.
+	_aim_yaw = clampf(atan2(-d.x, -d.z), -MAX_TWIST, MAX_TWIST) if aiming else 0.0
 	_aim_blend = 1.0 if aiming else 0.0
+
+
+func set_crouch(crouched: bool) -> void:
+	_crouched = crouched
+
+
+func set_backward(backward: bool) -> void:
+	_backward = backward
+
+
+func flinch(head: bool) -> void:
+	if _dead or _flinch > 0.0:
+		return
+	_flinch = 0.42
+	_clip = &""
+	_anim.speed_scale = 1.0
+	_anim.play(&"Hit_Head" if head else &"Hit_Chest", 0.06)
 
 
 func die(_direction: Vector3) -> void:
@@ -116,30 +144,40 @@ func pose_dead(pose: int, variant: int = 0) -> void:
 func _process(delta: float) -> void:
 	if _dead:
 		return
-	var want := &"Idle"
-	var rate := 1.0
-	if _speed > 0.2:
-		if _speed < 2.4:
-			want = &"Walk"
-			rate = _speed / WALK_SPEED
-		elif _speed < 4.8:
-			want = &"Jog_Fwd"
-			rate = _speed / JOG_SPEED
-		else:
-			want = &"Sprint"
-			rate = _speed / SPRINT_SPEED
-	_play(want, 0.25)
-	_anim.speed_scale = clampf(rate, 0.6, 1.5)
+	_crouch = move_toward(_crouch, 1.0 if _crouched else 0.0, delta * 4.0)
+	if _flinch > 0.0:
+		_flinch -= delta
+	else:
+		var want := &"Crouch_Idle" if _crouched else &"Idle"
+		var rate := 1.0
+		if _speed > 0.2:
+			if _crouched:
+				want = &"Crouch_Fwd"
+				rate = _speed / CROUCH_SPEED
+			elif _speed < 2.4:
+				want = &"Walk"
+				rate = _speed / WALK_SPEED
+			elif _speed < 4.8:
+				want = &"Jog_Fwd"
+				rate = _speed / JOG_SPEED
+			else:
+				want = &"Sprint"
+				rate = _speed / SPRINT_SPEED
+		_play(want, 0.25)
+		# Backing off: the same clip played in reverse.
+		_anim.speed_scale = clampf(rate, 0.6, 1.5) * (-1.0 if _backward and _speed > 0.2 else 1.0)
 	# Weapon: low ready unless aiming; aiming follows the target pitch.
 	var t := clampf(10.0 * delta, 0.0, 1.0)
 	_mount_pitch = lerp_angle(_mount_pitch, lerpf(deg_to_rad(-32.0), _aim_pitch, _aim_blend), t)
 	_chest_pitch = lerp_angle(_chest_pitch, _aim_pitch * _aim_blend, t)
+	_twist = lerp_angle(_twist, _aim_yaw, t)
 	_raise = lerpf(_raise, _aim_blend, t)
 	var pistol := _weapon != null and _weapon.data.length < 0.5
 	var mount := (MOUNT_PISTOL.lerp(MOUNT_PISTOL_AIM, _raise)) if pistol else MOUNT.lerp(MOUNT_AIM, _raise)
 	var bob := skeleton.get_bone_global_pose(_bones[&"DEF-hips"]).origin.y - _hips_rest_y
-	weapon_mount.position = mount + Vector3(0, bob * 0.6, 0)
-	weapon_mount.rotation.x = _mount_pitch
+	# Crouched, the shoulders come down with the hips.
+	weapon_mount.position = Basis(Vector3.UP, _twist) * mount + Vector3(0, bob * lerpf(0.6, 1.0, _crouch), 0)
+	weapon_mount.rotation = Vector3(_mount_pitch, _twist, 0.0)
 
 
 func _play(clip: StringName, blend: float) -> void:
@@ -153,12 +191,14 @@ func _play(clip: StringName, blend: float) -> void:
 func _pose(skel: Skeleton3D, _delta: float) -> void:
 	var to_skel := skel.global_transform.affine_inverse()
 	var right := (to_skel.basis * global_basis.x).normalized()
+	var up_axis := (to_skel.basis * global_basis.y).normalized()
 	# Chest and head follow the aim (the spine takes 60 %, the neck the rest).
 	if not _dead:
 		for bone_name: StringName in [&"DEF-spine.002", &"DEF-spine.003", &"DEF-neck"]:
 			var b: int = _bones[bone_name]
 			var g := skel.get_bone_global_pose(b)
-			g.basis = Basis(right, _chest_pitch * (0.4 if bone_name == &"DEF-neck" else 0.3)) * g.basis
+			var share := 0.4 if bone_name == &"DEF-neck" else 0.3
+			g.basis = Basis(up_axis, _twist * share) * Basis(right, _chest_pitch * share) * g.basis
 			skel.set_bone_global_pose(b, g)
 	if _weapon == null or _weapon.model == null or _arm_weight <= 0.001:
 		return

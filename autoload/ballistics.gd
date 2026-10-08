@@ -7,6 +7,8 @@ extends Node
 const MAX_LIFETIME := 3.0
 const GRAVITY := Vector3(0.0, -9.81, 0.0)
 const FLYBY_RADIUS := 2.0
+## Rounds within this distance of someone's head (or hitting this close) pin them.
+const SUPPRESS_RADIUS := 2.5
 const FLYBY_SOUNDS := [
 	"res://assets/audio/player/bullet_flyby_1.wav",
 	"res://assets/audio/player/bullet_flyby_2.wav",
@@ -24,6 +26,8 @@ class Bullet:
 	var age: float = 0.0
 	var flyby_done: bool = false
 	var tracer: Node3D
+	## Whom this round has already pinned down (once each).
+	var suppressed: Array = []
 
 
 var _bullets: Array[Bullet] = []
@@ -77,6 +81,7 @@ func _physics_process(delta: float) -> void:
 		var hit := space.intersect_ray(query)
 		var end: Vector3 = hit.position if hit else next
 		_check_flyby(b, b.position, end)
+		_check_near_misses(b, b.position, end, hit)
 		_update_tracer(b, b.position, end)
 		if hit:
 			_resolve_hit(b, hit)
@@ -113,6 +118,38 @@ func _check_flyby(b: Bullet, from: Vector3, to: Vector3) -> void:
 	if closest.distance_to(head) < FLYBY_RADIUS and closest.distance_to(to) > 0.05:
 		b.flyby_done = true
 		Audio.play_3d(_flyby_streams.pick_random(), closest, &"World", -2.0, 4.0, 0.1)
+
+
+## Rounds passing close by or hitting near someone pin them down: NPCs
+## (from anyone else's fire) and the player (from the NPCs').
+func _check_near_misses(b: Bullet, from: Vector3, to: Vector3, hit: Dictionary) -> void:
+	if not is_instance_valid(b.source):
+		b.source = null
+	for node in get_tree().get_nodes_in_group(&"npc"):
+		var npc := node as NPC
+		if npc == null or not npc.alive or npc == b.source or b.source is NPC:
+			continue
+		var eye := npc.eye_position()
+		var closest := Geometry3D.get_closest_point_to_segment(eye, from, to)
+		var d := closest.distance_to(eye)
+		var impact := 99.0
+		if hit:
+			impact = (hit.position as Vector3).distance_to(eye)
+		var near := minf(d, impact * 0.8)
+		if near < SUPPRESS_RADIUS and not (hit and hit.collider is Hitbox and (hit.collider as Node).owner == npc):
+			if not b.suppressed.has(npc):
+				b.suppressed.append(npc)
+				var origin := (b.source as Node3D).global_position if b.source is Node3D else from
+				npc.suppress(clampf(1.0 - near / SUPPRESS_RADIUS, 0.0, 1.0) * 0.45, origin)
+	if b.source is NPC and is_instance_valid(listener_owner) and listener_owner.has_method(&"suppress") and not b.suppressed.has(listener_owner):
+		var head := listener.global_position
+		var closest := Geometry3D.get_closest_point_to_segment(head, from, to)
+		var near := closest.distance_to(head)
+		if hit:
+			near = minf(near, (hit.position as Vector3).distance_to(head) * 0.8)
+		if near < SUPPRESS_RADIUS:
+			b.suppressed.append(listener_owner)
+			listener_owner.call(&"suppress", clampf(1.0 - near / SUPPRESS_RADIUS, 0.0, 1.0) * 0.35)
 
 
 func _update_tracer(b: Bullet, from: Vector3, to: Vector3) -> void:

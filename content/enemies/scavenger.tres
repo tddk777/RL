@@ -15,3 +15,6 @@ detection_time = 0.9
 aim_error = 3.2
 reaction_time = 0.7
 burst_pause = 0.8
+aggression_spread = 0.3
+skill = 0.4
+skill_spread = 0.25

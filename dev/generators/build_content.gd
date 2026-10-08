@@ -241,6 +241,11 @@ func _enemies() -> void:
 	e.detection_time = 0.9
 	e.aim_error = 3.2
 	e.reaction_time = 0.7
+	# Scavengers: rough, mixed bunch. Some reckless, most so-so shots.
+	e.aggression = 0.5
+	e.aggression_spread = 0.3
+	e.skill = 0.4
+	e.skill_spread = 0.25
 	e.burst_min = 2
 	e.burst_max = 5
 	e.burst_pause = 0.8

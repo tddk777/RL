@@ -27,6 +27,28 @@ extends Resource
 @export var burst_pause: float = 0.7
 @export var preferred_range: float = 14.0
 
+@export_group("Tactics")
+## How readily they push, flank and run and gun (0 cautious .. 1 reckless).
+## Each one rolls their own around this, +- aggression_spread.
+@export_range(0.0, 1.0) var aggression: float = 0.5
+@export var aggression_spread: float = 0.25
+## Marksmanship (0 poor .. 1 sharp): how fast the aim settles and how tight it gets.
+@export_range(0.0, 1.0) var skill: float = 0.5
+@export var skill_spread: float = 0.2
+## Seconds of tracking for the aim to settle from its first, wild shots.
+@export var aim_settle_time: float = 1.2
+## The first shots' aim error, as a multiple of the settled one.
+@export var first_shot_error: float = 2.6
+## Below this share of health they want out of the fight.
+@export var retreat_health: float = 0.35
+## How much fire it takes to pin them down (higher = steadier).
+@export var suppression_tolerance: float = 1.0
+## How far they look for cover (m).
+@export var cover_radius: float = 14.0
+## How far they shout what they've seen to the others (m).
+@export var callout_range: float = 26.0
+
 @export_group("Movement")
 @export var walk_speed: float = 1.6
 @export var run_speed: float = 4.2
+@export var crouch_speed: float = 1.1

@@ -113,6 +113,7 @@ func _add_daylight() -> void:
 		return
 	var sun := DirectionalLight3D.new()
 	sun.name = "Daylight"
+	sun.add_to_group(&"world_lights")
 	sun.light_color = profile.daylight_color
 	sun.light_energy = profile.daylight_energy
 	sun.shadow_enabled = true
@@ -486,6 +487,7 @@ func _make_light(l: Dictionary, root: Node3D, props: Array) -> void:
 		omni.omni_range = l["range"]
 		omni.omni_attenuation = 1.2
 		light = omni
+	light.add_to_group(&"world_lights")
 	light.light_color = l["color"]
 	light.light_energy = l["energy"]
 	light.shadow_enabled = l.get("shadow", false)

@@ -45,6 +45,7 @@ func _process(delta: float) -> void:
 	var low := 0.0
 	if is_instance_valid(_player):
 		low = clampf(1.0 - _player.health.ratio() / 0.35, 0.0, 1.0) * 0.55
+		low = maxf(low, _player.suppression * 0.45)  # pinned: the edges close in
 	(_vignette.material as ShaderMaterial).set_shader_parameter(&"intensity", maxf(_hurt, low))
 	if is_instance_valid(_player):
 		_stamina_bar.value = _player.stamina

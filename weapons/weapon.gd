@@ -39,6 +39,7 @@ var mode_index: int = 0
 
 var _trigger: bool = false
 var _trigger_handled: bool = false
+var _press_pending: bool = false
 var _cooldown: float = 0.0
 var _burst_left: int = 0
 var _action: ActionTimeline
@@ -86,6 +87,7 @@ func _process(delta: float) -> void:
 func set_trigger(pressed: bool) -> void:
 	if pressed and not _trigger:
 		_trigger_handled = false
+		_press_pending = true
 	_trigger = pressed
 
 
@@ -190,13 +192,15 @@ func _update_trigger() -> void:
 			else:
 				_burst_left -= 1
 		return
-	if not _trigger:
+	# A press is latched until handled, so a tap shorter than a frame still fires.
+	if not _trigger and not (_press_pending and not _trigger_handled):
 		return
 	# Firing interrupts single-round loading so the player can shoot.
 	if _action_kind == &"insert" and not _trigger_handled:
 		cancel_action()
 	if is_busy() or _cooldown > 0.0:
 		return
+	_press_pending = false
 	match mode:
 		WeaponData.FireMode.AUTO:
 			if not chambered:
@@ -266,6 +270,7 @@ func _eject_casing() -> void:
 # --- Actions --------------------------------------------------------------------
 
 func _start_action(kind: StringName, timeline: ActionTimeline) -> void:
+	_press_pending = false
 	_action = timeline
 	_action_kind = kind
 	_burst_left = 0
@@ -288,6 +293,8 @@ func _start_cycle(delay: float) -> void:
 
 
 func _start_magazine_reload() -> void:
+	Events.actor_reloading.emit(user)
+	Events.noise_emitted.emit(global_position, 8.0, user)
 	var empty := not chambered
 	var duration := data.reload_empty_time if empty else data.reload_time
 	var t := ActionTimeline.new()
@@ -313,6 +320,8 @@ func _start_magazine_reload() -> void:
 
 ## Internal magazines load one round at a time until full or interrupted.
 func _start_insert() -> void:
+	Events.actor_reloading.emit(user)
+	Events.noise_emitted.emit(global_position, 6.0, user)
 	var t := ActionTimeline.new()
 	var step := data.insert_time
 	var time := 0.25

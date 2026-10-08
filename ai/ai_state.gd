@@ -20,12 +20,13 @@ func update(_delta: float) -> void:
 	pass
 
 
-## Shared checks most states use to escalate.
+## Shared checks most states use to escalate: sure -> combat; a noise, a
+## glimpse or a mate's shout -> investigate.
 func check_threats() -> bool:
 	if npc.perception.is_alerted():
 		brain.change(&"combat")
 		return true
-	if npc.perception.has_heard and brain.has_state(&"investigate"):
+	if (npc.perception.has_heard or npc.perception.is_suspicious()) and brain.has_state(&"investigate"):
 		npc.perception.has_heard = false
 		brain.change(&"investigate")
 		return true

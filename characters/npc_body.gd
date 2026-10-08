@@ -21,6 +21,21 @@ func set_motion(_speed: float, _run: bool) -> void:
 	pass
 
 
+## Crouched (in cover, sneaking) or standing.
+func set_crouch(_crouched: bool) -> void:
+	pass
+
+
+## Walking backward (facing the aim while backing off).
+func set_backward(_backward: bool) -> void:
+	pass
+
+
+## A brief flinch when hit.
+func flinch(_head: bool) -> void:
+	pass
+
+
 ## Points the upper body and weapon at a global position (low ready when not aiming).
 func set_aim(_target: Vector3, _aiming: bool) -> void:
 	pass
