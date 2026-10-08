@@ -216,7 +216,7 @@ func _weapons(ammo: Dictionary, attachments: Dictionary) -> void:
 		"desc": "Pump shotgun. Nine pellets per shell: ends arguments in a room, does little past twenty metres.",
 		"modes": [F.BOLT], "rpm": 60.0, "velocity": 400.0, "mag": 4, "feed": WeaponData.Feed.INTERNAL,
 		"spread": [1.6, 0.5, 1.2], "recoil": [4.2, 1.2, 0.45, 0.09, 9.0],
-		"ads": [0.3, 62.0, 0.12], "hip": Vector3(0.155, -0.165, -0.3), "length": 1.0,
+		"ads": [0.3, 62.0, 0.2], "hip": Vector3(0.155, -0.165, -0.3), "length": 1.0,
 		"reload": [0.0, 0.0], "cycle": 0.5, "insert": 0.55, "weight": 3.6, "loudness": 140.0, "sway": 1.1, "range": 15.0,
 	}, ammo)
 	_weapon({
