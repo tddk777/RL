@@ -140,6 +140,11 @@ Key contracts:
   breaches; vents only with `crawl`, so enemies and exits never depend on
   them. Everything that isn't a building cell (open ground, yards,
   walkways) is "outdoor" to a building, which builds that wall whole.
+  Stairs (`ChunkBuilder._flight`): solid concrete flights with a soffit,
+  nosings and a balustrade in interiors, stairwells and tunnels; steel
+  stairs (channel stringers, tread plates, posted rails) on factory floors;
+  both walk on one ramp collider. `GeoBuilder.extrude()` builds stepped
+  profiles.
   `ChunkBuilder` (architecture) and `SetPieces` (machines, conveyor lines,
   furnaces, racks, cubicles, boilers, lockers, yards, open ground, and
   `_clutter` odds and ends checked against `ChunkData.taken`) turn
@@ -147,9 +152,13 @@ Key contracts:
   worker threads. Then `Detailer` dresses each cell from how it meets its
   neighbours (the Townscaper idea: detail follows whatever the layout
   does): every free wall run filled from the room's kit (floor pieces, then
-  things hung in the gaps), riser pipes or rubbish in inside corners, room
-  plates over doors, sector letters and names between buildings, EXIT
-  signs from `ChunkBuilder.exit_dist`, storey numbers in stairwells, pipes
+  things hung in the gaps; capped per cell and per room by `PER_CELL` /
+  `PER_ROOM`, never the same piece twice running unless it comes in rows,
+  movable things often left askew), riser pipes or rubbish in inside
+  corners, a rare small scene breaking the pattern (`_oddity`: a camp, a
+  toppled rack, dumped furniture, hanging cables, a spill), only the odd
+  EXIT sign as a hint (from `ChunkBuilder.exit_dist`; no door plates),
+  storey numbers in stairwells, pipes
   and cables down every cramped passage at a fixed side and height per axis
   so runs join cell to cell, walkway lines on factory floors. Hung things
   stand `Detailer.NUDGE` proud so they never share a plane with wall trim. Kit props are merged into the chunk meshes (lamps stay

@@ -562,6 +562,11 @@ func _broken_floor(d: ChunkData, x: int, z: int, s: int, o: Vector3, mat: String
 
 ## A flight up one storey along `side`, from the cell edge behind it to its
 ## landing in the same column.
+## A flight of stairs up its strip. Two kinds: a solid concrete flight with
+## a sloped soffit, steel nosings (yellow on the first and last) and a
+## balustrade, in office blocks, stores, stairwells and tunnels; a steel
+## stair (channel stringers, tread plates with lips, open risers, posted
+## rails) on factory floors. Both walk on the same ramp collider.
 func _flight(d: ChunkData, x: int, z: int, s: int, o: Vector3) -> void:
 	var dir := L.stair_dir(x, z, s)
 	var side := L.stair_side(x, z, s)
@@ -585,27 +590,117 @@ func _flight(d: ChunkData, x: int, z: int, s: int, o: Vector3) -> void:
 	# slab's edge: a capsule meeting that corner even 1 cm proud of the slope
 	# touches it at over 50 degrees, which counts as a wall.
 	d.geo.box(mid - up * 0.04, Vector3(width, 0.12, length), &"", &"metal", false, basis)
-	# Treads
-	var steps := int(round(H / 0.19))
-	for i in steps:
-		var t0 := maxf(i * RUN / steps - 0.015, 0.0)
-		var t1 := minf((i + 1) * RUN / steps + 0.015, RUN - 0.005)  # the last one stops short of the landing slab
-		var p := bottom + a * ((t0 + t1) * 0.5) + Vector3.UP * ((i + 1) * H / steps - 0.025)
-		d.geo.box(p, _oriented(a, Vector3(width, 0.05, t1 - t0)), &"steel_grate")
-	# Stringers and handrails on both edges
-	for e: float in [-1.0, 1.0]:
-		var off := lateral * (e * (width * 0.5 + 0.04))
-		d.geo.box(mid + off - up * 0.12, Vector3(0.07, 0.34, length), &"painted_steel_yellow", &"", false, basis)
-		d.geo.cylinder(bottom + off + Vector3.UP * 1.0, top + off + Vector3.UP * 1.0, 0.025, &"painted_steel_yellow", 6)
-		for i in 3:
-			var p := bottom.lerp(top, (i + 0.5) / 3.0) + off
-			d.geo.box(p + Vector3.UP * 0.5, Vector3(0.04, 1.0, 0.04), &"painted_steel_yellow")
+	var inner := -LevelLayout.dir_vector(side)  # from the wall toward the open side
+	var zn := L.zone_of(x, z, s)
+	var room := L.room_of(x, z, s)
+	var concrete := s < 0 or (zn.style and zn.style.family != &"factory") or (room and room.use == &"stairwell")
+	if concrete:
+		_concrete_flight(d, bottom, a, inner, width)
+	else:
+		_steel_flight(d, bottom, a, inner, width, mid, basis, length, top)
 	# Clip guard on the open (inner) edge of the upper half of the flight.
-	var inner := -LevelLayout.dir_vector(side)
 	var gmid := center + inner * (width * 0.5 + 0.1) + a * (RUN * 0.2) + Vector3.UP * (H * 0.7 + 0.5)
 	d.geo.box(gmid, Vector3(0.1, 1.2, length * 0.6), &"", &"metal", false, basis, Layers.CLIP)
+
+
+func _stair_steps() -> int:
+	return int(round(H / 0.19))
+
+
+func _concrete_flight(d: ChunkData, bottom: Vector3, a: Vector3, inner: Vector3, width: float) -> void:
+	var g := d.geo
+	var n := _stair_steps()
+	var go := RUN / n
+	var rise := H / n
+	var tan := H / RUN
+	var waist := 0.2 * sqrt(1.0 + tan * tan)  # vertical depth of a 20 cm thick slab
+	var t_end := RUN - 0.005  # stops short of the landing slab's edge
+	# Side profile (along, up), counter-clockwise from the foot.
+	var prof := PackedVector2Array()
+	prof.append(Vector2(0.0, -0.03))
+	prof.append(Vector2((waist - 0.03) / tan, -0.03))
+	prof.append(Vector2(t_end, t_end * tan - waist))
+	prof.append(Vector2(t_end, H))
+	for i in range(n - 1, -1, -1):
+		var front := i * go
+		prof.append(Vector2(front, (i + 1) * rise))
+		prof.append(Vector2(front, i * rise if i > 0 else 0.0))
+	# Drop repeated points (the last riser meets the start).
+	var clean := PackedVector2Array()
+	for p in prof:
+		if clean.is_empty() or clean[clean.size() - 1].distance_to(p) > 0.001:
+			clean.append(p)
+	# Wall side sunk 5 cm into the wall; open side flush with the flight.
+	g.extrude(clean, bottom, a, inner, -(width * 0.5 + 0.08), width * 0.5, &"concrete_dark")
+	# Nosings: steel edges, the first and last painted.
+	for i in n:
+		var mat := &"painted_steel_yellow" if i == 0 or i == n - 1 else &"gun_metal"
+		var p := bottom + a * (i * go + 0.02) + Vector3.UP * ((i + 1) * rise - 0.011) + inner * (-0.04)
+		g.box(p, _oriented(a, Vector3(width - 0.1, 0.038, 0.05)), mat)
+	# Balustrade on the open side: posts every third step, rail and mid rail.
+	var post_w := width * 0.5 - 0.07
+	var rail_at := func(t: float, h: float, w: float) -> Vector3:
+		return bottom + a * t + Vector3.UP * (t * tan + rise + h) + inner * w
+	var posts: Array[float] = []
+	var i := 1
+	while i < n - 1:
+		posts.append((i + 0.5) * go)
+		i += 3
+	posts.append(RUN - go * 0.5)
+	for t in posts:
+		var base := bottom + a * t + Vector3.UP * (floorf(t / go) * rise + rise) + inner * post_w
+		g.box(base + Vector3.UP * 0.47, Vector3(0.045, 0.94, 0.045), &"painted_steel")
+	var t0 := posts[0]
+	var t1 := posts[posts.size() - 1]
+	g.cylinder(rail_at.call(t0, 0.95, post_w), rail_at.call(t1, 0.95, post_w), 0.028, &"prop_wood", 8, true)
+	g.cylinder(rail_at.call(t0, 0.48, post_w), rail_at.call(t1, 0.48, post_w), 0.015, &"painted_steel", 6)
+	# Handrail on the wall side, on brackets.
+	var wall_w := -(STRIP * 0.5 - 0.15 - 0.07)
+	g.cylinder(rail_at.call(0.3, 0.9, wall_w), rail_at.call(RUN - 0.3, 0.9, wall_w), 0.022, &"gun_metal", 6, true)
+	for t: float in [0.6, RUN * 0.5, RUN - 0.6]:
+		var p: Vector3 = rail_at.call(t, 0.9, wall_w)
+		g.box(p + inner * -0.04 + Vector3.DOWN * 0.03, Vector3(0.025, 0.06, 0.025) + Vector3(absf(inner.x), 0, absf(inner.z)) * 0.06, &"gun_metal")
+
+
+func _steel_flight(d: ChunkData, bottom: Vector3, a: Vector3, inner: Vector3, width: float, mid: Vector3, basis: Basis,
+		length: float, top: Vector3) -> void:
+	var g := d.geo
+	var n := _stair_steps()
+	var go := RUN / n
+	var rise := H / n
+	var tan := H / RUN
+	var up := basis.y
+	# Channel stringers: web, top and bottom flanges.
+	for e: float in [-1.0, 1.0]:
+		var off := inner * (e * (width * 0.5 + 0.035))
+		var c := mid + off - up * 0.13
+		g.box(c, Vector3(0.012, 0.3, length), &"painted_steel_yellow", &"", false, basis)
+		for f: float in [-1.0, 1.0]:
+			g.box(c + up * (f * 0.144) - inner * (e * 0.035), Vector3(0.07, 0.012, length), &"painted_steel_yellow", &"", false, basis)
+	# Tread plates with a turned-down front lip; open risers.
+	for i in n:
+		var t0 := maxf(i * go - 0.01, 0.0)
+		var t1 := minf((i + 1) * go + 0.01, RUN - 0.005)
+		var h := (i + 1) * rise
+		var p := bottom + a * ((t0 + t1) * 0.5) + Vector3.UP * (h - 0.016)
+		g.box(p, _oriented(a, Vector3(width, 0.03, t1 - t0)), &"rusted_metal")
+		var lip := bottom + a * (t0 + 0.0105) + Vector3.UP * (h - 0.045)  # 1.5 mm proud of the plate's edge
+		g.box(lip, _oriented(a, Vector3(width - 0.004, 0.06, 0.024)), &"painted_steel_yellow" if i == 0 or i == n - 1 else &"rusted_metal")
+	# Rails both sides: posts off the stringers, top and knee rails.
+	for e: float in [-1.0, 1.0]:
+		var w := e * (width * 0.5 + 0.035)
+		var pts: Array[Vector3] = []
+		var t := go * 1.5
+		while t < RUN - 0.3:
+			pts.append(bottom + a * t + Vector3.UP * (t * tan + rise) + inner * w)
+			t += 1.15
+		pts.append(bottom + a * (RUN - 0.25) + Vector3.UP * ((RUN - 0.25) * tan + rise) + inner * w)
+		for p in pts:
+			g.box(p + Vector3.UP * 0.45, Vector3(0.05, 0.9 + 0.2, 0.05), &"painted_steel_yellow")
+		g.cylinder(pts[0] + Vector3.UP * 0.98, pts[pts.size() - 1] + Vector3.UP * 0.98, 0.024, &"painted_steel_yellow", 6, true)
+		g.cylinder(pts[0] + Vector3.UP * 0.5, pts[pts.size() - 1] + Vector3.UP * 0.5, 0.018, &"painted_steel_yellow", 6, true)
 	# Landing support under the top end when there's no floor slab there yet.
-	d.geo.box(top + a * 0.05 + Vector3.DOWN * 0.165, _oriented(a, Vector3(width - 0.1, 0.3, 0.2)), &"painted_steel")
+	g.box(top + a * 0.05 + Vector3.DOWN * 0.165, _oriented(a, Vector3(width - 0.1, 0.3, 0.2)), &"painted_steel")
 
 
 func _oriented(along: Vector3, size: Vector3) -> Vector3:

@@ -182,6 +182,47 @@ func prism(points: PackedVector2Array, y0: float, y1: float, mat: StringName, su
 			occluder_indices.append_array([base + 2 * i, base + 2 * j + 1, base + 2 * i + 1])
 
 
+## A profile (2D points (along, up), either winding, may be concave)
+## extruded sideways: visual only. The profile's x runs along `along`, y up;
+## the solid spans `side * w0` .. `side * w1` from `origin`.
+func extrude(profile: PackedVector2Array, origin: Vector3, along: Vector3, side: Vector3, w0: float, w1: float,
+		mat: StringName) -> void:
+	if not visuals or profile.size() < 3:
+		return
+	var pts := profile
+	var area := 0.0
+	for i in pts.size():
+		area += pts[i].cross(pts[(i + 1) % pts.size()])
+	if area < 0.0:
+		pts = profile.duplicate()
+		pts.reverse()
+	var at := func(p: Vector2, w: float) -> Vector3:
+		return origin + along * p.x + Vector3.UP * p.y + side * w
+	var tris := Geometry2D.triangulate_polygon(pts)
+	var n_side := side.normalized()
+	for i in range(0, tris.size(), 3):
+		var a := pts[tris[i]]
+		var b := pts[tris[i + 1]]
+		var c := pts[tris[i + 2]]
+		_tri(mat, at.call(a, w0), at.call(b, w0), at.call(c, w0), -n_side)
+		_tri(mat, at.call(a, w1), at.call(b, w1), at.call(c, w1), n_side)
+	# Counter-clockwise profile: the outward normal of edge a->b is (dy, -dx).
+	for i in pts.size():
+		var a := pts[i]
+		var b := pts[(i + 1) % pts.size()]
+		var e := b - a
+		if e.length() < 0.0001:
+			continue
+		var n2 := Vector2(e.y, -e.x).normalized()
+		var n := (along * n2.x + Vector3.UP * n2.y).normalized()
+		var a0: Vector3 = at.call(a, w0)
+		var b0: Vector3 = at.call(b, w0)
+		var a1: Vector3 = at.call(a, w1)
+		var b1: Vector3 = at.call(b, w1)
+		_tri(mat, a0, b0, b1, n)
+		_tri(mat, a0, b1, a1, n)
+
+
 ## Nav-only obstacle (a prop's footprint) - no visuals or collision.
 func nav_box(center: Vector3, size: Vector3, basis: Basis = Basis.IDENTITY) -> void:
 	var half := size * 0.5

@@ -155,12 +155,116 @@ func detail(k: SetPieces.Cell) -> void:
 		_passage_stripe(k)
 		return
 	_door_signs(k)
-	_split_sign(k)
 	_stairwell_number(k)
 	_corners(k)
 	_wall_runs(k)
+	_oddity(k)
 	_conduit(k)
 	_walkway_lines(k)
+
+
+# --- Oddities ---------------------------------------------------------------------------------
+
+## Now and then a cell breaks the pattern with a small scene: someone camped
+## here, a rack came down, furniture dumped in a heap, cables hanging out of
+## a broken ceiling, a drum tipped over in a spill. Each needs clear floor
+## (lanes, stairs and everything placed stay untouched).
+func _oddity(k: SetPieces.Cell) -> void:
+	if not hint(k, 440, 0.11) or k.flags & (LevelLayout.STAIR | LevelLayout.STAIR_ABOVE):
+		return
+	if k.room and k.room.use in [&"stairwell", &"hallway", &"washroom"]:
+		return
+	var r := cb.rng(k.x, k.z, k.s, 441)
+	var interior := k.zn.district == 1 or (k.room != null and k.room.use in [&"offices", &"archive", &"meeting", &"cubicles"])
+	var kinds: Array[String] = ["cables", "spill"]
+	if interior:
+		kinds.append_array(["heap", "heap", "camp", "cables"])
+	else:
+		kinds.append_array(["rack_down", "camp", "spill", "rack_down"])
+	var kind: String = kinds[r.randi_range(0, kinds.size() - 1)]
+	var A := Vector3(1, 0, 0) if r.randf() < 0.5 else Vector3(0, 0, 1)
+	for attempt in 6:
+		var c := k.o + Vector3(r.randf_range(1.6, C - 1.6), 0, r.randf_range(1.6, C - 1.6))
+		if _place_oddity(k, kind, c, A, r):
+			return
+
+
+func _place_oddity(k: SetPieces.Cell, kind: String, c: Vector3, A: Vector3, r: RandomNumberGenerator) -> bool:
+	var B := SetPieces._across(A)
+	var yaw := atan2(A.x, A.z)
+	match kind:
+		"camp":
+			if not sp._room_for(k, c, A, 2.6, 2.2):
+				return false
+			cb.kit(k.d, "bedroll", c + B * 0.3, yaw + r.randf_range(-0.2, 0.2))
+			for i in r.randi_range(1, 3):
+				cb.kit(k.d, "cardboard_box", c - B * 0.6 + A * r.randf_range(-0.9, 0.9), r.randf() * TAU)
+			if r.randf() < 0.6:
+				cb.kit(k.d, "school_chair", c - B * 0.7 + A * 0.9, r.randf() * TAU, {"collide": false})
+			# A burnt-out fire: a blackened ring and a few charred sticks.
+			var f := c + B * 0.4 + A * 1.3
+			k.d.geo.cylinder(f, f + UP * 0.02, 0.35, &"soot", 12, true)
+			for i in 5:
+				var a := r.randf() * TAU
+				var d := Vector3(cos(a), 0, sin(a))
+				k.d.geo.cylinder(f + UP * 0.05 - d * 0.25, f + UP * 0.07 + d * 0.25, 0.025, &"soot", 5)
+			for i in r.randi_range(3, 6):
+				var q := c + A * r.randf_range(-1.2, 1.2) + B * r.randf_range(-1.0, 1.0)
+				sp.box(k, q + UP * 0.002, Vector3(0.21, 0.002, 0.29), &"paper", false, Basis(UP, r.randf() * TAU))
+		"rack_down":
+			if not cb.models.has("rack_wide") or not sp._room_for(k, c, A, 2.5, 1.6):
+				return false
+			# Over on its back, its load all over the floor.
+			var rack := cb.models.size("rack_wide")
+			cb.kit(k.d, "rack_wide", c + Basis(UP, yaw) * Vector3(0, 0, rack.y * 0.5) + UP * rack.z * 0.5, yaw, {},
+				Basis(Vector3.RIGHT, -PI * 0.5))
+			for i in r.randi_range(3, 6):
+				var q := c + A * r.randf_range(-1.2, 1.2) + B * r.randf_range(-1.1, 1.1)
+				if r.randf() < 0.5:
+					cb.kit(k.d, "cardboard_box", q + UP * cb.models.size("cardboard_box").z * 0.5, r.randf() * TAU, {"collide": false},
+						Basis(Vector3.RIGHT, PI * 0.5))
+				else:
+					cb.kit(k.d, "cardboard_box", q, r.randf() * TAU, {"collide": false})
+		"heap":
+			if not sp._room_for(k, c, A, 2.6, 2.0):
+				return false
+			# Desks and chairs dumped in a pile, a cabinet on its face.
+			if cb.models.has("office_desk"):
+				var desk := cb.models.size("office_desk")
+				cb.kit(k.d, "office_desk", c + UP * desk.z * 0.5, yaw + r.randf_range(-0.3, 0.3), {}, Basis(Vector3.RIGHT, PI * 0.5))
+			cb.kit(k.d, "filing_cabinet", c + B * 0.8 + UP * 0.33, yaw + r.randf_range(-0.5, 0.5), {}, Basis(Vector3.RIGHT, PI * 0.5))
+			for i in r.randi_range(2, 4):
+				var q := c + A * r.randf_range(-1.0, 1.0) + B * r.randf_range(-0.8, 0.8)
+				var tilt := Basis(Vector3.RIGHT, r.randf_range(-1.6, 1.6)) if r.randf() < 0.6 else Basis.IDENTITY
+				cb.kit(k.d, "school_chair", q + UP * (0.25 if tilt != Basis.IDENTITY else 0.0), r.randf() * TAU, {"collide": false}, tilt)
+		"cables":
+			var hc := cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s)
+			if hc > H + 0.1 or not sp._free(k, Rect2(c.x - k.o.x - 1.0, c.z - k.o.z - 1.0, 2.0, 2.0)):
+				return false
+			# Out of a gap in the ceiling, sagging, a couple trailing on the floor.
+			var top := c + UP * (minf(hc, H) - 0.02)
+			for i in r.randi_range(3, 7):
+				var a := top + A * r.randf_range(-0.4, 0.4) + B * r.randf_range(-0.4, 0.4)
+				var drop := r.randf_range(0.8, minf(hc, H) - 0.1)
+				var m := a + Vector3.DOWN * drop * 0.6 + A * r.randf_range(-0.3, 0.3) + B * r.randf_range(-0.3, 0.3)
+				var e := a + Vector3.DOWN * drop + A * r.randf_range(-0.6, 0.6) + B * r.randf_range(-0.6, 0.6)
+				k.d.geo.cylinder(a, m, 0.012, &"cable", 4)
+				k.d.geo.cylinder(m, e, 0.012, &"cable", 4)
+			sp.box(k, top + Vector3.DOWN * 0.3 + A * 0.5, Vector3(0.6, 0.02, 0.6), &"ceiling_tile", false,
+				Basis(A, r.randf_range(0.6, 1.1)))  # a tile hanging off
+		"spill":
+			if not sp._room_for(k, c, A, 1.8, 1.8):
+				return false
+			# A drum on its side, what was in it across the floor.
+			var drum := sp.drum(r)
+			var lying := Basis(Vector3.RIGHT, PI * 0.5)
+			if cb.models.has(drum):
+				var sz := cb.models.size(drum)
+				cb.kit(k.d, drum, c + UP * sz.x * 0.5 - Basis(UP, yaw) * Vector3(0, 0, sz.y * 0.5), yaw, {}, lying)
+			else:
+				cb.kit(k.d, drum, c + UP * 0.3 - Basis(UP, yaw) * Vector3(0, 0, 0.45), yaw, {}, lying)
+			k.d.decals.append(["oil", Transform3D(Basis(UP, r.randf() * TAU), c + A * 0.9), Vector3(r.randf_range(1.6, 2.6), 0.5, r.randf_range(1.4, 2.2))])
+	return true
 
 
 # --- Sectors ----------------------------------------------------------------------------------
@@ -208,59 +312,31 @@ func _hung_free(k: SetPieces.Cell, center: Vector3, size: Vector3) -> bool:
 
 # --- Doors: what's through them ------------------------------------------------------------------
 
+## Only the odd EXIT sign over a door on the way out survives: a vague hint,
+## not a map. (No room plates, sector boards or hazard labels: they made
+## every doorway the same.)
 func _door_signs(k: SetPieces.Cell) -> void:
 	var here := L.idx(k.x, k.z, k.s)
 	for dir in 4:
 		if not L.has_door(k.x, k.z, k.s, dir):
 			continue
 		var n := Vector2i(k.x, k.z) + LevelLayout.DIRS[dir]
-		if not L.is_walkable(n.x, n.y, k.s):
+		if not L.is_walkable(n.x, n.y, k.s) or not hint(k, 400 + dir, 0.12):
+			continue
+		var ed := cb.exit_dist[here]
+		var en := cb.exit_dist[L.idx(n.x, n.y, k.s)]
+		if en < 0 or (ed >= 0 and en >= ed):
 			continue
 		var span := cb.edge_span(k.o, dir)
 		var door := cb.door_span(k.x, k.z, k.s, dir)
 		var dh := cb.door_height(k.x, k.z, k.s, n, k.st)
-		var mid := (door.x + door.y) * 0.5
 		var head := minf(dh + 0.32, cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s) - 0.2)
-		var other_zone := L.zone_of(n.x, n.y, k.s)
-		var other_room := L.room_of(n.x, n.y, k.s)
-		var labelled := false
-		# Way out: the next cell is nearer an exit.
-		var ed := cb.exit_dist[here]
-		var en := cb.exit_dist[L.idx(n.x, n.y, k.s)]
-		if en >= 0 and (ed < 0 or en < ed):
-			wall_decal(k, "exit", _span_point(span, mid, FACE, head + 0.05), span.m, 0.62, 0.24)
-			labelled = true
-		# The room behind the door.
-		if not labelled and other_room and other_room != k.room and other_room.use in PLATES:
-			wall_decal(k, "room_" + String(other_room.use), _span_point(span, mid, FACE, head), span.m, 1.1, 0.28)
-			labelled = true
-		# Into another building: its letter and name beside the door.
-		if other_zone and other_zone != k.zn and other_zone.type in SECTOR_TYPES and door.x > 2.4:
-			var letter := LETTERS[sector(other_zone) % LETTERS.length()]
-			var a := door.x - 1.1
-			if _hung_free(k, _span_point(span, a, FACE + 0.1, 2.05), Vector3(0.9, 1.4, 0.9)):
-				wall_decal(k, "sector_" + letter, _span_point(span, a, FACE, 2.35), span.m, 0.85, 0.85)
-				wall_decal(k, "sector_name_" + String(other_zone.type), _span_point(span, a, FACE, 1.72), span.m, 1.9, 0.3)
-		# Hazard labels at plant rooms.
-		if other_room and other_room.use in [&"electrical", &"boiler", &"pumps", &"cages", &"lab"] and door.y < C - 1.2:
-			var tex: String = {&"electrical": "hazard_danger_hv", &"boiler": "hazard_ear_protection",
-				&"pumps": "hazard_ear_protection", &"cages": "hazard_authorised", &"lab": "hazard_authorised"}[other_room.use]
-			var a := door.y + 0.55
-			if _hung_free(k, _span_point(span, a, FACE + 0.02, 1.65), Vector3(0.5, 0.4, 0.5)):
-				wall_decal(k, tex, _span_point(span, a, FACE, 1.65), span.m, 0.48, 0.32)
+		wall_decal(k, "exit", _span_point(span, (door.x + door.y) * 0.5, FACE, head + 0.05), span.m, 0.62, 0.24)
 
 
-## The plate over a split cell's inner doorway, naming its back room.
-func _split_sign(k: SetPieces.Cell) -> void:
-	if not L.has_split(k.x, k.z, k.s):
-		return
-	var use: StringName = BACK_ROOMS.get(_kit_key(k), &"closet")
-	if use not in PLATES:
-		return
-	var psp := cb.split_span(k.o, L.split_side(k.x, k.z, k.s))
-	var door := L.split_door(k.x, k.z, k.s)
-	var y := minf(LevelLayout.SPLIT_DOOR_H + 0.32, cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s) - 0.2)
-	wall_decal(k, "room_" + String(use), _span_point(psp, (door.x + door.y) * 0.5, LevelLayout.SPLIT_T * 0.5, y), psp.m, 1.1, 0.28)
+## A rare yes, the same for every run of this seed.
+func hint(k: SetPieces.Cell, salt: int, chance: float) -> bool:
+	return absi(hash([L.seed, k.x, k.z, k.s, salt])) % 1000 < int(chance * 1000.0)
 
 
 ## A big stencilled storey number on a stairwell wall.
@@ -387,6 +463,7 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 	var key := _kit_key(k)
 	var split := L.has_split(k.x, k.z, k.s)
 	var posters: Array[int] = [0]
+	var counts := {}
 	for dir in 4:
 		if not L.has_wall(k.x, k.z, k.s, dir) or L.stair_sides(k.x, k.z, k.s) & (1 << dir) \
 				or (L.has_flag(k.x, k.z, k.s, LevelLayout.DOCK) and L.is_outside(k.x, k.z, k.s, dir)):
@@ -401,7 +478,7 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 				var mid := span.origin + span.u * ((run.x + run.y) * 0.5) + span.m * 1.0 - k.o
 				if L.in_back_room(k.x, k.z, k.s, Vector2(mid.x, mid.z)):
 					run_key = BACK_ROOMS.get(key, &"closet")
-			_fill_run(k, span, dir, run, run_key, window, r, posters)
+			_fill_run(k, span, dir, run, run_key, window, r, posters, counts)
 	if split:
 		# Both faces of the partition, either side of its doorway.
 		var side := L.split_side(k.x, k.z, k.s)
@@ -417,7 +494,42 @@ func _wall_runs(k: SetPieces.Cell) -> void:
 			var run_key: StringName = key if face > 0.0 else BACK_ROOMS.get(key, &"closet")
 			for run in runs:
 				if run.y - run.x > 0.4:
-					_fill_run(k, fsp, dir, run, run_key, false, r, posters)
+					_fill_run(k, fsp, dir, run, run_key, false, r, posters, counts)
+
+
+## At most this many of a piece in one cell (3 for anything not listed).
+const PER_CELL := {
+	"fire_alarm": 1, "camera": 1, "clock": 1, "phone": 1, "first_aid": 1, "whiteboard": 1, "mirror": 2, "notice": 2,
+	"poster": 1, "hazard": 1, "fuse": 2, "power_box": 1, "valve": 2, "gauges": 2, "pegboard": 2, "hooks": 1,
+	"shelf_wall": 2, "extinguisher": 1, "hose": 1, "radiator": 4,
+	"generator": 1, "ladder": 1, "tool_chest": 1, "tool_cart": 1, "storage_cart": 1, "bins": 1, "wet_sign": 1,
+	"hand_truck": 1, "desk_metal": 1, "desk": 2, "tyres": 1, "vending": 1, "cooler": 1, "mop": 1, "bench": 2,
+	"rack": 3, "utility": 2, "drums": 2, "gas": 1, "manifold": 2, "bench_seat": 1, "bin": 1, "electrical": 2,
+}
+## One per room (in its first cell); in corridors and open floors, one cell in four.
+const PER_ROOM: Array[String] = ["fire_alarm", "camera", "clock", "phone", "whiteboard", "first_aid", "vending", "cooler",
+	"wet_sign", "mirror"]
+## Pieces that make sense in a row (the same twice running is otherwise skipped).
+const ROWS: Array[String] = ["shelf", "cabinet", "lockers", "rack", "pallet", "electrical", "utility"]
+
+
+## May `id` go here? Caps per cell and per room, and never the same piece
+## twice in a row along a wall unless it's a row kind of thing.
+func _allowed(k: SetPieces.Cell, id: String, counts: Dictionary, last: String) -> bool:
+	if id == last and id not in ROWS:
+		return false
+	if int(counts.get(id, 0)) >= int(PER_CELL.get(id, 3)):
+		return false
+	if id in PER_ROOM:
+		if k.room and k.room.use != &"hallway":
+			return Vector2i(k.x, k.z) == k.room.rect.position
+		return hint(k, 430 + absi(id.hash()) % 97, 0.25)
+	return true
+
+
+## Scanned models that get shoved about (left at an angle, off the wall).
+const MOVABLE: Array[String] = ["tool_cart", "storage_cart", "generator", "hand_truck", "bins", "tool_chest", "office_desk",
+	"utility_box"]
 
 
 ## Back room of a split cell, by the room's use.
@@ -428,7 +540,8 @@ const BACK_ROOMS := {&"offices": &"archive", &"archive": &"closet", &"meeting": 
 ## Floor pieces along one free run of wall, leaving gaps, then things hung in
 ## the gaps between them.
 func _fill_run(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, run: Vector2, key: StringName, window: bool,
-		r: RandomNumberGenerator, posters: Array[int]) -> void:
+		r: RandomNumberGenerator, posters: Array[int], counts: Dictionary) -> void:
+	var last := ""
 	var floor_kit: Dictionary = FLOOR_KITS.get(key, {})
 	var hung_kit: Dictionary = HUNG_KITS.get(key, HUNG_KITS.get(k.zn.type, {}))
 	var fill: float = FILL.get(key, 0.3)
@@ -441,12 +554,19 @@ func _fill_run(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, run: Vector
 			var id := sp._weighted(r, floor_kit)
 			if window and id in ["shelf", "lockers", "vending", "manifold", "electrical", "cabinet"]:
 				id = "bin" if r.randf() < 0.3 else "boxes"
+			if not _allowed(k, id, counts, last):
+				id = sp._weighted(r, floor_kit)
+				if not _allowed(k, id, counts, last):
+					a += r.randf_range(0.4, 1.0)
+					continue
 			var size: Array = FLOOR_SIZES[id]
 			var w: float = size[0]
 			if a + w > run.y:
 				a += 0.5
 				continue
 			if _floor_piece(k, span, dir, id, a + w * 0.5, w, size[1], r):
+				counts[id] = int(counts.get(id, 0)) + 1
+				last = id
 				a += w + r.randf_range(0.05, 0.5)
 			else:
 				a += 0.5
@@ -457,9 +577,10 @@ func _fill_run(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, run: Vector
 	if hung_kit.is_empty() or window:
 		return
 	var b := run.x + r.randf_range(0.1, 0.9)
+	last = ""
 	while b < run.y - 0.3:
 		var id := sp._weighted(r, hung_kit)
-		if id == "poster" and posters[0] >= 1:
+		if (id == "poster" and posters[0] >= 1) or not _allowed(k, id, counts, last):
 			b += 0.6
 			continue
 		var hs: Array = HUNG_SIZES[id]
@@ -469,7 +590,10 @@ func _fill_run(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, run: Vector
 		if _hung_piece(k, span, dir, id, b + w * 0.5, r):
 			if id == "poster":
 				posters[0] += 1
-			b += w + r.randf_range(0.4, 1.6)
+			counts[id] = int(counts.get(id, 0)) + 1
+			last = id
+			# Gaps vary: things bunch up in places, leave bare wall in others.
+			b += w + r.randf_range(0.4, 2.4)
 		else:
 			b += 0.45
 
@@ -486,9 +610,14 @@ func _floor_piece(k: SetPieces.Cell, span: ChunkBuilder.Span, dir: int, id: Stri
 		return false
 	var yaw := SetPieces._face_from_wall(dir)
 	# A scanned model with its back to the wall (they face +Z, kit props -Z).
+	# Things on wheels or light enough to shove are often left askew.
 	var against := func(model: String, turn: float = 0.0) -> void:
 		var sz := cb.models.size(model)
-		cb.kit(k.d, model, base + N * ((sz.x if absf(turn) > 1.0 else sz.z) * 0.5 + 0.03), yaw + PI + turn)
+		var out := 0.03
+		if model in MOVABLE and r.randf() < 0.4:
+			turn += r.randf_range(-0.4, 0.4)
+			out += r.randf_range(0.05, 0.35)
+		cb.kit(k.d, model, base + N * ((sz.x if absf(turn) > 1.0 else sz.z) * 0.5 + out), yaw + PI + turn)
 	match id:
 		"rack":
 			var model: String = ["rack_wide", "rack_narrow", "rack_worn"][r.randi_range(0, 2)]
@@ -870,6 +999,8 @@ func _passage_walls(k: SetPieces.Cell) -> void:
 	var crawl := cb.narrow_edges(k.x, k.z, k.s, true)
 	var r := cb.rng(k.x, k.z, k.s, 330)
 	var posters := 0
+	var counts := {}
+	var last := ""
 	for axis in 2:
 		var lo_dir := 3 if axis == 0 else 0  # arm toward -X / -Z
 		var hi_dir := 1 if axis == 0 else 2
@@ -891,7 +1022,7 @@ func _passage_walls(k: SetPieces.Cell) -> void:
 				var b := run.x + r.randf_range(0.2, 1.2)
 				while b < run.y - 0.3:
 					var id := sp._weighted(r, PASSAGE_KIT)
-					if id == "poster" and posters >= 1:
+					if (id == "poster" and posters >= 1) or not _allowed(k, id, counts, last):
 						b += 0.5
 						continue
 					var hs: Array = HUNG_SIZES[id]
@@ -900,6 +1031,8 @@ func _passage_walls(k: SetPieces.Cell) -> void:
 					if _hung_piece(k, span, side_dir, id, b + float(hs[0]) * 0.5, r):
 						if id == "poster":
 							posters += 1
+						counts[id] = int(counts.get(id, 0)) + 1
+						last = id
 						b += float(hs[0]) + r.randf_range(0.8, 2.4)
 					else:
 						b += 0.5
@@ -926,19 +1059,7 @@ func _passage_signs(k: SetPieces.Cell) -> void:
 	for d in 4:
 		if open & (1 << d):
 			arms += 1
-	var head := minf(cb.ceiling_height(k.st, k.zn, k.room, k.x, k.z, k.s), H - 0.3) - 0.45
-	# Doors at the end of an arm: what's through them.
-	for dir in 4:
-		if not L.has_door(k.x, k.z, k.s, dir):
-			continue
-		var n := Vector2i(k.x, k.z) + LevelLayout.DIRS[dir]
-		var other := L.room_of(n.x, n.y, k.s)
-		if other and other != k.room and other.use in PLATES:
-			var v := LevelLayout.dir_vector(dir)
-			# On the door wall above the opening (the cell edge, facing in).
-			var p := k.c + v * (C * 0.5 - FACE) + UP * minf(head, cb.door_height(k.x, k.z, k.s, n, k.st) + 0.32)
-			wall_decal(k, "room_" + String(other.use), p, -v, minf(1.1, w - 0.3), 0.28)
-	if arms != 3:
+	if arms != 3 or not hint(k, 420, 0.2):
 		return
 	var here := cb.exit_dist[L.idx(k.x, k.z, k.s)]
 	var best := -1
